@@ -106,7 +106,9 @@ public sealed class FenetreLogos : Window
         ImGui.SameLine();
         ImGui.TextColored(Violet, $"· {aApprendre.Count} à apprendre maintenant");
         ImGui.SameLine();
-        ImGui.TextColored(Gris, "· clic droit sur une action : apprise / pas apprise");
+        ImGui.TextColored(Gris, etat.ApprisesLuesLe is { } lues
+            ? $"· apprises lues dans le journal le {lues:dd/MM à HH:mm}"
+            : "· pour lire les apprises : journal des actions Logos (Drake), ou clic droit sur une action");
 
         if (aApprendre.Count == 0) return;
         ImGui.TextUnformatted("Pas encore apprises, fabricables :");

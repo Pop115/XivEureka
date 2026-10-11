@@ -8,7 +8,8 @@ jeu. Il grandit au fil des besoins.
 - **Actions Logos** (`/xiveureka`, ou le bouton du plugin dans `/xlplugins`) : la page de
   ffxiv-eureka.com/logograms, mais avec le stock lu dans le jeu. Mnemes par éclat à gauche, les 56
   actions au centre, fiche de l'action (description, recettes, stock/besoin) à droite. En violet :
-  pas encore apprise et fabricable tout de suite. Clic droit sur une action : apprise / pas apprise.
+  pas encore apprise et fabricable tout de suite. Les actions apprises sont lues dans le journal des
+  actions Logos (ouvert en parlant à Drake) ; clic droit sur une action pour corriger entre-temps.
   La fenêtre s'ouvre toute seule avec le manipulateur Logos.
 - Le stock est relu deux fois par seconde tant que la **fenêtre des éclats Logos** est ouverte, et
   gardé par personnage dans la configuration du plugin (utilisable loin du manipulateur).
@@ -18,6 +19,8 @@ jeu. Il grandit au fil des besoins.
 - **Stock** : tableau `NumberArrayType.EurekaLogosShardList` (137) du jeu, rempli seulement fenêtre
   des éclats ouverte. Case 0 = nombre de sortes, puis 4 cases par mneme dès la case 3 : icône,
   quantité, numéro d'objet, ligne EurekaMagiciteItem (relevé du 2026-10-11, test sur ce relevé).
+- **Apprises** : fenêtre `EurekaMagiaActionNotebook` ; ses 56 premières valeurs sont, pour chaque
+  action, son numéro si elle est apprise, 0 sinon (relevé du 2026-10-11, test sur ce relevé).
 - **Recettes** : le jeu ne les a pas (mélange résolu par le serveur). `XivEureka/Donnees/logos.json`,
   extrait de ffxiv-eureka.com et recoupé avec Logogram Helper (55/56 identiques ; pour Restauration
   le site a une recette à 3 mnemes de plus, gardée).
@@ -40,8 +43,7 @@ Le journal Dalamud dit « Relevé écrit : … ».
 
 ## À faire / idées
 
-- [ ] **Actions apprises lues dans le jeu** au lieu de cases à cocher : ouvrir le journal des actions
-      Logos en jeu, lire son relevé, trouver où le jeu les garde.
+- [x] Actions apprises lues dans le journal des actions Logos.
 - [ ] Détecter dans le chat les liens de tracker (ffxiv-eureka.com) et les proposer.
 - [ ] Détecter les messages « pop » (position d'un NM) et poser un repère sur la carte.
 - [ ] Repérer les FATE sur la carte.

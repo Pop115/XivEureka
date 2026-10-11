@@ -37,6 +37,7 @@ public sealed class Plugin : IDalamudPlugin
     private static readonly TimeSpan IntervalleLecture = TimeSpan.FromMilliseconds(500);
 
     private readonly Configuration configuration;
+    private readonly CatalogueLogos catalogue;
     private readonly WindowSystem fenetres = new("XivEureka");
     private readonly FenetreLogos fenetreLogos;
     private DateTime prochaineLecture = DateTime.MinValue;
@@ -45,7 +46,8 @@ public sealed class Plugin : IDalamudPlugin
     public Plugin()
     {
         configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-        fenetreLogos = new FenetreLogos(CatalogueLogos.Integre(), new TextesJeu(DataManager), TextureProvider,
+        catalogue = CatalogueLogos.Integre();
+        fenetreLogos = new FenetreLogos(catalogue, new TextesJeu(DataManager), TextureProvider,
             EtatCourant, () => stockEnDirect, Sauver);
         fenetres.AddWindow(fenetreLogos);
 
@@ -101,16 +103,32 @@ public sealed class Plugin : IDalamudPlugin
         if (DateTime.UtcNow < prochaineLecture) return;
         prochaineLecture = DateTime.UtcNow + IntervalleLecture;
 
-        stockEnDirect = LecteurEclats.FenetreOuverte(GameGui.GetAddonByName(LecteurEclats.Fenetre, 1).Address);
-        if (!stockEnDirect) return;
         var etat = EtatCourant();
-        var stock = LecteurEclats.Lire();
-        if (etat == null || stock == null) return;
+        if (etat == null) return;
+        stockEnDirect = LecteurEclats.FenetreOuverte(GameGui.GetAddonByName(LecteurEclats.Fenetre, 1).Address);
+        if (stockEnDirect) LireStock(etat);
+        LireApprises(etat);
+    }
 
+    private void LireStock(EtatPersonnage etat)
+    {
+        var stock = LecteurEclats.Lire();
+        if (stock == null) return;
         var change = stock.Count != etat.Stock.Count || stock.Any(s => etat.Stock.GetValueOrDefault(s.Key, -1) != s.Value);
         if (!change && etat.StockLuLe != null) return;
         etat.Stock = stock;
         etat.StockLuLe = DateTime.Now;
+        Sauver();
+    }
+
+    /// <summary>Le journal des actions Logos fait foi : il remplace ce qui avait été coché à la main.</summary>
+    private void LireApprises(EtatPersonnage etat)
+    {
+        var apprises = LecteurJournal.Lire(GameGui.GetAddonByName(LecteurJournal.Fenetre, 1).Address, catalogue);
+        if (apprises == null) return;
+        if (apprises.SetEquals(etat.Apprises) && etat.ApprisesLuesLe != null) return;
+        etat.Apprises = apprises;
+        etat.ApprisesLuesLe = DateTime.Now;
         Sauver();
     }
 

@@ -16,8 +16,14 @@ public sealed class EtatPersonnage
     /// <summary>Quand <see cref="Stock"/> a été lu dans le jeu ; null tant qu'il ne l'a jamais été.</summary>
     public DateTime? StockLuLe { get; set; }
 
-    /// <summary>Actions Logos apprises (ligne de la feuille Action), cochées à la main pour l'instant.</summary>
+    /// <summary>
+    /// Actions Logos apprises (ligne de la feuille Action). Lues dans le journal des actions Logos
+    /// quand il est ouvert ; cochables à la main entre deux passages.
+    /// </summary>
     public HashSet<uint> Apprises { get; set; } = [];
+
+    /// <summary>Quand <see cref="Apprises"/> a été lu dans le journal ; null s'il ne l'a jamais été.</summary>
+    public DateTime? ApprisesLuesLe { get; set; }
 }
 
 [Serializable]

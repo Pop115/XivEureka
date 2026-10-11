@@ -120,3 +120,26 @@ public class FabricationTests
     public void Raccourcit_les_noms_a_prefixe(string nom, string attendu) =>
         Assert.Equal(attendu, TextesJeu.Raccourcir(nom));
 }
+
+public class LecteurJournalTests
+{
+    [Fact]
+    public void Decode_le_journal_releve_en_jeu()
+    {
+        var catalogue = CatalogueLogos.Integre();
+        var valeurs = JsonSerializer.Deserialize<long[]>(File.ReadAllText(Path.Combine("TestData", "journal-2026-10-11.json")))!;
+
+        var apprises = LecteurJournal.Decoder(valeurs, catalogue)!;
+
+        var numeros = catalogue.Actions.Where(a => apprises.Contains(a.Action)).Select(a => a.Numero);
+        Assert.Equal([1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 16, 17, 19, 20, 22, 23, 26, 27, 31, 32, 33, 34, 37, 38, 39], numeros);
+    }
+
+    [Fact]
+    public void Refuse_un_journal_trop_court_ou_inconnu()
+    {
+        var catalogue = CatalogueLogos.Integre();
+        Assert.Null(LecteurJournal.Decoder([1, 2, 3], catalogue));
+        Assert.Null(LecteurJournal.Decoder(Enumerable.Repeat(99L, 56).ToList(), catalogue));
+    }
+}
