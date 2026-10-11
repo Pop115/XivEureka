@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <Version>0.0.1.0</Version>
+    <Author>Pop115</Author>
+    <Name>Xiv Eurêka</Name>
+    <Punchline>Compagnon d'Eurêka : éclats Logos, actions Logos, et plus.</Punchline>
+    <Description>Plugin privé. Lit les mnemes du manipulateur Logos et montre les actions Logos fabricables.</Description>
+    <Tags>eureka;logos</Tags>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>
