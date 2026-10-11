@@ -9,4 +9,7 @@
     <Tags>eureka;logos</Tags>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Donnees\logos.json" LogicalName="XivEureka.Donnees.logos.json" />
+  </ItemGroup>
 </Project>

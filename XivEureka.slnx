@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="XivEureka.Tests/XivEureka.Tests.csproj" />
+  <Project Path="XivEureka/XivEureka.csproj" />
+</Solution>
