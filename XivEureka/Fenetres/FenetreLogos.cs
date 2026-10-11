@@ -101,7 +101,7 @@ public sealed class FenetreLogos : Window
         if (aApprendre > 0)
         {
             ImGui.SameLine();
-            ImGui.TextColored(Jaune, $"· {aApprendre} à apprendre maintenant (cases claires)");
+            ImGui.TextColored(Jaune, $"· {aApprendre} à apprendre maintenant (cases qui clignotent)");
         }
 
         ImGui.TextColored(Gris, Provenance(etat));
@@ -149,9 +149,19 @@ public sealed class FenetreLogos : Window
         }
         else if (e.Possibles > 0)
         {
+            // À apprendre : icône en couleur dans un halo jaune qui pulse, pour sauter aux yeux.
+            var pulsation = 0.55f + (0.45f * MathF.Sin((float)ImGui.GetTime() * 4f));
+            for (var halo = 1; halo <= 4; halo++)
+                dessin.AddRect(coin - new Vector2(halo * 1.5f), fin + new Vector2(halo * 1.5f),
+                    ImGui.GetColorU32(Jaune with { W = pulsation * (0.9f - (halo * 0.18f)) }), arrondi + halo, ImDrawFlags.None, 2);
             dessin.AddRectFilled(coin, fin, ImGui.GetColorU32(CaseClaire), arrondi);
-            if (TextureIcone(texte.Icone) is { } image)
-                dessin.AddImageRounded(image, coin, fin, Vector2.Zero, Vector2.One, ImGui.GetColorU32(new Vector4(1, 1, 1, 0.35f)), arrondi);
+            if (TextureIcone(texte.Icone) is { } image) dessin.AddImageRounded(image, coin, fin, Vector2.Zero, Vector2.One, 0xFFFFFFFF, arrondi);
+            if (taille >= 32)
+            {
+                var pastille = coin + new Vector2(7, 7);
+                dessin.AddCircleFilled(pastille, 7, ImGui.GetColorU32(Jaune));
+                dessin.AddText(pastille - (ImGui.CalcTextSize("!") / 2), 0xFF000000, "!");
+            }
         }
         else
         {
