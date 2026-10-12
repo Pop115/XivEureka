@@ -11,6 +11,7 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using XivEureka.Fenetres;
 using XivEureka.Logos;
+using XivEureka.Zones;
 
 namespace XivEureka;
 
@@ -31,6 +32,10 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
     [PluginService] internal static IPlayerState PlayerState { get; private set; } = null!;
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
+    [PluginService] internal static IClientState ClientState { get; private set; } = null!;
+    [PluginService] internal static IFateTable FateTable { get; private set; } = null!;
+    [PluginService] internal static IToastGui ToastGui { get; private set; } = null!;
+    [PluginService] internal static IDtrBar DtrBar { get; private set; } = null!;
 
     private const string Commande = "/xiveureka";
     private const string FenetreManipulateur = "EurekaMagiciteItemSynthesis";
@@ -40,6 +45,8 @@ public sealed class Plugin : IDalamudPlugin
     private readonly CatalogueLogos catalogue;
     private readonly WindowSystem fenetres = new("XivEureka");
     private readonly FenetreLogos fenetreLogos;
+    private readonly FenetreReglages fenetreReglages;
+    private readonly CompagnonZone compagnon;
     private DateTime prochaineLecture = DateTime.MinValue;
     private bool stockEnDirect;
 
@@ -50,6 +57,11 @@ public sealed class Plugin : IDalamudPlugin
         fenetreLogos = new FenetreLogos(catalogue, new TextesJeu(DataManager), TextureProvider,
             EtatCourant, () => stockEnDirect, Sauver);
         fenetres.AddWindow(fenetreLogos);
+        fenetreReglages = new FenetreReglages(configuration, Sauver);
+        fenetres.AddWindow(fenetreReglages);
+        compagnon = new CompagnonZone(configuration, ClientState, Framework, FateTable, ChatGui, ToastGui, DtrBar, Log,
+            new NomsMeteo(DataManager),
+            NombreAApprendre, () => fenetreLogos.IsOpen = true, Sauver);
 
         CommandManager.AddHandler(Commande, new CommandInfo(SurCommande)
         {
@@ -62,15 +74,18 @@ public sealed class Plugin : IDalamudPlugin
 
         PluginInterface.UiBuilder.Draw += fenetres.Draw;
         PluginInterface.UiBuilder.OpenMainUi += BasculerFenetre;
+        PluginInterface.UiBuilder.OpenConfigUi += fenetreReglages.Toggle;
     }
 
     public void Dispose()
     {
         PluginInterface.UiBuilder.Draw -= fenetres.Draw;
         PluginInterface.UiBuilder.OpenMainUi -= BasculerFenetre;
+        PluginInterface.UiBuilder.OpenConfigUi -= fenetreReglages.Toggle;
         AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, FenetreManipulateur, SurManipulateurOuvert);
         AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, SurFenetreOuverte);
         Framework.Update -= SurTrame;
+        compagnon.Dispose();
         CommandManager.RemoveHandler(Commande);
         fenetres.RemoveAllWindows();
     }
@@ -79,6 +94,14 @@ public sealed class Plugin : IDalamudPlugin
         PlayerState.IsLoaded && PlayerState.ContentId != 0
             ? configuration.Personnage(PlayerState.ContentId, PlayerState.CharacterName)
             : null;
+
+    /// <summary>Actions pas encore apprises et fabricables avec le dernier stock lu ; null sans personnage.</summary>
+    private int? NombreAApprendre()
+    {
+        var etat = EtatCourant();
+        return etat?.StockLuLe == null ? null
+            : catalogue.Actions.Count(a => Fabrication.Action(a, etat.Stock, etat.Apprises).AApprendre);
+    }
 
     private void Sauver() => PluginInterface.SavePluginConfig(configuration);
 

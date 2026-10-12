@@ -37,6 +37,27 @@ public sealed class Configuration : IPluginConfiguration
     /// <summary>Ouvrir la fenêtre Logos quand on ouvre le manipulateur Logos en jeu.</summary>
     public bool OuvrirAvecLeManipulateur { get; set; } = true;
 
+    /// <summary>Annoncer (toast, chat avec lien de carte) chaque nouvelle FATE dans une zone d'Eurêka.</summary>
+    public bool AlerterFates { get; set; } = true;
+
+    /// <summary>Poser le drapeau de la carte du jeu sur une nouvelle FATE.</summary>
+    public bool DrapeauSurFate { get; set; } = true;
+
+    /// <summary>Lire le chat d'Eurêka (cris, LS, CWLS…) pour les annonces de pop et les liens de tracker.</summary>
+    public bool EcouterChat { get; set; } = true;
+
+    /// <summary>Poser le drapeau sur la position d'un pop annoncé dans le chat.</summary>
+    public bool DrapeauSurChat { get; set; } = true;
+
+    /// <summary>Son du jeu avec les alertes.</summary>
+    public bool SonAlertes { get; set; } = true;
+
+    /// <summary>Montrer « Logos : N à apprendre » dans la barre d'infos serveur hors d'Eurêka.</summary>
+    public bool BarreHorsEureka { get; set; } = true;
+
+    /// <summary>Dernier tracker ffxiv-eureka.com vu dans le chat (identifiant, ex. « bZFR-s »).</summary>
+    public string? DernierTracker { get; set; }
+
     public EtatPersonnage Personnage(ulong contentId, string nom)
     {
         if (!Personnages.TryGetValue(contentId, out var etat))

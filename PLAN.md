@@ -5,6 +5,16 @@ proche de l'UI du jeu**, **la carte du jeu** pour tout ce qui est position (pas 
 Penser **Bozja** dès la conception (mêmes besoins : fragments ↔ éclats, CE ↔ FATE, actions de
 fortune ↔ actions Logos).
 
+## État (2026-10-12)
+- 0 fait : recherche dans le Google Doc « XivEureka – recherche étape 0 (2026-10-12) »
+  (protocole du tracker, données NM/logogrammes, ClientStructs, KamiToolKit, Bozja).
+- 1 en partie : barre d'infos serveur cliquable, toasts + chat avec lien de carte. Reste : bouton
+  natif sur le manipulateur / la carte (KamiToolKit `AddonController`), style « jeu » de la fenêtre.
+- 3 + 4 faits (pas encore testés en jeu) : `Zones/CompagnonZone.cs` (FATE, chat, barre),
+  `Zones/Meteo.cs` (météo et heure d'Eorzéa locales), `Zones/AnalyseChat.cs`, `Zones/CarteJeu.cs`.
+- Suivant : 2 (conseils de farm : données `acquired-by` et NM du site, niveau élémentaire via
+  `PlayerState.GetContentValue(2)`, conditions météo/nuit des NM avec `Meteo.Prochaine`).
+
 ## 0. À vérifier avant de coder (outils existants)
 - Plugins Dalamud Eurêka/Bozja à lire (pas copier) : un « Eureka helper »/auto-pop qui parle au
   tracker, **BozjaBuddy** (Bozja : fragments, actions de fortune, carte), Logogram Helper (fait).

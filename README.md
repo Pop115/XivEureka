@@ -11,6 +11,16 @@ jeu. Il grandit au fil des besoins.
   pas encore apprise et fabricable tout de suite. Les actions apprises sont lues dans le journal des
   actions Logos (ouvert en parlant à Drake) ; clic droit sur une action pour corriger entre-temps.
   La fenêtre s'ouvre toute seule avec le manipulateur Logos.
+- **Barre d'infos serveur** : à Eurêka, météo en cours → suivante (dans N min) et heure d'Eorzéa,
+  les 6 prochaines météos en infobulle ; partout, « Logos : N à apprendre ». Clic : fenêtre Logos.
+- **FATE** (zones d'Eurêka) : chaque nouvelle FATE est annoncée par un toast du jeu et un message
+  avec lien de carte, et le drapeau de la carte du jeu est posé dessus (celles déjà là à l'arrivée
+  ne sont pas annoncées).
+- **Chat** (cris, zone, groupe, alliance, CL, LS, CWLS ; à Eurêka seulement) : un message qui
+  annonce un pop (« pop », « spawn », ou le nom d'une FATE en cours) avec un lien de carte, des
+  coordonnées (« X: 12.3 Y: 14.5 », « (12.3, 14.5) ») ou le nom d'une FATE en cours → même alerte,
+  drapeau sur la position. Un lien ffxiv-eureka.com/xxxx est retenu comme dernier tracker vu.
+- **Réglages** : bouton de configuration dans `/xlplugins` (chaque alerte se coupe).
 - Le stock est relu deux fois par seconde tant que la **fenêtre des éclats Logos** est ouverte, et
   gardé par personnage dans la configuration du plugin (utilisable loin du manipulateur).
 
@@ -44,7 +54,8 @@ Le journal Dalamud dit « Relevé écrit : … ».
 ## À faire / idées
 
 - [x] Actions apprises lues dans le journal des actions Logos.
-- [ ] Détecter dans le chat les liens de tracker (ffxiv-eureka.com) et les proposer.
-- [ ] Détecter les messages « pop » (position d'un NM) et poser un repère sur la carte.
-- [ ] Repérer les FATE sur la carte.
+- [x] Détecter dans le chat les liens de tracker (ffxiv-eureka.com) — retenus ; suivi en direct : étape 5.
+- [x] Détecter les messages « pop » (position d'un NM) et poser le drapeau sur la carte du jeu.
+- [x] Annoncer les nouvelles FATE avec drapeau.
+- [ ] À valider en jeu : drapeau (coordonnées monde), noms de météo FR, textes des pops réels.
 - Note : `/eureka` n'est jamais parvenue au plugin (aucun appel, aucune erreur) — d'où `/xiveureka`.
