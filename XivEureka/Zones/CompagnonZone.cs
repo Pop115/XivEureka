@@ -23,6 +23,7 @@ public sealed class CompagnonZone : IDisposable
     private static readonly TimeSpan Intervalle = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan AntiDoublon = TimeSpan.FromSeconds(45);
     private const float DistanceFate = 60f;
+    private static readonly TimeSpan DureePop = TimeSpan.FromMinutes(10);
 
     // Canaux où se donnent les pops : cris, zone, groupe, alliance, LS, CWLS. Pas les messages système.
     private static readonly HashSet<XivChatType> CanauxEcoutes =
@@ -45,6 +46,7 @@ public sealed class CompagnonZone : IDisposable
     private readonly Action sauver;
     private readonly SuiviFates fates = new();
     private readonly Dictionary<string, DateTime> dernieresAlertes = [];
+    private readonly List<PopAnnonce> pops = [];
     private DateTime prochainPassage = DateTime.MinValue;
 
     public CompagnonZone(Configuration configuration, IClientState clientState, IFramework framework, IFateTable fateTable,
@@ -73,7 +75,18 @@ public sealed class CompagnonZone : IDisposable
 
     private ZoneEureka? ZoneCourante => Meteo.Zone(clientState.TerritoryType);
 
-    private void SurChangementZone(uint territoire) => fates.Reinitialiser();
+    /// <summary>Les pops annoncés dans le chat depuis moins de dix minutes, pour la carte du plugin.</summary>
+    public IReadOnlyList<PopAnnonce> PopsRecents()
+    {
+        pops.RemoveAll(p => DateTime.UtcNow - p.Quand > DureePop);
+        return pops.ToList();
+    }
+
+    private void SurChangementZone(uint territoire)
+    {
+        fates.Reinitialiser();
+        pops.Clear();
+    }
 
     private void SurTrame(IFramework _)
     {
@@ -136,7 +149,9 @@ public sealed class CompagnonZone : IDisposable
 
         var cle = fate != null ? $"fate:{fate.Id}" : $"pos:{(int)(position.Value.X / 20)}:{(int)(position.Value.Z / 20)}";
         if (DejaAnnonce(cle)) return;
-        Alerter(fate != null ? $"Pop annoncé : {fate.Nom}" : "Pop annoncé dans le chat", position.Value, configuration.DrapeauSurChat);
+        var titre = fate != null ? $"Pop annoncé : {fate.Nom}" : "Pop annoncé dans le chat";
+        pops.Add(new PopAnnonce(titre, position.Value, DateTime.UtcNow));
+        Alerter(titre, position.Value, configuration.DrapeauSurChat);
     }
 
     private bool DejaAnnonce(string cle)

@@ -6,7 +6,6 @@ using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using XivEureka.Logos;
 
@@ -17,14 +16,14 @@ namespace XivEureka.Fenetres;
 /// journal (10 par ligne, dans l'ordre du jeu) : icône en couleur si l'action est apprise, case
 /// sombre sinon, case claire si elle n'est pas apprise mais fabricable ; en jaune, combien on peut en
 /// fabriquer. En dessous, les mnemes par éclat avec les actions où chacune sert. À droite, la fiche
-/// de l'action choisie.
+/// de l'action choisie. Onglet « Actions Logos » de la fenêtre principale.
 /// </summary>
-public sealed class FenetreLogos : Window
+public sealed class OngletLogos
 {
     private const int Colonnes = 10;
     private const float TailleCase = 44;
     private const float Ecart = 6;
-    private const float LargeurFiche = 330;
+    public const float LargeurFiche = 330;
 
     private static readonly Vector4 Jaune = new(1f, 0.85f, 0.25f, 1f);
     private static readonly Vector4 Vert = new(0.35f, 0.83f, 0.6f, 1f);
@@ -46,9 +45,8 @@ public sealed class FenetreLogos : Window
 
     private int? choisie;
 
-    public FenetreLogos(CatalogueLogos catalogue, TextesJeu textes, ITextureProvider icones,
+    public OngletLogos(CatalogueLogos catalogue, TextesJeu textes, ITextureProvider icones,
         Func<EtatPersonnage?> etatCourant, Func<bool> stockEnDirect, Action sauver)
-        : base("Actions Logos · Xiv Eurêka###XivEurekaLogos")
     {
         this.catalogue = catalogue;
         this.textes = textes;
@@ -56,12 +54,9 @@ public sealed class FenetreLogos : Window
         this.etatCourant = etatCourant;
         this.stockEnDirect = stockEnDirect;
         this.sauver = sauver;
-        Size = new Vector2(1000, 720);
-        SizeCondition = ImGuiCond.FirstUseEver;
-        SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(600 + LargeurFiche, 420), MaximumSize = new Vector2(4000, 3000) };
     }
 
-    public override void Draw()
+    public void Dessiner()
     {
         var etat = etatCourant();
         if (etat == null)

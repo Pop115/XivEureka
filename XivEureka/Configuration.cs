@@ -26,6 +26,19 @@ public sealed class EtatPersonnage
     public DateTime? ApprisesLuesLe { get; set; }
 }
 
+/// <summary>Ce que l'onglet Carte affiche (cases « Calques »).</summary>
+[Serializable]
+public sealed class CalquesCarte
+{
+    public bool Reperes { get; set; } = true;
+    public bool NomsDeZone { get; set; } = true;
+    public bool Groupe { get; set; } = true;
+    public bool Fates { get; set; } = true;
+    public bool Pops { get; set; } = true;
+    public bool Nm { get; set; } = true;
+    public bool Prepa { get; set; } = true;
+}
+
 [Serializable]
 public sealed class Configuration : IPluginConfiguration
 {
@@ -51,6 +64,12 @@ public sealed class Configuration : IPluginConfiguration
 
     /// <summary>Son du jeu avec les alertes.</summary>
     public bool SonAlertes { get; set; } = true;
+
+    /// <summary>Calques de l'onglet Carte.</summary>
+    public CalquesCarte Calques { get; set; } = new();
+
+    /// <summary>Zone d'Eurêka montrée par l'onglet Carte hors d'Eurêka : la dernière visitée (Pyros au départ).</summary>
+    public uint DerniereZone { get; set; } = 795;
 
     /// <summary>Dernier tracker ffxiv-eureka.com vu dans le chat (identifiant, ex. « bZFR-s »).</summary>
     public string? DernierTracker { get; set; }

@@ -133,3 +133,63 @@ public class SuiviFatesTests
     public void Reconnait_les_fates_lapin_a_leur_regle(byte regle, bool lapin) =>
         Assert.Equal(lapin, SuiviFates.EstFateLapin(regle));
 }
+
+public class GeometrieCarteTests
+{
+    private static readonly GeometrieCarte Pyros = new(100, 0, 0);
+
+    [Fact]
+    public void Repere_du_jeu_aux_coordonnees_du_wiki()
+    {
+        // Éthérite de Firing Chamber : MapMarker 335 (pixels 1151, 827) ; le wiki dit X 23.8 Y 17.0.
+        var coord = Pyros.Coordonnees(new Vector2(1151, 827));
+        Assert.Equal(24.02f, coord.X, 2);
+        Assert.Equal(17.54f, coord.Y, 2);
+    }
+
+    [Fact]
+    public void Le_centre_du_monde_est_au_centre_de_la_texture()
+    {
+        Assert.Equal(new Vector2(1024, 1024), Pyros.Pixel(Vector3.Zero));
+        Assert.Equal(new Vector2(1024, 1024), new GeometrieCarte(200, 0, 0).Pixel(Vector3.Zero));
+        Assert.Equal(new Vector2(1024, 1024 + 475), new GeometrieCarte(100, 0, 475).Pixel(Vector3.Zero)); // Hydatos
+    }
+
+    [Theory]
+    [InlineData(100, 0, 0)]
+    [InlineData(200, 0, -754)]
+    public void Aller_retour_monde_pixel_coordonnees(ushort echelle, short dx, short dy)
+    {
+        var g = new GeometrieCarte(echelle, dx, dy);
+        var monde = new Vector3(-123.5f, 40, 287.25f);
+        var pixel = g.Pixel(monde);
+        var retour = g.Monde(pixel);
+        Assert.Equal(monde.X, retour.X, 3);
+        Assert.Equal(monde.Z, retour.Z, 3);
+        Assert.True(Vector2.Distance(pixel, g.PixelDeCoordonnees(g.Coordonnees(pixel))) < 1e-3f);
+    }
+
+    [Fact]
+    public void Meme_formule_que_le_lien_de_carte_du_jeu()
+    {
+        // MapUtil de Dalamud : 0.02 × décalage + 2048 / échelle + 0.02 × valeur + 1.
+        var g = new GeometrieCarte(200, 0, -754);
+        var monde = new Vector3(310f, 0, -95f);
+        var attendu = (0.02f * -754) + (2048f / 200) + (0.02f * -95f) + 1f;
+        Assert.Equal(attendu, g.Coordonnees(g.Pixel(monde)).Y, 3);
+    }
+}
+
+public class BasculeJourNuitTests
+{
+    [Theory]
+    [InlineData(0, false, 6)]        // minuit → le jour à 6 h
+    [InlineData(6 * 175, true, 19)]  // 6 h pile → la nuit à 19 h
+    [InlineData(19 * 175, false, 30)] // 19 h → le jour à 6 h le lendemain
+    public void Prochaine_bascule(long secondes, bool nuit, int heureEorzea)
+    {
+        var (n, quand) = Meteo.ProchaineBascule(DateTimeOffset.FromUnixTimeSeconds(secondes));
+        Assert.Equal(nuit, n);
+        Assert.Equal(heureEorzea * 175L, quand.ToUnixTimeSeconds());
+    }
+}

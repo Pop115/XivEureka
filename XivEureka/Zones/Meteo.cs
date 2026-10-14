@@ -49,6 +49,23 @@ public static class Meteo
         return heure < 6 || heure >= 19;
     }
 
+    /// <summary>
+    /// Prochain passage jour → nuit (19 h) ou nuit → jour (6 h) d'Eorzéa après l'instant donné ;
+    /// <c>Nuit</c> dit ce qui commence alors.
+    /// </summary>
+    public static (bool Nuit, DateTimeOffset Quand) ProchaineBascule(DateTimeOffset instant)
+    {
+        const long jour = 24 * SecondesParHeure;
+        var secondes = instant.ToUnixTimeSeconds();
+        var debutJour = secondes - (secondes % jour);
+        var dansLeJour = secondes % jour;
+        long aube = 6 * SecondesParHeure, soir = 19 * SecondesParHeure;
+        var (nuit, quand) = dansLeJour < aube ? (false, debutJour + aube)
+            : dansLeJour < soir ? (true, debutJour + soir)
+            : (false, debutJour + jour + aube);
+        return (nuit, DateTimeOffset.FromUnixTimeSeconds(quand));
+    }
+
     /// <summary>Valeur 0-99 qui choisit la météo de la période contenant l'instant.</summary>
     public static int Valeur(DateTimeOffset instant)
     {

@@ -35,6 +35,8 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IClientState ClientState { get; private set; } = null!;
     [PluginService] internal static IFateTable FateTable { get; private set; } = null!;
     [PluginService] internal static IToastGui ToastGui { get; private set; } = null!;
+    [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
+    [PluginService] internal static IPartyList PartyList { get; private set; } = null!;
 
     private const string Commande = "/xiveureka";
     private const string FenetreManipulateur = "EurekaMagiciteItemSynthesis";
@@ -43,7 +45,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly Configuration configuration;
     private readonly CatalogueLogos catalogue;
     private readonly WindowSystem fenetres = new("XivEureka");
-    private readonly FenetreLogos fenetreLogos;
+    private readonly FenetrePrincipale fenetre;
     private readonly FenetreReglages fenetreReglages;
     private readonly CompagnonZone compagnon;
     private DateTime prochaineLecture = DateTime.MinValue;
@@ -53,16 +55,21 @@ public sealed class Plugin : IDalamudPlugin
     {
         configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         catalogue = CatalogueLogos.Integre();
-        fenetreLogos = new FenetreLogos(catalogue, new TextesJeu(DataManager), TextureProvider,
+        compagnon = new CompagnonZone(configuration, ClientState, Framework, FateTable, ChatGui, ToastGui, Log, Sauver);
+        var logos = new OngletLogos(catalogue, new TextesJeu(DataManager), TextureProvider,
             EtatCourant, () => stockEnDirect, Sauver);
-        fenetres.AddWindow(fenetreLogos);
+        var carte = new OngletCarte(configuration, new LecteurCartes(DataManager),
+            new LecteurEtatCarte(ClientState, ObjectTable, PartyList, FateTable, compagnon.PopsRecents),
+            new NomsMeteo(DataManager), TextureProvider, Sauver,
+            (territoire, map, position) => CarteJeu.Drapeau(territoire, map, position, ouvrir: false));
+        fenetre = new FenetrePrincipale(logos, carte);
+        fenetres.AddWindow(fenetre);
         fenetreReglages = new FenetreReglages(configuration, Sauver);
         fenetres.AddWindow(fenetreReglages);
-        compagnon = new CompagnonZone(configuration, ClientState, Framework, FateTable, ChatGui, ToastGui, Log, Sauver);
 
         CommandManager.AddHandler(Commande, new CommandInfo(SurCommande)
         {
-            HelpMessage = "Ouvre la fenêtre des actions Logos. « /xiveureka releve » : relevé de développement.",
+            HelpMessage = "Ouvre la fenêtre du plugin. « /xiveureka carte » : sur la carte. « /xiveureka releve » : relevé de développement.",
         });
 
         Framework.Update += SurTrame;
@@ -94,13 +101,18 @@ public sealed class Plugin : IDalamudPlugin
 
     private void Sauver() => PluginInterface.SavePluginConfig(configuration);
 
-    private void BasculerFenetre() => fenetreLogos.Toggle();
+    private void BasculerFenetre() => fenetre.Toggle();
 
     private void SurCommande(string commande, string arguments)
     {
         if (arguments.Trim().StartsWith("rel", StringComparison.OrdinalIgnoreCase))
         {
             EcrireReleve(LecteurEclats.Fenetre);
+            return;
+        }
+        if (arguments.Trim().StartsWith("carte", StringComparison.OrdinalIgnoreCase))
+        {
+            fenetre.Ouvrir(FenetrePrincipale.Onglet.Carte);
             return;
         }
         BasculerFenetre();
@@ -146,7 +158,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private void SurManipulateurOuvert(AddonEvent type, AddonArgs args)
     {
-        if (configuration.OuvrirAvecLeManipulateur) fenetreLogos.IsOpen = true;
+        if (configuration.OuvrirAvecLeManipulateur) fenetre.Ouvrir(FenetrePrincipale.Onglet.Logos);
     }
 
     /// <summary>Relevé automatique de toute fenêtre d'Eurêka qui s'ouvre (développement).</summary>
