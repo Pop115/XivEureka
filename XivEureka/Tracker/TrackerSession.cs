@@ -42,6 +42,7 @@ public sealed class TrackerSession : IDisposable
     private string? followedId;
     private string? dataCenterTopic;
     private bool creating;
+    private bool resumed;
 
     public TrackerSession(Configuration configuration, IClientState clientState, IObjectTable objects, IFramework framework,
         IChatGui chat, IPluginLog log, NmCatalog nmCatalog, Action save)
@@ -56,9 +57,10 @@ public sealed class TrackerSession : IDisposable
         this.save = save;
         client = new PhoenixClient(log);
 
+        // Nothing from the game here: the constructor may run off the main thread (enabling the
+        // plugin from /xlplugins), where Dalamud refuses game state. Resume() waits for the first frame.
         clientState.TerritoryChanged += OnTerritoryChanged;
         framework.Update += OnFrameworkUpdate;
-        Resume();
     }
 
     /// <summary>The followed tracker, as the server sent it; null if there is none (yet).</summary>
@@ -144,6 +146,7 @@ public sealed class TrackerSession : IDisposable
 
     private void OnTerritoryChanged(uint newTerritory)
     {
+        resumed = true; // a zone change supersedes resuming
         // New zone = new instance: the old tracker no longer applies.
         Forget();
         territory = newTerritory;
@@ -153,7 +156,7 @@ public sealed class TrackerSession : IDisposable
         ListenToDataCenter();
     }
 
-    /// <summary>On plugin start: resume the followed tracker if we are still in its zone.</summary>
+    /// <summary>On the first frame after plugin start: resume the followed tracker if we are still in its zone.</summary>
     private void Resume()
     {
         territory = clientState.TerritoryType;
@@ -247,8 +250,16 @@ public sealed class TrackerSession : IDisposable
 
     private void OnFrameworkUpdate(IFramework _)
     {
+        if (!resumed)
+        {
+            resumed = true;
+            Resume();
+        }
         while (pending.TryDequeue(out var action)) action();
         while (client.Received.TryDequeue(out var message)) Handle(message);
+
+        // On arrival the player may not be loaded yet, so the data center was unknown: try again.
+        if (SiteZone != null && dataCenterTopic == null && DataCenter() != null) ListenToDataCenter();
 
         if (CreationPending(SiteZone != null, followedId != null, creating, configuration.AutoCreateTracker)
             && DateTime.UtcNow - zoneEntry >= CreationDelay)

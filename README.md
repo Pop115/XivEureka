@@ -64,6 +64,10 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   (noms français) est migré au chargement par `ConfigurationMigration`, l'ancien gardé en
   `XivEureka.json.v1.bak`.
 
+- **Rien du jeu dans les constructeurs** : activer le plugin depuis `/xlplugins` le construit hors
+  du fil principal, et Dalamud y refuse l'état du jeu (`LocalPlayer` : « Not on main thread! »,
+  plantage à l'initialisation du 2026-10-15). Lire le jeu au premier `Framework.Update`.
+
 ## Construire, tester, charger
 
 ```bash
