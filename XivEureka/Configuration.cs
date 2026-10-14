@@ -52,9 +52,6 @@ public sealed class Configuration : IPluginConfiguration
     /// <summary>Son du jeu avec les alertes.</summary>
     public bool SonAlertes { get; set; } = true;
 
-    /// <summary>Montrer « Logos : N à apprendre » dans la barre d'infos serveur hors d'Eurêka.</summary>
-    public bool BarreHorsEureka { get; set; } = true;
-
     /// <summary>Dernier tracker ffxiv-eureka.com vu dans le chat (identifiant, ex. « bZFR-s »).</summary>
     public string? DernierTracker { get; set; }
 

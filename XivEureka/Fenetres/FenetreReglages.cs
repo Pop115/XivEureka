@@ -23,11 +23,10 @@ public sealed class FenetreReglages : Window
     {
         ImGui.TextDisabled("Actions Logos");
         Case("Ouvrir avec le manipulateur Logos", () => configuration.OuvrirAvecLeManipulateur, v => configuration.OuvrirAvecLeManipulateur = v);
-        Case("« Logos : N à apprendre » dans la barre hors d'Eurêka", () => configuration.BarreHorsEureka, v => configuration.BarreHorsEureka = v);
 
         ImGui.Spacing();
         ImGui.TextDisabled("En zone d'Eurêka");
-        Case("Annoncer les nouvelles FATE", () => configuration.AlerterFates, v => configuration.AlerterFates = v);
+        Case("Annoncer les nouvelles FATE (sauf les FATE lapin)", () => configuration.AlerterFates, v => configuration.AlerterFates = v);
         Case("Drapeau sur la carte pour une nouvelle FATE", () => configuration.DrapeauSurFate, v => configuration.DrapeauSurFate = v);
         Case("Lire le chat (pops annoncés, liens de tracker)", () => configuration.EcouterChat, v => configuration.EcouterChat = v);
         Case("Drapeau sur la carte pour un pop annoncé", () => configuration.DrapeauSurChat, v => configuration.DrapeauSurChat = v);

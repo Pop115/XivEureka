@@ -125,4 +125,11 @@ public class SuiviFatesTests
         Assert.Equal(2, suivi.PlusProche(new Vector3(90, -50, 5), 60)!.Id);
         Assert.Null(suivi.PlusProche(new Vector3(50, 0, 200), 60));
     }
+
+    [Theory]
+    [InlineData(4, true)]   // We're All Mad Here, Uncommon Nonsense… (feuille Fate, colonne Rule)
+    [InlineData(1, false)]  // FATE de NM
+    [InlineData(5, false)]  // Color My World (Anémos)
+    public void Reconnait_les_fates_lapin_a_leur_regle(byte regle, bool lapin) =>
+        Assert.Equal(lapin, SuiviFates.EstFateLapin(regle));
 }

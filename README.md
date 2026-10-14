@@ -11,11 +11,10 @@ jeu. Il grandit au fil des besoins.
   pas encore apprise et fabricable tout de suite. Les actions apprises sont lues dans le journal des
   actions Logos (ouvert en parlant à Drake) ; clic droit sur une action pour corriger entre-temps.
   La fenêtre s'ouvre toute seule avec le manipulateur Logos.
-- **Barre d'infos serveur** : à Eurêka, météo en cours → suivante (dans N min) et heure d'Eorzéa,
-  les 6 prochaines météos en infobulle ; partout, « Logos : N à apprendre ». Clic : fenêtre Logos.
-- **FATE** (zones d'Eurêka) : chaque nouvelle FATE est annoncée par un toast du jeu et un message
+- **FATE** (zones d'Eurêka) : chaque nouvelle FATE de NM est annoncée par un toast du jeu et un message
   avec lien de carte, et le drapeau de la carte du jeu est posé dessus (celles déjà là à l'arrivée
-  ne sont pas annoncées).
+  ne sont pas annoncées). Les FATE lapin sont ignorées (on ne les fait pas) : dans la feuille Fate,
+  ce sont les seules FATE d'Eurêka à avoir la règle 4 (« collecte »).
 - **Chat** (cris, zone, groupe, alliance, CL, LS, CWLS ; à Eurêka seulement) : un message qui
   annonce un pop (« pop », « spawn », ou le nom d'une FATE en cours) avec un lien de carte, des
   coordonnées (« X: 12.3 Y: 14.5 », « (12.3, 14.5) ») ou le nom d'une FATE en cours → même alerte,

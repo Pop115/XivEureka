@@ -35,7 +35,6 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IClientState ClientState { get; private set; } = null!;
     [PluginService] internal static IFateTable FateTable { get; private set; } = null!;
     [PluginService] internal static IToastGui ToastGui { get; private set; } = null!;
-    [PluginService] internal static IDtrBar DtrBar { get; private set; } = null!;
 
     private const string Commande = "/xiveureka";
     private const string FenetreManipulateur = "EurekaMagiciteItemSynthesis";
@@ -59,9 +58,7 @@ public sealed class Plugin : IDalamudPlugin
         fenetres.AddWindow(fenetreLogos);
         fenetreReglages = new FenetreReglages(configuration, Sauver);
         fenetres.AddWindow(fenetreReglages);
-        compagnon = new CompagnonZone(configuration, ClientState, Framework, FateTable, ChatGui, ToastGui, DtrBar, Log,
-            new NomsMeteo(DataManager),
-            NombreAApprendre, () => fenetreLogos.IsOpen = true, Sauver);
+        compagnon = new CompagnonZone(configuration, ClientState, Framework, FateTable, ChatGui, ToastGui, Log, Sauver);
 
         CommandManager.AddHandler(Commande, new CommandInfo(SurCommande)
         {
@@ -94,14 +91,6 @@ public sealed class Plugin : IDalamudPlugin
         PlayerState.IsLoaded && PlayerState.ContentId != 0
             ? configuration.Personnage(PlayerState.ContentId, PlayerState.CharacterName)
             : null;
-
-    /// <summary>Actions pas encore apprises et fabricables avec le dernier stock lu ; null sans personnage.</summary>
-    private int? NombreAApprendre()
-    {
-        var etat = EtatCourant();
-        return etat?.StockLuLe == null ? null
-            : catalogue.Actions.Count(a => Fabrication.Action(a, etat.Stock, etat.Apprises).AApprendre);
-    }
 
     private void Sauver() => PluginInterface.SavePluginConfig(configuration);
 

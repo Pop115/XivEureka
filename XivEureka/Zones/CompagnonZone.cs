@@ -4,7 +4,6 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Game.Chat;
 using Dalamud.Game.ClientState.Fates;
-using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game.Gui.Toast;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
@@ -14,10 +13,9 @@ using Dalamud.Plugin.Services;
 namespace XivEureka.Zones;
 
 /// <summary>
-/// Ce que le plugin fait en jeu sans qu'on lui demande rien : l'entrée de la barre d'infos serveur
-/// (zone, météo, heure d'Eorzéa, actions Logos à apprendre ; clic = fenêtre Logos), l'alerte des
-/// nouvelles FATE avec drapeau sur la carte du jeu, et la lecture du chat d'Eurêka (annonces de pop,
-/// liens de tracker).
+/// Ce que le plugin fait en jeu sans qu'on lui demande rien : l'alerte des nouvelles FATE de NM
+/// avec drapeau sur la carte du jeu, et la lecture du chat d'Eurêka (annonces de pop, liens de
+/// tracker). Les FATE lapin sont ignorées : on ne les fait pas.
 /// </summary>
 public sealed class CompagnonZone : IDisposable
 {
@@ -43,19 +41,14 @@ public sealed class CompagnonZone : IDisposable
     private readonly IFateTable fateTable;
     private readonly IChatGui chat;
     private readonly IToastGui toasts;
-    private readonly IDtrBar dtrBar;
     private readonly IPluginLog log;
-    private readonly NomsMeteo nomsMeteo;
-    private readonly Func<int?> aApprendre;
-    private readonly Action ouvrirLogos;
     private readonly Action sauver;
-    private readonly IDtrBarEntry entree;
     private readonly SuiviFates fates = new();
     private readonly Dictionary<string, DateTime> dernieresAlertes = [];
     private DateTime prochainPassage = DateTime.MinValue;
 
     public CompagnonZone(Configuration configuration, IClientState clientState, IFramework framework, IFateTable fateTable,
-        IChatGui chat, IToastGui toasts, IDtrBar dtrBar, IPluginLog log, NomsMeteo nomsMeteo, Func<int?> aApprendre, Action ouvrirLogos, Action sauver)
+        IChatGui chat, IToastGui toasts, IPluginLog log, Action sauver)
     {
         this.configuration = configuration;
         this.clientState = clientState;
@@ -63,19 +56,8 @@ public sealed class CompagnonZone : IDisposable
         this.fateTable = fateTable;
         this.chat = chat;
         this.toasts = toasts;
-        this.dtrBar = dtrBar;
         this.log = log;
-        this.nomsMeteo = nomsMeteo;
-        this.aApprendre = aApprendre;
-        this.ouvrirLogos = ouvrirLogos;
         this.sauver = sauver;
-
-        entree = dtrBar.Get(Titre);
-        entree.Shown = false;
-        entree.OnClick = e =>
-        {
-            if (e.ClickType == MouseClickType.Left) ouvrirLogos();
-        };
 
         framework.Update += SurTrame;
         clientState.TerritoryChanged += SurChangementZone;
@@ -87,7 +69,6 @@ public sealed class CompagnonZone : IDisposable
         chat.ChatMessage -= SurMessage;
         clientState.TerritoryChanged -= SurChangementZone;
         framework.Update -= SurTrame;
-        entree.Remove();
     }
 
     private ZoneEureka? ZoneCourante => Meteo.Zone(clientState.TerritoryType);
@@ -99,48 +80,14 @@ public sealed class CompagnonZone : IDisposable
         if (DateTime.UtcNow < prochainPassage) return;
         prochainPassage = DateTime.UtcNow + Intervalle;
 
-        var zone = ZoneCourante;
-        MettreAJourBarre(zone);
-        if (zone == null) return;
+        if (ZoneCourante == null) return;
 
         var nouvelles = fates.MettreAJour(fateTable
             .Where(f => f.State is FateState.Preparing or FateState.Running)
+            .Where(f => !SuiviFates.EstFateLapin(f.GameData.Value.Rule))
             .Select(f => new FateVue(f.FateId, f.Name.TextValue, f.Position)));
         foreach (var fate in nouvelles) AnnoncerFate(fate);
     }
-
-    private void MettreAJourBarre(ZoneEureka? zone)
-    {
-        var logos = aApprendre() ?? 0;
-        var logosTexte = logos > 0 ? $"Logos : {logos} à apprendre" : null;
-        if (zone == null)
-        {
-            entree.Shown = configuration.BarreHorsEureka && logosTexte != null;
-            if (entree.Shown) SetTexte(logosTexte!, "Clic : actions Logos");
-            return;
-        }
-
-        var maintenant = DateTimeOffset.UtcNow;
-        var periodes = Meteo.Periodes(zone, maintenant).Take(7).ToList();
-        var (h, m) = Meteo.HeureEorzea(maintenant);
-        var suivante = periodes[1];
-        var texte = $"{nomsMeteo[periodes[0].Meteo]} → {nomsMeteo[suivante.Meteo]} {Duree(suivante.Debut - maintenant)} · ET {h:00}:{m:00}"
-                    + (logosTexte != null ? $" · {logosTexte}" : string.Empty);
-        var infobulle = $"{zone.Nom} — météo à venir (heure locale) :\n"
-                        + string.Join("\n", periodes.Skip(1).Select(p => $"{p.Debut.ToLocalTime():HH:mm}  {nomsMeteo[p.Meteo]}"))
-                        + "\nClic : actions Logos";
-        entree.Shown = true;
-        SetTexte(texte, infobulle);
-    }
-
-    private void SetTexte(string texte, string infobulle)
-    {
-        // Ne réécrire que si le texte change : chaque affectation reconstruit la barre.
-        if (entree.Text?.TextValue != texte) entree.Text = texte;
-        if (entree.Tooltip?.TextValue != infobulle) entree.Tooltip = infobulle;
-    }
-
-    private static string Duree(TimeSpan d) => d.TotalMinutes >= 1 ? $"{(int)d.TotalMinutes} min" : $"{Math.Max(0, (int)d.TotalSeconds)} s";
 
     private void AnnoncerFate(FateVue fate)
     {

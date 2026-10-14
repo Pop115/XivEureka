@@ -8,12 +8,22 @@ namespace XivEureka.Zones;
 public sealed record FateVue(ushort Id, string Nom, Vector3 Position);
 
 /// <summary>
-/// Compare les FATE en cours d'une trame à l'autre pour annoncer les nouvelles. À Eurêka, presque
-/// toutes les FATE sont des NM (le reste : les FATE lapin) ; on n'a donc pas besoin d'une table des
-/// NM pour alerter, le nom et la position viennent du jeu.
+/// Compare les FATE en cours d'une trame à l'autre pour annoncer les nouvelles. À Eurêka, toutes
+/// les FATE sont des NM sauf les FATE lapin, écartées avant (<see cref="EstFateLapin"/>) ; on n'a
+/// donc pas besoin d'une table des NM pour alerter, le nom et la position viennent du jeu.
 /// </summary>
 public sealed class SuiviFates
 {
+    /// <summary>
+    /// Règle « collecte » de la feuille Fate. Dans les quatre zones d'Eurêka, seules les cinq FATE
+    /// lapin l'ont (Down the Rabbit Hole, Curiouser and Curiouser, We're All Mad Here, Uncommon
+    /// Nonsense, Drink Me) ; les NM ont la règle 1 (relevé des lignes 1328-1427, 2026-10-14).
+    /// </summary>
+    private const byte RegleCollecte = 4;
+
+    /// <summary>Vrai pour une FATE lapin d'Eurêka (à ne pas annoncer : on ne les fait pas).</summary>
+    public static bool EstFateLapin(byte regle) => regle == RegleCollecte;
+
     private readonly Dictionary<ushort, FateVue> enCours = [];
     private bool premierPassage = true;
 
