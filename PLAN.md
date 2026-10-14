@@ -12,10 +12,10 @@ fortune ↔ actions Logos).
   (protocole du tracker, données NM/logogrammes, ClientStructs, KamiToolKit, Bozja).
 - 1 en partie : barre d'infos serveur cliquable, toasts + chat avec lien de carte. Reste : bouton
   natif sur le manipulateur / la carte (KamiToolKit `AddonController`), style « jeu » de la fenêtre.
-- 3 + 4 faits (pas encore testés en jeu) : `Zones/CompagnonZone.cs` (FATE, chat, barre),
-  `Zones/Meteo.cs` (météo et heure d'Eorzéa locales), `Zones/AnalyseChat.cs`, `Zones/CarteJeu.cs`.
+- 3 + 4 faits (pas encore testés en jeu) : `Zones/ZoneCompanion.cs` (FATE, chat, barre),
+  `Zones/EurekaWeather.cs` (météo et heure d'Eorzéa locales), `Zones/ChatParser.cs`, `Zones/InGameMap.cs`.
 - Suivant : 2 (conseils de farm : données `acquired-by` et NM du site, niveau élémentaire via
-  `PlayerState.GetContentValue(2)`, conditions météo/nuit des NM avec `Meteo.Prochaine`).
+  `PlayerState.GetContentValue(2)`, conditions météo/nuit des NM avec `EurekaWeather.Next`).
 
 ## Onglet « Carte » (2026-10-14, à valider avec Pop)
 
@@ -39,7 +39,7 @@ les coordonnées sous la souris. En plus, du plugin : NM, zones de prépa, pops 
 **Données** : fond = texture de la carte du jeu (`ui/map/z3fc/00/z3fc00_m.tex` pour Pyros, ligne
 Map 484, échelle 100) → marche pour les 4 zones, Hydatos compris, sans image tierce. Positions des
 FATE : en direct dans le jeu ; la colonne `Fate.Location` n'est pas une ligne de Level (vérifié),
-donc positions fixes dans `Donnees/zones/<zone>.json` relevées sur le wiki : par NM la FATE
+donc positions fixes dans `Data/nm.json/<zone>.json` relevées sur le wiki : par NM la FATE
 (numéro), niveau, élément, coordonnées, mob de prépa (nom, niveau, zone x/y/rayon), condition
 (météo ou nuit), logogramme lâché ; mobs de montée de niveau ; points des élémentaires ;
 objectifs de quête. Noms affichés dans la langue du client via les feuilles (Fate, BNpcName).

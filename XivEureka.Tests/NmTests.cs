@@ -5,187 +5,146 @@ using Xunit;
 
 namespace XivEureka.Tests;
 
-public class CatalogueNmTests
+public class NmCatalogTests
 {
-    private static readonly NmZone Pyros = CatalogueNm.Integre().Zone(795)!;
+    private static readonly ZoneNms Pyros = NmCatalog.Embedded().Zone(795)!;
 
     [Fact]
-    public void Les_17_NM_de_Pyros_avec_leur_FATE()
+    public void The_17_Pyros_NMs_with_their_FATE()
     {
-        Assert.Equal(17, Pyros.Nm.Count);
+        Assert.Equal(17, Pyros.Nms.Count);
         Assert.Equal(120, Pyros.RespawnMinutes);
-        // FATE 1388 à 1404 de la feuille Fate, une par NM ; les FATE lapin (1407, 1408) n'y sont pas.
-        Assert.Equal(Enumerable.Range(1388, 17).Select(i => (ushort)i), Pyros.Nm.Select(n => n.Fate).Order());
-        Assert.All(Pyros.Nm, n => Assert.NotEmpty(n.Prepa.Lieux));
+        // FATEs 1388 to 1404 of the Fate sheet, one per NM; the bunny FATEs (1407, 1408) are not there.
+        Assert.Equal(Enumerable.Range(1388, 17).Select(i => (ushort)i), Pyros.Nms.Select(n => n.Fate).Order());
+        Assert.Equal(Enumerable.Range(38, 17), Pyros.Nms.Select(n => n.Site).Order());
+        Assert.All(Pyros.Nms, n => Assert.NotEmpty(n.Prep.Places));
     }
 
     [Fact]
-    public void Chaque_NM_lache_un_eclat_connu_du_catalogue_Logos()
+    public void Each_NM_drops_a_shard_known_to_the_Logos_catalog()
     {
-        var eclats = CatalogueLogos.Integre().Eclats.Select(e => e.Objet).ToHashSet();
-        Assert.All(Pyros.Nm, n => Assert.Contains(n.Eclat, eclats));
+        var shards = LogosCatalog.Embedded().Shards.Select(s => s.Item).ToHashSet();
+        Assert.All(Pyros.Nms, n => Assert.Contains(n.Shard, shards));
     }
 
     [Fact]
-    public void Conditions_relevees_sur_le_tracker()
+    public void Conditions_as_on_the_tracker()
     {
-        var skoll = Pyros.Nm.Single(n => n.Pnj == 7739);
-        Assert.Equal("Blizzards", skoll.Condition.Meteo);
-        Assert.True(skoll.Prepa.Condition.Aucune);
+        var skoll = Pyros.Nms.Single(n => n.Npc == 7739);
+        Assert.Equal("Blizzards", skoll.Condition.Weather);
+        Assert.True(skoll.Prep.Condition.None);
 
-        var leucosia = Pyros.Nm.Single(n => n.Pnj == 7759);
-        Assert.True(leucosia.Condition.Aucune);
-        Assert.True(leucosia.Prepa.Condition.Nuit);
+        var leucosia = Pyros.Nms.Single(n => n.Npc == 7759);
+        Assert.True(leucosia.Condition.None);
+        Assert.True(leucosia.Prep.Condition.Night);
 
-        // Les météos citées existent dans les tranches de Pyros (sinon la fenêtre ne serait jamais trouvée).
-        var meteos = Meteo.Zone(795)!.Tranches.Select(t => t.Meteo).ToHashSet();
-        Assert.All(Pyros.Nm.SelectMany(n => new[] { n.Condition.Meteo, n.Prepa.Condition.Meteo }).OfType<string>(),
-            m => Assert.Contains(m, meteos));
+        // The weathers used exist in the Pyros slices (otherwise their window would never be found).
+        var weathers = EurekaWeather.Zone(795)!.Slices.Select(s => s.Weather).ToHashSet();
+        Assert.All(Pyros.Nms.SelectMany(n => new[] { n.Condition.Weather, n.Prep.Condition.Weather }).OfType<string>(),
+            w => Assert.Contains(w, weathers));
     }
 }
 
-public class SituationsTests
+public class NmStatusesTests
 {
-    private static readonly ZoneEureka Pyros = Meteo.Zone(795)!;
-    private static readonly DateTimeOffset Maintenant = DateTimeOffset.FromUnixTimeSeconds(1_760_000_000L);
+    private static readonly EurekaZone Pyros = EurekaWeather.Zone(795)!;
+    private static readonly DateTimeOffset Now = DateTimeOffset.FromUnixTimeSeconds(1_760_000_000L);
 
-    private static NmEureka Nm(uint pnj, ushort fate, Condition? condition = null, Condition? prepa = null, int niveau = 40, uint eclat = 24009) =>
-        new(pnj, 0, fate, niveau, "fire", new Vector2(20, 20), eclat, [], condition ?? new Condition(null, false),
-            new Prepa(1, niveau + 5, prepa ?? new Condition(null, false), [new Vector2(21, 21)]));
+    private static EurekaNm Nm(uint npc, ushort fate, int level = 40) =>
+        new(npc, 0, fate, level, "fire", new Vector2(20, 20), 24009, [], new SpawnCondition(null, false),
+            new PrepMob(1, level + 5, new SpawnCondition(null, false), [new Vector2(21, 21)]));
 
     [Fact]
-    public void Fenetre_meteo_couvre_les_periodes_consecutives()
+    public void A_weather_window_spans_consecutive_periods()
     {
-        foreach (var (_, meteo) in Pyros.Tranches)
+        foreach (var (_, weather) in Pyros.Slices)
         {
-            var f = Situations.ProchaineFenetre(Pyros, new Condition(meteo, false), Maintenant)!;
-            var periodes = Meteo.Periodes(Pyros, f.Debut).TakeWhile(p => p.Debut < f.Fin).ToList();
-            Assert.All(periodes, p => Assert.Equal(meteo, p.Meteo));
-            Assert.NotEqual(meteo, Meteo.Periodes(Pyros, f.Fin).First().Meteo);
-            Assert.True(f.Fin > Maintenant);
+            var w = NmStatuses.NextWindow(Pyros, new SpawnCondition(weather, false), Now)!;
+            var periods = EurekaWeather.Periods(Pyros, w.Start).TakeWhile(p => p.Start < w.End).ToList();
+            Assert.All(periods, p => Assert.Equal(weather, p.Weather));
+            Assert.NotEqual(weather, EurekaWeather.Periods(Pyros, w.End).First().Weather);
+            Assert.True(w.End > Now);
         }
     }
 
     [Fact]
-    public void Fenetre_de_nuit()
+    public void Night_window()
     {
-        var minuit = DateTimeOffset.FromUnixTimeSeconds(0);
-        var enCours = Situations.ProchaineFenetre(Pyros, new Condition(null, true), minuit)!;
-        Assert.True(enCours.EnCours(minuit));
-        Assert.Equal(6 * 175, enCours.Fin.ToUnixTimeSeconds());
+        var midnight = DateTimeOffset.FromUnixTimeSeconds(0);
+        var open = NmStatuses.NextWindow(Pyros, new SpawnCondition(null, true), midnight)!;
+        Assert.True(open.IsOpen(midnight));
+        Assert.Equal(6 * 175, open.End.ToUnixTimeSeconds());
 
-        var midi = DateTimeOffset.FromUnixTimeSeconds(12 * 175);
-        var aVenir = Situations.ProchaineFenetre(Pyros, new Condition(null, true), midi)!;
-        Assert.Equal(19 * 175, aVenir.Debut.ToUnixTimeSeconds());
-        Assert.Equal((24 + 6) * 175, aVenir.Fin.ToUnixTimeSeconds());
+        var noon = DateTimeOffset.FromUnixTimeSeconds(12 * 175);
+        var coming = NmStatuses.NextWindow(Pyros, new SpawnCondition(null, true), noon)!;
+        Assert.Equal(19 * 175, coming.Start.ToUnixTimeSeconds());
+        Assert.Equal((24 + 6) * 175, coming.End.ToUnixTimeSeconds());
     }
 
     [Fact]
-    public void Respawn_deux_heures_apres_la_fin_de_la_FATE()
+    public void Respawn_two_hours_after_the_FATE_ends()
     {
-        var zone = new NmZone(795, 120, [Nm(10, 500)]);
-        var fin = Maintenant.UtcDateTime.AddMinutes(-30);
-        var s = Situations.Calculer(Pyros, zone, [], new Dictionary<ushort, DateTime> { [500] = fin }, new HashSet<ushort>(), Maintenant).Single();
-        Assert.True(s.EnRespawn(Maintenant));
-        Assert.Equal(Maintenant.AddMinutes(90), s.RespawnAuPlusTot);
-        Assert.False(s.EnRespawn(Maintenant.AddMinutes(91)));
-    }
-}
-
-public class ConseilsTests
-{
-    private static readonly ZoneEureka Pyros = Meteo.Zone(795)!;
-    private static readonly NomsJeu Noms = new(p => $"NM{p}", m => m, o => $"Objet{o}");
-
-    private static NmEureka Nm(uint pnj, int niveau, uint eclat = 24009, Condition? condition = null) =>
-        new(pnj, 0, (ushort)(1000 + pnj), niveau, "fire", new Vector2(pnj, 10), eclat, [], condition ?? new Condition(null, false),
-            new Prepa(pnj + 100, niveau + 5, new Condition(null, false), [new Vector2(pnj, 12)]));
-
-    private static SituationNm Libre(NmEureka nm) => new(nm, null, null, null, null);
-
-    [Fact]
-    public void La_FATE_en_cours_passe_en_premier()
-    {
-        var maintenant = DateTimeOffset.UtcNow;
-        var fate = new FateCarte(1001, "F", Vector3.Zero, 20, 35, TimeSpan.FromMinutes(24), 0, false);
-        var conseils = Conseils.Calculer([new SituationNm(Nm(1, 40), fate, null, null, null), Libre(Nm(2, 40))],
-            maintenant, 40, new Dictionary<uint, int>(), Noms);
-        Assert.Equal("NM1 – FATE en cours", conseils[0].Titre);
-        Assert.Contains("35 %", conseils[0].Texte);
-    }
-
-    [Fact]
-    public void Une_meteo_dans_la_demi_heure_donne_la_prepa()
-    {
-        var maintenant = DateTimeOffset.UtcNow;
-        var dans20 = new Fenetre(maintenant.AddMinutes(20), maintenant.AddMinutes(43));
-        var dans50 = new Fenetre(maintenant.AddMinutes(50), maintenant.AddMinutes(73));
-        var conseils = Conseils.Calculer(
-            [new SituationNm(Nm(1, 50, condition: new Condition("Blizzards", false)), null, null, dans20, null),
-             new SituationNm(Nm(2, 46, condition: new Condition("Thunder", false)), null, null, dans50, null)],
-            maintenant, null, new Dictionary<uint, int>(), Noms);
-        var c = Assert.Single(conseils);
-        Assert.Equal("NM1 – Blizzards dans 20 min", c.Titre);
-        Assert.Equal("Prépa : NM101 (Nv 55) vers (1.0, 12.0).", c.Texte);
-        Assert.Equal(new Vector2(1, 12), c.Coordonnees);
-    }
-
-    [Fact]
-    public void Niveau_et_eclats_ignorent_les_NM_en_respawn_ou_en_attente()
-    {
-        var maintenant = DateTimeOffset.UtcNow;
-        var respawn = new SituationNm(Nm(1, 40), null, maintenant.AddMinutes(30), null, null);
-        var attente = new SituationNm(Nm(2, 41, condition: new Condition("Thunder", false)), null, null,
-            new Fenetre(maintenant.AddHours(2), maintenant.AddHours(3)), null);
-        var libre = Libre(Nm(3, 42, eclat: 24011));
-        var conseils = Conseils.Calculer([respawn, attente, libre], maintenant, 40,
-            new Dictionary<uint, int> { [24009] = 5, [24011] = 2 }, Noms);
-
-        var niveau = conseils.Single(c => c.Titre.StartsWith("À ton niveau"));
-        Assert.Equal("Disponibles : NM3 (Nv 42).", niveau.Texte);
-        var logos = Assert.Single(conseils, c => c.Titre.StartsWith("Logos"));
-        Assert.Equal("Logos – Objet24011", logos.Titre); // 24009 n'a pas de source disponible
+        var zone = new ZoneNms(795, 120, [Nm(10, 500)]);
+        var end = Now.UtcDateTime.AddMinutes(-30);
+        var s = NmStatuses.Compute(Pyros, zone, [], new Dictionary<ushort, DateTime> { [500] = end }, new HashSet<ushort> { 500 }, Now).Single();
+        Assert.True(s.IsRespawning(Now));
+        Assert.Equal(Now.AddMinutes(90), s.RespawnNotBefore);
+        Assert.False(s.IsRespawning(Now.AddMinutes(91)));
+        Assert.True(s.Prepped);
     }
 }
 
-public class EclatsUtilesTests
+public class SuggestionsTests
 {
+    private static readonly GameNames Names = new(n => $"NM{n}", w => w, i => $"Item{i}");
+
+    private static EurekaNm Nm(uint npc, int level, uint shard = 24009, SpawnCondition? condition = null) =>
+        new(npc, 0, (ushort)(1000 + npc), level, "fire", new Vector2(npc, 10), shard, [], condition ?? new SpawnCondition(null, false),
+            new PrepMob(npc + 100, level + 5, new SpawnCondition(null, false), [new Vector2(npc, 12)]));
+
+    private static NmStatus Free(EurekaNm nm) => new(nm, null, null, null, null);
+
     [Fact]
-    public void Compte_les_actions_que_chaque_eclat_ferait_avancer()
+    public void A_running_FATE_comes_first()
     {
-        var catalogue = new CatalogueLogos(
-            [new Eclat(1, [100, 101]), new Eclat(2, [200])],
-            [new Mneme(100, "a"), new Mneme(101, "b"), new Mneme(200, "c")],
-            [
-                new ActionLogos(1, 9001, "T", null, [[100, 200]]), // manque 100 et 200 → éclats 1 et 2
-                new ActionLogos(2, 9002, "T", null, [[101]]),      // fabricable → ignorée
-                new ActionLogos(3, 9003, "T", null, [[200, 200]]), // apprise → ignorée
-            ]);
-        var stock = new Dictionary<uint, int> { [101] = 1 };
-        var utiles = Fabrication.EclatsUtiles(catalogue, stock, new HashSet<uint> { 9003 });
-        Assert.Equal(1, utiles[1]);
-        Assert.Equal(1, utiles[2]);
+        var now = DateTimeOffset.UtcNow;
+        var fate = new MapFate(1001, "F", Vector3.Zero, 20, 35, TimeSpan.FromMinutes(24), 0, false);
+        var suggestions = Suggestions.Compute([new NmStatus(Nm(1, 40), fate, null, null, null), Free(Nm(2, 40))],
+            now, 40, new Dictionary<uint, int>(), Names);
+        Assert.Equal("NM1 – FATE en cours", suggestions[0].Title);
+        Assert.Contains("35 %", suggestions[0].Text);
     }
-}
-
-public class FatesTermineesTests
-{
-    private static FateVue Fate(ushort id) => new(id, $"F{id}", Vector3.Zero);
 
     [Fact]
-    public void Retient_les_FATE_vues_finir_et_les_oublie_si_elles_reviennent()
+    public void A_weather_within_half_an_hour_gives_the_prep()
     {
-        var suivi = new SuiviFates();
-        var t0 = new DateTime(2026, 10, 14, 20, 0, 0, DateTimeKind.Utc);
-        suivi.MettreAJour([Fate(1), Fate(2)], t0);        // déjà là à l'arrivée
-        suivi.MettreAJour([Fate(2)], t0.AddSeconds(5));     // la 1 finit
-        Assert.Equal(t0.AddSeconds(5), suivi.Terminees[1]);
-        Assert.False(suivi.Terminees.ContainsKey(2));
+        var now = DateTimeOffset.UtcNow;
+        var in20 = new TimeWindow(now.AddMinutes(20), now.AddMinutes(43));
+        var in50 = new TimeWindow(now.AddMinutes(50), now.AddMinutes(73));
+        var suggestions = Suggestions.Compute(
+            [new NmStatus(Nm(1, 50, condition: new SpawnCondition("Blizzards", false)), null, null, in20, null),
+             new NmStatus(Nm(2, 46, condition: new SpawnCondition("Thunder", false)), null, null, in50, null)],
+            now, null, new Dictionary<uint, int>(), Names);
+        var s = Assert.Single(suggestions);
+        Assert.Equal("NM1 – Blizzards dans 20 min", s.Title);
+        Assert.Equal("Prépa : NM101 (Nv 55) vers (1.0, 12.0).", s.Text);
+        Assert.Equal(new Vector2(1, 12), s.Coordinates);
+    }
 
-        suivi.MettreAJour([Fate(1), Fate(2)], t0.AddHours(2)); // la 1 revient
-        Assert.False(suivi.Terminees.ContainsKey(1));
+    [Fact]
+    public void Level_and_shards_skip_respawning_or_waiting_NMs()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var respawning = new NmStatus(Nm(1, 40), null, now.AddMinutes(30), null, null);
+        var waiting = new NmStatus(Nm(2, 41, condition: new SpawnCondition("Thunder", false)), null, null,
+            new TimeWindow(now.AddHours(2), now.AddHours(3)), null);
+        var free = Free(Nm(3, 42, shard: 24011));
+        var suggestions = Suggestions.Compute([respawning, waiting, free], now, 40,
+            new Dictionary<uint, int> { [24009] = 5, [24011] = 2 }, Names);
 
-        suivi.Reinitialiser();
-        Assert.Empty(suivi.Terminees);
+        var level = suggestions.Single(s => s.Title.StartsWith("À ton niveau"));
+        Assert.Equal("Disponibles : NM3 (Nv 42).", level.Text);
+        var logos = Assert.Single(suggestions, s => s.Title.StartsWith("Logos"));
+        Assert.Equal("Logos – Item24011", logos.Title); // 24009 has no available source
     }
 }

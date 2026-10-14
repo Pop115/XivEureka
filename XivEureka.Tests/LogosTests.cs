@@ -4,142 +4,159 @@ using Xunit;
 
 namespace XivEureka.Tests;
 
-public class LecteurEclatsTests
+public class ShardReaderTests
 {
-    private static int[] ReleveReel() =>
-        JsonSerializer.Deserialize<int[]>(File.ReadAllText(Path.Combine("TestData", "eclats-2026-10-11.json")))!;
+    private static int[] RealCapture() =>
+        JsonSerializer.Deserialize<int[]>(File.ReadAllText(Path.Combine("TestData", "shards-2026-10-11.json")))!;
 
     [Fact]
-    public void Decode_le_releve_fait_en_jeu()
+    public void Decodes_the_in_game_capture()
     {
-        var stock = LecteurEclats.Decoder(ReleveReel())!;
+        var stock = ShardReader.Decode(RealCapture())!;
 
         Assert.Equal(12, stock.Count);
         Assert.Equal(5, stock[24015]);   // Mémoire d'un prêtre guerrier
         Assert.Equal(16, stock[24031]);  // Tranquillisant
-        Assert.Equal(1, stock[24034]);   // Extra Soin, dernière case
+        Assert.Equal(1, stock[24034]);   // Extra Soin, last slot
     }
 
     [Fact]
-    public void Refuse_un_tableau_incoherent()
+    public void Rejects_an_inconsistent_array()
     {
-        Assert.Null(LecteurEclats.Decoder([]));
-        Assert.Null(LecteurEclats.Decoder([5, 0, 0, 1, 2, 3]));
+        Assert.Null(ShardReader.Decode([]));
+        Assert.Null(ShardReader.Decode([5, 0, 0, 1, 2, 3]));
     }
 
     [Fact]
-    public void Toutes_les_mnemes_du_releve_sont_au_catalogue()
+    public void Every_captured_mneme_is_in_the_catalog()
     {
-        var catalogue = CatalogueLogos.Integre();
-        Assert.All(LecteurEclats.Decoder(ReleveReel())!.Keys, objet => Assert.Contains(objet, catalogue.Mnemes.Keys));
+        var catalog = LogosCatalog.Embedded();
+        Assert.All(ShardReader.Decode(RealCapture())!.Keys, item => Assert.Contains(item, catalog.Mnemes.Keys));
     }
 }
 
-public class CatalogueTests
+public class LogosCatalogTests
 {
-    private readonly CatalogueLogos catalogue = CatalogueLogos.Integre();
+    private readonly LogosCatalog catalog = LogosCatalog.Embedded();
 
     [Fact]
-    public void Contient_les_56_actions_et_28_mnemes()
+    public void Holds_the_56_actions_and_28_mnemes()
     {
-        Assert.Equal(Enumerable.Range(1, 56), catalogue.Actions.Select(a => a.Numero));
-        Assert.Equal(28, catalogue.Mnemes.Count);
+        Assert.Equal(Enumerable.Range(1, 56), catalog.Actions.Select(a => a.Number));
+        Assert.Equal(28, catalog.Mnemes.Count);
     }
 
     [Fact]
-    public void Chaque_mneme_vient_d_un_seul_eclat()
+    public void Each_mneme_comes_from_a_single_shard()
     {
-        var parEclat = catalogue.Eclats.SelectMany(e => e.Mnemes).ToList();
-        Assert.Equal(parEclat.Count, parEclat.Distinct().Count());
-        Assert.Equal(catalogue.Mnemes.Keys.Order(), parEclat.Order());
+        var byShard = catalog.Shards.SelectMany(s => s.Mnemes).ToList();
+        Assert.Equal(byShard.Count, byShard.Distinct().Count());
+        Assert.Equal(catalog.Mnemes.Keys.Order(), byShard.Order());
     }
 
     [Fact]
-    public void Les_recettes_n_utilisent_que_des_mnemes_connues()
+    public void Recipes_only_use_known_mnemes()
     {
-        Assert.All(catalogue.Actions, a =>
+        Assert.All(catalog.Actions, a =>
         {
-            Assert.NotEmpty(a.Recettes);
-            Assert.All(a.Recettes.SelectMany(r => r), m => Assert.Contains(m, catalogue.Mnemes.Keys));
+            Assert.NotEmpty(a.Recipes);
+            Assert.All(a.Recipes.SelectMany(r => r), m => Assert.Contains(m, catalog.Mnemes.Keys));
         });
     }
 }
 
-public class FabricationTests
+public class CraftingTests
 {
-    private static readonly ActionLogos Exemple = new(1, 100, "THMPC", 3, [[1, 1, 1], [1, 2]]);
+    private static readonly LogosAction Example = new(1, 100, "THMPC", 3, [[1, 1, 1], [1, 2]]);
 
     [Fact]
-    public void Une_mneme_repetee_compte_autant_de_fois()
+    public void A_repeated_mneme_counts_as_many_times()
     {
-        var recette = Fabrication.Recette([1, 1, 1], new Dictionary<uint, int> { [1] = 7 });
-        Assert.Equal(2, recette.Possibles);
-        Assert.Equal(0, recette.Manquantes);
+        var recipe = Crafting.Recipe([1, 1, 1], new Dictionary<uint, int> { [1] = 7 });
+        Assert.Equal(2, recipe.Craftable);
+        Assert.Equal(0, recipe.Missing);
 
-        var manque = Fabrication.Recette([1, 1, 1], new Dictionary<uint, int> { [1] = 1 });
-        Assert.Equal(0, manque.Possibles);
-        Assert.Equal(2, manque.Manquantes);
+        var short_ = Crafting.Recipe([1, 1, 1], new Dictionary<uint, int> { [1] = 1 });
+        Assert.Equal(0, short_.Craftable);
+        Assert.Equal(2, short_.Missing);
     }
 
     [Fact]
-    public void Une_action_prend_la_meilleure_recette_sans_additionner()
+    public void An_action_takes_the_best_recipe_without_adding_them_up()
     {
-        var etat = Fabrication.Action(Exemple, new Dictionary<uint, int> { [1] = 3, [2] = 5 }, new HashSet<uint>());
-        Assert.Equal(3, etat.Possibles);
-        Assert.True(etat.AApprendre);
+        var state = Crafting.Action(Example, new Dictionary<uint, int> { [1] = 3, [2] = 5 }, new HashSet<uint>());
+        Assert.Equal(3, state.Craftable);
+        Assert.True(state.ToLearn);
     }
 
     [Fact]
-    public void Une_action_apprise_n_est_plus_a_apprendre()
+    public void A_learned_action_is_no_longer_to_learn()
     {
-        var etat = Fabrication.Action(Exemple, new Dictionary<uint, int> { [1] = 3 }, new HashSet<uint> { 100 });
-        Assert.False(etat.AApprendre);
-        Assert.Equal(1, etat.Possibles);
+        var state = Crafting.Action(Example, new Dictionary<uint, int> { [1] = 3 }, new HashSet<uint> { 100 });
+        Assert.False(state.ToLearn);
+        Assert.Equal(1, state.Craftable);
     }
 
     [Fact]
-    public void La_recette_la_plus_proche_est_celle_qui_manque_le_moins()
+    public void The_closest_recipe_is_the_one_missing_the_least()
     {
-        var etat = Fabrication.Action(Exemple, new Dictionary<uint, int> { [1] = 1 }, new HashSet<uint>());
-        Assert.Equal(0, etat.Possibles);
-        Assert.Equal(1, etat.PlusProche.Manquantes);
-        Assert.Equal([1u, 2u], etat.PlusProche.Recette);
+        var state = Crafting.Action(Example, new Dictionary<uint, int> { [1] = 1 }, new HashSet<uint>());
+        Assert.Equal(0, state.Craftable);
+        Assert.Equal(1, state.Closest.Missing);
+        Assert.Equal([1u, 2u], state.Closest.Recipe);
     }
 
     [Fact]
-    public void L_utilite_ignore_les_actions_apprises()
+    public void Usefulness_ignores_learned_actions()
     {
-        Assert.Equal(1, Fabrication.Utilite([Exemple], new HashSet<uint>())[2]);
-        Assert.Empty(Fabrication.Utilite([Exemple], new HashSet<uint> { 100 }));
+        Assert.Equal(1, Crafting.Usefulness([Example], new HashSet<uint>())[2]);
+        Assert.Empty(Crafting.Usefulness([Example], new HashSet<uint> { 100 }));
+    }
+
+    [Fact]
+    public void Counts_the_actions_each_shard_would_move_forward()
+    {
+        var catalog = new LogosCatalog(
+            [new Shard(1, [100, 101]), new Shard(2, [200])],
+            [new Mneme(100, "a"), new Mneme(101, "b"), new Mneme(200, "c")],
+            [
+                new LogosAction(1, 9001, "T", null, [[100, 200]]), // missing 100 and 200 → shards 1 and 2
+                new LogosAction(2, 9002, "T", null, [[101]]),      // craftable → ignored
+                new LogosAction(3, 9003, "T", null, [[200, 200]]), // learned → ignored
+            ]);
+        var stock = new Dictionary<uint, int> { [101] = 1 };
+        var useful = Crafting.UsefulShards(catalog, stock, new HashSet<uint> { 9003 });
+        Assert.Equal(1, useful[1]);
+        Assert.Equal(1, useful[2]);
     }
 
     [Theory]
     [InlineData("Évocation Logos : Bouclier", "Bouclier")]
     [InlineData("Mémoire d'un prêtre guerrier", "Mémoire d'un prêtre guerrier")]
     [InlineData("Protect L", "Protect L")]
-    public void Raccourcit_les_noms_a_prefixe(string nom, string attendu) =>
-        Assert.Equal(attendu, TextesJeu.Raccourcir(nom));
+    public void Shortens_prefixed_names(string name, string expected) =>
+        Assert.Equal(expected, GameTexts.Shorten(name));
 }
 
-public class LecteurJournalTests
+public class NotebookReaderTests
 {
     [Fact]
-    public void Decode_le_journal_releve_en_jeu()
+    public void Decodes_the_notebook_captured_in_game()
     {
-        var catalogue = CatalogueLogos.Integre();
-        var valeurs = JsonSerializer.Deserialize<long[]>(File.ReadAllText(Path.Combine("TestData", "journal-2026-10-11.json")))!;
+        var catalog = LogosCatalog.Embedded();
+        var values = JsonSerializer.Deserialize<long[]>(File.ReadAllText(Path.Combine("TestData", "notebook-2026-10-11.json")))!;
 
-        var apprises = LecteurJournal.Decoder(valeurs, catalogue)!;
+        var learned = NotebookReader.Decode(values, catalog)!;
 
-        var numeros = catalogue.Actions.Where(a => apprises.Contains(a.Action)).Select(a => a.Numero);
-        Assert.Equal([1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 16, 17, 19, 20, 22, 23, 26, 27, 31, 32, 33, 34, 37, 38, 39], numeros);
+        var numbers = catalog.Actions.Where(a => learned.Contains(a.Action)).Select(a => a.Number);
+        Assert.Equal([1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 16, 17, 19, 20, 22, 23, 26, 27, 31, 32, 33, 34, 37, 38, 39], numbers);
     }
 
     [Fact]
-    public void Refuse_un_journal_trop_court_ou_inconnu()
+    public void Rejects_a_notebook_too_short_or_unknown()
     {
-        var catalogue = CatalogueLogos.Integre();
-        Assert.Null(LecteurJournal.Decoder([1, 2, 3], catalogue));
-        Assert.Null(LecteurJournal.Decoder(Enumerable.Repeat(99L, 56).ToList(), catalogue));
+        var catalog = LogosCatalog.Embedded();
+        Assert.Null(NotebookReader.Decode([1, 2, 3], catalog));
+        Assert.Null(NotebookReader.Decode(Enumerable.Repeat(99L, 56).ToList(), catalog));
     }
 }

@@ -4,13 +4,13 @@
     <Version>0.0.1.0</Version>
     <Author>Pop115</Author>
     <Name>Xiv Eurêka</Name>
-    <Punchline>Compagnon d'Eurêka : éclats Logos, actions Logos, et plus.</Punchline>
-    <Description>Plugin privé. Lit les mnemes du manipulateur Logos et montre les actions Logos fabricables.</Description>
+    <Punchline>Eureka companion: Logos shards and actions, NM map, live tracker.</Punchline>
+    <Description>Private plugin. Reads the Logos mnemes from the game and shows the craftable Logos actions; Eureka map with NMs, prep areas and suggestions; follows the ffxiv-eureka.com tracker of the instance.</Description>
     <Tags>eureka;logos</Tags>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Donnees\logos.json" LogicalName="XivEureka.Donnees.logos.json" />
-    <EmbeddedResource Include="Donnees\nm.json" LogicalName="XivEureka.Donnees.nm.json" />
+    <EmbeddedResource Include="Data\logos.json" LogicalName="XivEureka.Data.logos.json" />
+    <EmbeddedResource Include="Data\nm.json" LogicalName="XivEureka.Data.nm.json" />
   </ItemGroup>
 </Project>

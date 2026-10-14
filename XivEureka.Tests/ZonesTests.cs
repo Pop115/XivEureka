@@ -4,192 +4,206 @@ using Xunit;
 
 namespace XivEureka.Tests;
 
-public class MeteoTests
+public class EurekaWeatherTests
 {
-    private static readonly ZoneEureka Pyros = Meteo.Zone(795)!;
+    private static readonly EurekaZone Pyros = EurekaWeather.Zone(795)!;
 
     [Fact]
-    public void Valeur_connue_a_l_epoque_unix()
+    public void Known_value_at_the_unix_epoch()
     {
-        // Calcul à la main : heure 0 → incrément 8, jour 0 → base 8 ; (8<<11)^8 = 16392 ; (16392>>8)^16392 = 16456.
-        Assert.Equal(56, Meteo.Valeur(DateTimeOffset.FromUnixTimeSeconds(0)));
+        // By hand: hour 0 → increment 8, day 0 → seed 8; (8<<11)^8 = 16392; (16392>>8)^16392 = 16456.
+        Assert.Equal(56, EurekaWeather.Value(DateTimeOffset.FromUnixTimeSeconds(0)));
     }
 
     [Fact]
-    public void La_meteo_ne_change_qu_aux_limites_de_periode()
+    public void Weather_only_changes_at_period_boundaries()
     {
-        var debut = DateTimeOffset.FromUnixTimeSeconds(1_760_000_000L / 1400 * 1400);
-        var valeur = Meteo.Valeur(debut);
-        Assert.Equal(valeur, Meteo.Valeur(debut.AddSeconds(1399)));
-        var periodes = Meteo.Periodes(Pyros, debut.AddSeconds(700)).Take(3).ToList();
-        Assert.Equal(debut, periodes[0].Debut);
-        Assert.Equal(periodes[0].Fin, periodes[1].Debut);
-        Assert.Equal(TimeSpan.FromSeconds(1400), periodes[2].Fin - periodes[2].Debut);
+        var start = DateTimeOffset.FromUnixTimeSeconds(1_760_000_000L / 1400 * 1400);
+        var value = EurekaWeather.Value(start);
+        Assert.Equal(value, EurekaWeather.Value(start.AddSeconds(1399)));
+        var periods = EurekaWeather.Periods(Pyros, start.AddSeconds(700)).Take(3).ToList();
+        Assert.Equal(start, periods[0].Start);
+        Assert.Equal(periods[0].End, periods[1].Start);
+        Assert.Equal(TimeSpan.FromSeconds(1400), periods[2].End - periods[2].Start);
     }
 
     [Fact]
-    public void Chaque_meteo_de_chaque_zone_revient_dans_la_semaine()
+    public void Every_weather_of_every_zone_comes_back_within_a_week()
     {
-        var maintenant = DateTimeOffset.FromUnixTimeSeconds(1_760_000_000L);
-        foreach (var zone in Meteo.Zones)
-            foreach (var (_, meteo) in zone.Tranches)
-                Assert.Equal(meteo, Meteo.Prochaine(zone, meteo, maintenant)!.Meteo);
+        var now = DateTimeOffset.FromUnixTimeSeconds(1_760_000_000L);
+        foreach (var zone in EurekaWeather.Zones)
+            foreach (var (_, weather) in zone.Slices)
+                Assert.Equal(weather, EurekaWeather.Next(zone, weather, now)!.Weather);
     }
 
     [Fact]
-    public void Tranches_aux_bornes()
+    public void Slices_at_the_bounds()
     {
-        Assert.Equal("Fair Skies", Pyros.MeteoPour(0));
-        Assert.Equal("Fair Skies", Pyros.MeteoPour(9));
-        Assert.Equal("Heat Waves", Pyros.MeteoPour(10));
-        Assert.Equal("Snow", Pyros.MeteoPour(99));
+        Assert.Equal("Fair Skies", Pyros.WeatherFor(0));
+        Assert.Equal("Fair Skies", Pyros.WeatherFor(9));
+        Assert.Equal("Heat Waves", Pyros.WeatherFor(10));
+        Assert.Equal("Snow", Pyros.WeatherFor(99));
     }
 
     [Fact]
-    public void Heure_et_nuit_d_Eorzea()
+    public void Eorzea_time_and_night()
     {
-        // 175 s réelles = une heure d'Eorzéa ; l'époque unix tombe à minuit.
-        Assert.Equal((0, 0), Meteo.HeureEorzea(DateTimeOffset.FromUnixTimeSeconds(0)));
-        Assert.Equal((6, 0), Meteo.HeureEorzea(DateTimeOffset.FromUnixTimeSeconds(6 * 175)));
-        Assert.True(Meteo.Nuit(DateTimeOffset.FromUnixTimeSeconds(5 * 175)));
-        Assert.False(Meteo.Nuit(DateTimeOffset.FromUnixTimeSeconds(6 * 175)));
-        Assert.True(Meteo.Nuit(DateTimeOffset.FromUnixTimeSeconds(19 * 175)));
+        // 175 real seconds = one Eorzea hour; the unix epoch falls at midnight.
+        Assert.Equal((0, 0), EurekaWeather.EorzeaTime(DateTimeOffset.FromUnixTimeSeconds(0)));
+        Assert.Equal((6, 0), EurekaWeather.EorzeaTime(DateTimeOffset.FromUnixTimeSeconds(6 * 175)));
+        Assert.True(EurekaWeather.IsNight(DateTimeOffset.FromUnixTimeSeconds(5 * 175)));
+        Assert.False(EurekaWeather.IsNight(DateTimeOffset.FromUnixTimeSeconds(6 * 175)));
+        Assert.True(EurekaWeather.IsNight(DateTimeOffset.FromUnixTimeSeconds(19 * 175)));
+    }
+
+    [Theory]
+    [InlineData(0, false, 6)]         // midnight → day at 6:00
+    [InlineData(6 * 175, true, 19)]   // 6:00 sharp → night at 19:00
+    [InlineData(19 * 175, false, 30)] // 19:00 → day at 6:00 the next day
+    public void Next_day_night_switch(long seconds, bool night, int eorzeaHour)
+    {
+        var (n, when) = EurekaWeather.NextDayNightSwitch(DateTimeOffset.FromUnixTimeSeconds(seconds));
+        Assert.Equal(night, n);
+        Assert.Equal(eorzeaHour * 175L, when.ToUnixTimeSeconds());
     }
 }
 
-public class AnalyseChatTests
+public class ChatParserTests
 {
-    private static readonly string[] AucuneFate = [];
+    private static readonly string[] NoFate = [];
 
     [Theory]
     [InlineData("tracker https://ffxiv-eureka.com/bZFR-s merci", "bZFR-s")]
     [InlineData("ffxiv-eureka.com/v/aB3_x9 ", "aB3_x9")]
     [InlineData("pas de lien ici", null)]
-    public void Repere_les_liens_de_tracker(string texte, string? attendu) =>
-        Assert.Equal(attendu, AnalyseChat.Analyser(texte, AucuneFate).Tracker);
+    public void Finds_tracker_links(string text, string? expected) =>
+        Assert.Equal(expected, ChatParser.Parse(text, NoFate).Tracker);
 
     [Theory]
     [InlineData("Skoll pop X: 12.3 Y: 14.5", 12.3f, 14.5f)]
     [InlineData("pop (21.4, 26.1)", 21.4f, 26.1f)]
     [InlineData("pop x 8,5 y 30", 8.5f, 30f)]
-    public void Lit_les_coordonnees(string texte, float x, float y)
+    public void Reads_coordinates(string text, float x, float y)
     {
-        var lu = AnalyseChat.Analyser(texte, AucuneFate);
-        Assert.True(lu.Pop);
-        Assert.Equal(new Vector2(x, y), lu.Position);
+        var info = ChatParser.Parse(text, NoFate);
+        Assert.True(info.Pop);
+        Assert.Equal(new Vector2(x, y), info.Position);
     }
 
     [Fact]
-    public void Ignore_les_coordonnees_hors_carte_et_le_lien_du_tracker()
+    public void Ignores_off_map_coordinates_and_the_tracker_link()
     {
-        Assert.Null(AnalyseChat.Analyser("pop (80, 12)", AucuneFate).Position);
-        Assert.Null(AnalyseChat.Analyser("ffxiv-eureka.com/X12Y14", AucuneFate).Position);
+        Assert.Null(ChatParser.Parse("pop (80, 12)", NoFate).Position);
+        Assert.Null(ChatParser.Parse("ffxiv-eureka.com/X12Y14", NoFate).Position);
     }
 
     [Fact]
-    public void Reconnait_une_fate_en_cours_par_son_nom()
+    public void Recognizes_a_running_fate_by_its_name()
     {
-        var lu = AnalyseChat.Analyser("go go Ice Scream !!", ["Ice Scream", "Eternity"]);
-        Assert.True(lu.Pop);
-        Assert.Equal("Ice Scream", lu.Fate);
+        var info = ChatParser.Parse("go go Ice Scream !!", ["Ice Scream", "Eternity"]);
+        Assert.True(info.Pop);
+        Assert.Equal("Ice Scream", info.Fate);
     }
 
     [Theory]
     [InlineData("level up enfin")]
     [InlineData("population de lapins")]
-    public void Pas_de_faux_pop(string texte) => Assert.False(AnalyseChat.Analyser(texte, AucuneFate).Pop);
+    public void No_false_pop(string text) => Assert.False(ChatParser.Parse(text, NoFate).Pop);
 }
 
-public class SuiviFatesTests
+public class FateTrackerTests
 {
-    private static FateVue Fate(ushort id, float x = 0, float z = 0) => new(id, $"F{id}", new Vector3(x, 10, z));
+    private static SeenFate Fate(ushort id, float x = 0, float z = 0) => new(id, $"F{id}", new Vector3(x, 10, z));
 
     [Fact]
-    public void Ne_signale_que_les_nouvelles_et_pas_celles_deja_la_a_l_arrivee()
+    public void Only_reports_new_ones_and_not_those_already_there_on_arrival()
     {
-        var suivi = new SuiviFates();
-        Assert.Empty(suivi.MettreAJour([Fate(1)]));
-        Assert.Empty(suivi.MettreAJour([Fate(1)]));
-        Assert.Equal([2], suivi.MettreAJour([Fate(1), Fate(2)]).Select(f => (int)f.Id));
-        Assert.Empty(suivi.MettreAJour([Fate(2)]));
+        var tracker = new FateTracker();
+        Assert.Empty(tracker.Update([Fate(1)]));
+        Assert.Empty(tracker.Update([Fate(1)]));
+        Assert.Equal([2], tracker.Update([Fate(1), Fate(2)]).Select(f => (int)f.Id));
+        Assert.Empty(tracker.Update([Fate(2)]));
 
-        suivi.Reinitialiser();
-        Assert.Empty(suivi.MettreAJour([Fate(3)]));
+        tracker.Reset();
+        Assert.Empty(tracker.Update([Fate(3)]));
     }
 
     [Fact]
-    public void Trouve_la_fate_la_plus_proche_dans_le_plan()
+    public void Finds_the_nearest_fate_in_the_plane()
     {
-        var suivi = new SuiviFates();
-        suivi.MettreAJour([Fate(1, 0, 0), Fate(2, 100, 0)]);
-        Assert.Equal(2, suivi.PlusProche(new Vector3(90, -50, 5), 60)!.Id);
-        Assert.Null(suivi.PlusProche(new Vector3(50, 0, 200), 60));
+        var tracker = new FateTracker();
+        tracker.Update([Fate(1, 0, 0), Fate(2, 100, 0)]);
+        Assert.Equal(2, tracker.Nearest(new Vector3(90, -50, 5), 60)!.Id);
+        Assert.Null(tracker.Nearest(new Vector3(50, 0, 200), 60));
     }
 
     [Theory]
-    [InlineData(4, true)]   // We're All Mad Here, Uncommon Nonsense… (feuille Fate, colonne Rule)
-    [InlineData(1, false)]  // FATE de NM
-    [InlineData(5, false)]  // Color My World (Anémos)
-    public void Reconnait_les_fates_lapin_a_leur_regle(byte regle, bool lapin) =>
-        Assert.Equal(lapin, SuiviFates.EstFateLapin(regle));
-}
-
-public class GeometrieCarteTests
-{
-    private static readonly GeometrieCarte Pyros = new(100, 0, 0);
+    [InlineData(4, true)]   // We're All Mad Here, Uncommon Nonsense… (Fate sheet, Rule column)
+    [InlineData(1, false)]  // NM FATE
+    [InlineData(5, false)]  // Color My World (Anemos)
+    public void Recognizes_bunny_fates_by_their_rule(byte rule, bool bunny) =>
+        Assert.Equal(bunny, FateTracker.IsBunnyFate(rule));
 
     [Fact]
-    public void Repere_du_jeu_aux_coordonnees_du_wiki()
+    public void Remembers_fates_seen_ending_and_forgets_them_when_they_come_back()
     {
-        // Éthérite de Firing Chamber : MapMarker 335 (pixels 1151, 827) ; le wiki dit X 23.8 Y 17.0.
-        var coord = Pyros.Coordonnees(new Vector2(1151, 827));
-        Assert.Equal(24.02f, coord.X, 2);
-        Assert.Equal(17.54f, coord.Y, 2);
+        var tracker = new FateTracker();
+        var t0 = new DateTime(2026, 10, 14, 20, 0, 0, DateTimeKind.Utc);
+        tracker.Update([Fate(1), Fate(2)], t0);           // already there on arrival
+        tracker.Update([Fate(2)], t0.AddSeconds(5));        // #1 ends
+        Assert.Equal(t0.AddSeconds(5), tracker.Ended[1]);
+        Assert.False(tracker.Ended.ContainsKey(2));
+
+        tracker.Update([Fate(1), Fate(2)], t0.AddHours(2)); // #1 comes back
+        Assert.False(tracker.Ended.ContainsKey(1));
+
+        tracker.Reset();
+        Assert.Empty(tracker.Ended);
+    }
+}
+
+public class MapGeometryTests
+{
+    private static readonly MapGeometry Pyros = new(100, 0, 0);
+
+    [Fact]
+    public void A_game_point_lands_on_the_wiki_coordinates()
+    {
+        // Firing Chamber aetheryte: MapMarker 335 (pixels 1151, 827); the wiki says X 23.8 Y 17.0.
+        var coordinates = Pyros.Coordinates(new Vector2(1151, 827));
+        Assert.Equal(24.02f, coordinates.X, 2);
+        Assert.Equal(17.54f, coordinates.Y, 2);
     }
 
     [Fact]
-    public void Le_centre_du_monde_est_au_centre_de_la_texture()
+    public void The_world_center_is_the_texture_center()
     {
         Assert.Equal(new Vector2(1024, 1024), Pyros.Pixel(Vector3.Zero));
-        Assert.Equal(new Vector2(1024, 1024), new GeometrieCarte(200, 0, 0).Pixel(Vector3.Zero));
-        Assert.Equal(new Vector2(1024, 1024 + 475), new GeometrieCarte(100, 0, 475).Pixel(Vector3.Zero)); // Hydatos
+        Assert.Equal(new Vector2(1024, 1024), new MapGeometry(200, 0, 0).Pixel(Vector3.Zero));
+        Assert.Equal(new Vector2(1024, 1024 + 475), new MapGeometry(100, 0, 475).Pixel(Vector3.Zero)); // Hydatos
     }
 
     [Theory]
     [InlineData(100, 0, 0)]
     [InlineData(200, 0, -754)]
-    public void Aller_retour_monde_pixel_coordonnees(ushort echelle, short dx, short dy)
+    public void Round_trip_world_pixel_coordinates(ushort scale, short dx, short dy)
     {
-        var g = new GeometrieCarte(echelle, dx, dy);
-        var monde = new Vector3(-123.5f, 40, 287.25f);
-        var pixel = g.Pixel(monde);
-        var retour = g.Monde(pixel);
-        Assert.Equal(monde.X, retour.X, 3);
-        Assert.Equal(monde.Z, retour.Z, 3);
-        Assert.True(Vector2.Distance(pixel, g.PixelDeCoordonnees(g.Coordonnees(pixel))) < 1e-3f);
+        var g = new MapGeometry(scale, dx, dy);
+        var world = new Vector3(-123.5f, 40, 287.25f);
+        var pixel = g.Pixel(world);
+        var back = g.World(pixel);
+        Assert.Equal(world.X, back.X, 3);
+        Assert.Equal(world.Z, back.Z, 3);
+        Assert.True(Vector2.Distance(pixel, g.PixelFromCoordinates(g.Coordinates(pixel))) < 1e-3f);
     }
 
     [Fact]
-    public void Meme_formule_que_le_lien_de_carte_du_jeu()
+    public void Same_formula_as_the_game_map_link()
     {
-        // MapUtil de Dalamud : 0.02 × décalage + 2048 / échelle + 0.02 × valeur + 1.
-        var g = new GeometrieCarte(200, 0, -754);
-        var monde = new Vector3(310f, 0, -95f);
-        var attendu = (0.02f * -754) + (2048f / 200) + (0.02f * -95f) + 1f;
-        Assert.Equal(attendu, g.Coordonnees(g.Pixel(monde)).Y, 3);
-    }
-}
-
-public class BasculeJourNuitTests
-{
-    [Theory]
-    [InlineData(0, false, 6)]        // minuit → le jour à 6 h
-    [InlineData(6 * 175, true, 19)]  // 6 h pile → la nuit à 19 h
-    [InlineData(19 * 175, false, 30)] // 19 h → le jour à 6 h le lendemain
-    public void Prochaine_bascule(long secondes, bool nuit, int heureEorzea)
-    {
-        var (n, quand) = Meteo.ProchaineBascule(DateTimeOffset.FromUnixTimeSeconds(secondes));
-        Assert.Equal(nuit, n);
-        Assert.Equal(heureEorzea * 175L, quand.ToUnixTimeSeconds());
+        // Dalamud's MapUtil: 0.02 × offset + 2048 / scale + 0.02 × value + 1.
+        var g = new MapGeometry(200, 0, -754);
+        var world = new Vector3(310f, 0, -95f);
+        var expected = (0.02f * -754) + (2048f / 200) + (0.02f * -95f) + 1f;
+        Assert.Equal(expected, g.Coordinates(g.Pixel(world)).Y, 3);
     }
 }

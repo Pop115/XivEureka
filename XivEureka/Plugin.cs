@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
@@ -9,17 +10,17 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using XivEureka.Fenetres;
 using XivEureka.Logos;
 using XivEureka.Tracker;
+using XivEureka.Windows;
 using XivEureka.Zones;
 
 namespace XivEureka;
 
 /// <summary>
-/// Point d'entrée Dalamud : branche les fenêtres, la commande et la lecture du stock de mnemes.
-/// Le calcul (quoi fabriquer) est dans <see cref="Fabrication"/>, la lecture mémoire dans
-/// <see cref="LecteurEclats"/>.
+/// Dalamud entry point: wires the windows, the command, the mneme stock reading, the zone companion
+/// and the tracker session. What to craft is computed in <see cref="Crafting"/>, the memory read is
+/// in <see cref="ShardReader"/>.
 /// </summary>
 public sealed class Plugin : IDalamudPlugin
 {
@@ -39,204 +40,228 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] internal static IPartyList PartyList { get; private set; } = null!;
 
-    private const string Commande = "/xiveureka";
-    private const string FenetreManipulateur = "EurekaMagiciteItemSynthesis";
-    private static readonly TimeSpan IntervalleLecture = TimeSpan.FromMilliseconds(500);
+    private const string Command = "/xiveureka";
+    private const string ManipulatorWindow = "EurekaMagiciteItemSynthesis";
+    private static readonly TimeSpan ReadInterval = TimeSpan.FromMilliseconds(500);
 
     private readonly Configuration configuration;
-    private readonly CatalogueLogos catalogue;
-    private readonly WindowSystem fenetres = new("XivEureka");
-    private readonly FenetrePrincipale fenetre;
-    private readonly FenetreReglages fenetreReglages;
-    private readonly CompagnonZone compagnon;
-    private readonly SuiviTracker tracker;
-    private DateTime prochaineLecture = DateTime.MinValue;
-    private bool stockEnDirect;
+    private readonly LogosCatalog catalog;
+    private readonly WindowSystem windows = new("XivEureka");
+    private readonly MainWindow mainWindow;
+    private readonly SettingsWindow settingsWindow;
+    private readonly ZoneCompanion companion;
+    private readonly TrackerSession tracker;
+    private DateTime nextRead = DateTime.MinValue;
+    private bool liveStock;
 
     public Plugin()
     {
-        configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-        catalogue = CatalogueLogos.Integre();
-        compagnon = new CompagnonZone(configuration, ClientState, Framework, FateTable, ChatGui, ToastGui, Log, Sauver);
-        var catalogueNm = CatalogueNm.Integre();
-        tracker = new SuiviTracker(configuration, ClientState, ObjectTable, Framework, ChatGui, Log, catalogueNm, Sauver);
-        compagnon.TrackerCrie += tracker.TrackerCrie;
-        compagnon.FateReussie += tracker.FateReussie;
-        var textes = new TextesJeu(DataManager);
-        var nomsMeteo = new NomsMeteo(DataManager);
-        var logos = new OngletLogos(catalogue, textes, TextureProvider, EtatCourant, () => stockEnDirect, Sauver);
-        var carte = new OngletCarte(configuration, new LecteurCartes(DataManager),
-            new LecteurEtatCarte(ClientState, ObjectTable, PartyList, FateTable, compagnon.PopsRecents),
-            catalogueNm,
-            new NomsJeu(textes.Pnj, m => nomsMeteo[m], o => textes.Objet(o).Nom),
-            TextureProvider,
-            new SourcesCarte(FatesTerminees, tracker.PreparesParFate, NiveauElementaire, EclatsUtiles, tracker,
-                (territoire, map, position) => CarteJeu.Drapeau(territoire, map, position, ouvrir: false)),
-            Sauver);
-        fenetre = new FenetrePrincipale(logos, carte);
-        fenetres.AddWindow(fenetre);
-        fenetreReglages = new FenetreReglages(configuration, Sauver);
-        fenetres.AddWindow(fenetreReglages);
+        configuration = LoadConfiguration();
+        catalog = LogosCatalog.Embedded();
+        companion = new ZoneCompanion(configuration, ClientState, Framework, FateTable, ChatGui, ToastGui, Log, Save);
+        var nmCatalog = NmCatalog.Embedded();
+        tracker = new TrackerSession(configuration, ClientState, ObjectTable, Framework, ChatGui, Log, nmCatalog, Save);
+        companion.TrackerShouted += tracker.OnTrackerShouted;
+        companion.FateSucceeded += tracker.OnFateSucceeded;
 
-        CommandManager.AddHandler(Commande, new CommandInfo(SurCommande)
+        var texts = new GameTexts(DataManager);
+        var weatherNames = new WeatherNames(DataManager);
+        var logosTab = new LogosTab(catalog, texts, TextureProvider, CurrentCharacter, () => liveStock, Save);
+        var mapTab = new MapTab(configuration, new MapReader(DataManager),
+            new MapStateReader(ClientState, ObjectTable, PartyList, FateTable, companion.RecentPops),
+            nmCatalog,
+            new GameNames(texts.Npc, w => weatherNames[w], i => texts.Item(i).Name),
+            TextureProvider,
+            new MapSources(EndedFates, tracker.PreppedByFate, ElementalLevel, UsefulShards, tracker,
+                (territory, map, position) => InGameMap.SetFlag(territory, map, position, open: false)),
+            Save);
+        mainWindow = new MainWindow(logosTab, mapTab);
+        windows.AddWindow(mainWindow);
+        settingsWindow = new SettingsWindow(configuration, Save);
+        windows.AddWindow(settingsWindow);
+
+        CommandManager.AddHandler(Command, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Ouvre la fenêtre du plugin. « /xiveureka carte » : sur la carte. « /xiveureka releve » : relevé de développement.",
+            HelpMessage = "Ouvre la fenêtre du plugin. « /xiveureka carte » : sur la carte. « /xiveureka releve » : relevé de développement. « /xiveureka niveau » : valeurs de contenu.",
         });
 
-        Framework.Update += SurTrame;
-        AddonLifecycle.RegisterListener(AddonEvent.PostSetup, FenetreManipulateur, SurManipulateurOuvert);
-        AddonLifecycle.RegisterListener(AddonEvent.PostSetup, SurFenetreOuverte);
+        Framework.Update += OnFrameworkUpdate;
+        AddonLifecycle.RegisterListener(AddonEvent.PostSetup, ManipulatorWindow, OnManipulatorOpened);
+        AddonLifecycle.RegisterListener(AddonEvent.PostSetup, OnWindowOpened);
 
-        PluginInterface.UiBuilder.Draw += fenetres.Draw;
-        PluginInterface.UiBuilder.OpenMainUi += BasculerFenetre;
-        PluginInterface.UiBuilder.OpenConfigUi += fenetreReglages.Toggle;
+        PluginInterface.UiBuilder.Draw += windows.Draw;
+        PluginInterface.UiBuilder.OpenMainUi += ToggleMainWindow;
+        PluginInterface.UiBuilder.OpenConfigUi += settingsWindow.Toggle;
     }
 
     public void Dispose()
     {
-        PluginInterface.UiBuilder.Draw -= fenetres.Draw;
-        PluginInterface.UiBuilder.OpenMainUi -= BasculerFenetre;
-        PluginInterface.UiBuilder.OpenConfigUi -= fenetreReglages.Toggle;
-        AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, FenetreManipulateur, SurManipulateurOuvert);
-        AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, SurFenetreOuverte);
-        Framework.Update -= SurTrame;
-        compagnon.TrackerCrie -= tracker.TrackerCrie;
-        compagnon.FateReussie -= tracker.FateReussie;
+        PluginInterface.UiBuilder.Draw -= windows.Draw;
+        PluginInterface.UiBuilder.OpenMainUi -= ToggleMainWindow;
+        PluginInterface.UiBuilder.OpenConfigUi -= settingsWindow.Toggle;
+        AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, ManipulatorWindow, OnManipulatorOpened);
+        AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, OnWindowOpened);
+        Framework.Update -= OnFrameworkUpdate;
+        companion.TrackerShouted -= tracker.OnTrackerShouted;
+        companion.FateSucceeded -= tracker.OnFateSucceeded;
         tracker.Dispose();
-        compagnon.Dispose();
-        CommandManager.RemoveHandler(Commande);
-        fenetres.RemoveAllWindows();
+        companion.Dispose();
+        CommandManager.RemoveHandler(Command);
+        windows.RemoveAllWindows();
     }
 
-    private EtatPersonnage? EtatCourant() =>
+    /// <summary>
+    /// Loads the configuration, migrating a version 1 file first (Dalamud could not read it: the
+    /// class names it stores have changed). The old file is kept next to it as <c>.v1.bak</c>.
+    /// </summary>
+    private static Configuration LoadConfiguration()
+    {
+        var file = PluginInterface.ConfigFile;
+        if (file.Exists)
+        {
+            var json = File.ReadAllText(file.FullName);
+            if (ConfigurationMigration.IsLegacy(json))
+            {
+                var migrated = ConfigurationMigration.FromLegacy(json);
+                File.Copy(file.FullName, file.FullName + ".v1.bak", overwrite: true);
+                PluginInterface.SavePluginConfig(migrated);
+                Log.Information("Configuration migrated from version 1 ({Count} character(s))", migrated.Characters.Count);
+                return migrated;
+            }
+        }
+        return PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+    }
+
+    private CharacterState? CurrentCharacter() =>
         PlayerState.IsLoaded && PlayerState.ContentId != 0
-            ? configuration.Personnage(PlayerState.ContentId, PlayerState.CharacterName)
+            ? configuration.Character(PlayerState.ContentId, PlayerState.CharacterName)
             : null;
 
     /// <summary>
-    /// FATE de NM terminées et quand (UTC) : celles vues finir dans l'instance et celles du tracker
-    /// suivi ; pour une même FATE, la plus récente.
+    /// Ended NM FATEs and when (UTC): those seen ending in the instance and those from the followed
+    /// tracker; for a given FATE, the latest.
     /// </summary>
-    private IReadOnlyDictionary<ushort, DateTime> FatesTerminees()
+    private IReadOnlyDictionary<ushort, DateTime> EndedFates()
     {
-        var morts = new Dictionary<ushort, DateTime>(compagnon.FatesTerminees());
-        foreach (var (fate, quand) in tracker.MortsParFate())
-            if (!morts.TryGetValue(fate, out var vu) || quand > vu) morts[fate] = quand;
-        return morts;
+        var ended = new Dictionary<ushort, DateTime>(companion.EndedFates());
+        foreach (var (fate, when) in tracker.KillsByFate())
+            if (!ended.TryGetValue(fate, out var seen) || when > seen) ended[fate] = when;
+        return ended;
     }
 
-    /// <summary>Éclats Logos qui feraient avancer des actions pas encore apprises (vide sans stock lu).</summary>
-    private IReadOnlyDictionary<uint, int> EclatsUtiles()
+    /// <summary>Logos shards that would move not-yet-learned actions forward (empty without a read stock).</summary>
+    private IReadOnlyDictionary<uint, int> UsefulShards()
     {
-        var etat = EtatCourant();
-        return etat?.StockLuLe == null ? new Dictionary<uint, int>() : Fabrication.EclatsUtiles(catalogue, etat.Stock, etat.Apprises);
+        var state = CurrentCharacter();
+        return state?.StockReadAt == null ? new Dictionary<uint, int>() : Crafting.UsefulShards(catalog, state.Stock, state.Learned);
     }
 
     /// <summary>
-    /// Niveau élémentaire d'Eurêka : valeur de contenu n° 2 du joueur (recherche de l'étape 0, à
-    /// valider en jeu). Null si la valeur n'est pas un niveau plausible.
+    /// Eureka elemental level: the player's content value #2 (step-0 research, to confirm in game).
+    /// Null if the value is not a plausible level.
     /// </summary>
-    private static unsafe int? NiveauElementaire()
+    private static unsafe int? ElementalLevel()
     {
-        var etat = FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.Instance();
-        if (etat == null) return null;
-        var niveau = (int)etat->GetContentValue(2);
-        return niveau is >= 1 and <= 60 ? niveau : null;
+        var state = FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.Instance();
+        if (state == null) return null;
+        var level = (int)state->GetContentValue(2);
+        return level is >= 1 and <= 60 ? level : null;
     }
 
-    /// <summary>Développement : les valeurs de contenu 0 à 9 du joueur, pour vérifier que la n° 2 est le niveau élémentaire.</summary>
-    private static unsafe void AfficherValeursContenu()
+    /// <summary>Development: the player's content values 0 to 9, to check that #2 is the elemental level.</summary>
+    private static unsafe void PrintContentValues()
     {
-        var etat = FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.Instance();
-        if (etat == null) return;
-        var valeurs = Enumerable.Range(0, 10).Select(i => $"{i}={etat->GetContentValue((uint)i)}");
-        ChatGui.Print($"Valeurs de contenu : {string.Join(" ", valeurs)} (niveau élémentaire attendu en 2)", "Xiv Eurêka");
+        var state = FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.Instance();
+        if (state == null) return;
+        var values = Enumerable.Range(0, 10).Select(i => $"{i}={state->GetContentValue((uint)i)}");
+        ChatGui.Print($"Valeurs de contenu : {string.Join(" ", values)} (niveau élémentaire attendu en 2)", "Xiv Eurêka");
     }
 
-    private void Sauver() => PluginInterface.SavePluginConfig(configuration);
+    private void Save() => PluginInterface.SavePluginConfig(configuration);
 
-    private void BasculerFenetre() => fenetre.Toggle();
+    private void ToggleMainWindow() => mainWindow.Toggle();
 
-    private void SurCommande(string commande, string arguments)
+    private void OnCommand(string command, string arguments)
     {
-        if (arguments.Trim().StartsWith("rel", StringComparison.OrdinalIgnoreCase))
+        var argument = arguments.Trim();
+        if (argument.StartsWith("rel", StringComparison.OrdinalIgnoreCase))
         {
-            EcrireReleve(LecteurEclats.Fenetre);
+            WriteCapture(ShardReader.Window);
             return;
         }
-        if (arguments.Trim().StartsWith("niv", StringComparison.OrdinalIgnoreCase))
+        if (argument.StartsWith("niv", StringComparison.OrdinalIgnoreCase))
         {
-            AfficherValeursContenu();
+            PrintContentValues();
             return;
         }
-        if (arguments.Trim().StartsWith("carte", StringComparison.OrdinalIgnoreCase))
+        if (argument.StartsWith("carte", StringComparison.OrdinalIgnoreCase))
         {
-            fenetre.Ouvrir(FenetrePrincipale.Onglet.Carte);
+            mainWindow.Open(MainWindow.Tab.Map);
             return;
         }
-        BasculerFenetre();
+        ToggleMainWindow();
     }
 
     /// <summary>
-    /// Deux fois par seconde : si la fenêtre des éclats est ouverte, relit le stock et l'enregistre
-    /// quand il a changé. Ainsi la fenêtre du plugin reste juste même loin du manipulateur.
+    /// Twice a second: if the shard window is open, read the stock again and save it when it
+    /// changed. So the plugin window stays right even away from the manipulator.
     /// </summary>
-    private void SurTrame(IFramework trame)
+    private void OnFrameworkUpdate(IFramework framework)
     {
-        if (DateTime.UtcNow < prochaineLecture) return;
-        prochaineLecture = DateTime.UtcNow + IntervalleLecture;
+        if (DateTime.UtcNow < nextRead) return;
+        nextRead = DateTime.UtcNow + ReadInterval;
 
-        var etat = EtatCourant();
-        if (etat == null) return;
-        stockEnDirect = LecteurEclats.FenetreOuverte(GameGui.GetAddonByName(LecteurEclats.Fenetre, 1).Address);
-        if (stockEnDirect) LireStock(etat);
-        LireApprises(etat);
+        var state = CurrentCharacter();
+        if (state == null) return;
+        liveStock = ShardReader.IsWindowOpen(GameGui.GetAddonByName(ShardReader.Window, 1).Address);
+        if (liveStock) ReadStock(state);
+        ReadLearned(state);
     }
 
-    private void LireStock(EtatPersonnage etat)
+    private void ReadStock(CharacterState state)
     {
-        var stock = LecteurEclats.Lire();
+        var stock = ShardReader.Read();
         if (stock == null) return;
-        var change = stock.Count != etat.Stock.Count || stock.Any(s => etat.Stock.GetValueOrDefault(s.Key, -1) != s.Value);
-        if (!change && etat.StockLuLe != null) return;
-        etat.Stock = stock;
-        etat.StockLuLe = DateTime.Now;
-        Sauver();
+        var changed = stock.Count != state.Stock.Count || stock.Any(s => state.Stock.GetValueOrDefault(s.Key, -1) != s.Value);
+        if (!changed && state.StockReadAt != null) return;
+        state.Stock = stock;
+        state.StockReadAt = DateTime.Now;
+        Save();
     }
 
-    /// <summary>Le journal des actions Logos fait foi : il remplace ce qui avait été coché à la main.</summary>
-    private void LireApprises(EtatPersonnage etat)
+    /// <summary>The Logos action notebook is authoritative: it replaces what was ticked by hand.</summary>
+    private void ReadLearned(CharacterState state)
     {
-        var apprises = LecteurJournal.Lire(GameGui.GetAddonByName(LecteurJournal.Fenetre, 1).Address, catalogue);
-        if (apprises == null) return;
-        if (apprises.SetEquals(etat.Apprises) && etat.ApprisesLuesLe != null) return;
-        etat.Apprises = apprises;
-        etat.ApprisesLuesLe = DateTime.Now;
-        Sauver();
+        var learned = NotebookReader.Read(GameGui.GetAddonByName(NotebookReader.Window, 1).Address, catalog);
+        if (learned == null) return;
+        if (learned.SetEquals(state.Learned) && state.LearnedReadAt != null) return;
+        state.Learned = learned;
+        state.LearnedReadAt = DateTime.Now;
+        Save();
     }
 
-    private void SurManipulateurOuvert(AddonEvent type, AddonArgs args)
+    private void OnManipulatorOpened(AddonEvent type, AddonArgs args)
     {
-        if (configuration.OuvrirAvecLeManipulateur) fenetre.Ouvrir(FenetrePrincipale.Onglet.Logos);
+        if (configuration.OpenWithManipulator) mainWindow.Open(MainWindow.Tab.Logos);
     }
 
-    /// <summary>Relevé automatique de toute fenêtre d'Eurêka qui s'ouvre (développement).</summary>
-    private void SurFenetreOuverte(AddonEvent type, AddonArgs args)
+    /// <summary>Automatic capture of every Eureka window that opens (development).</summary>
+    private void OnWindowOpened(AddonEvent type, AddonArgs args)
     {
-        if (args.AddonName.StartsWith("Eureka", StringComparison.Ordinal)) EcrireReleve(args.AddonName);
+        if (args.AddonName.StartsWith("Eureka", StringComparison.Ordinal)) WriteCapture(args.AddonName);
     }
 
-    private unsafe void EcrireReleve(string fenetre)
+    private unsafe void WriteCapture(string window)
     {
         try
         {
-            var chemin = Diagnostic.Ecrire(PluginInterface.GetPluginConfigDirectory(), fenetre,
-                (AtkUnitBase*)GameGui.GetAddonByName(fenetre, 1).Address);
-            Log.Information("Relevé écrit : {Chemin}", chemin);
+            var path = Diagnostic.Write(PluginInterface.GetPluginConfigDirectory(), window,
+                (AtkUnitBase*)GameGui.GetAddonByName(window, 1).Address);
+            Log.Information("Capture written: {Path}", path);
         }
         catch (Exception e)
         {
-            Log.Error(e, "Relevé impossible pour {Fenetre}", fenetre);
+            Log.Error(e, "Could not capture {Window}", window);
         }
     }
 }

@@ -40,19 +40,28 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   quantité, numéro d'objet, ligne EurekaMagiciteItem (relevé du 2026-10-11, test sur ce relevé).
 - **Apprises** : fenêtre `EurekaMagiaActionNotebook` ; ses 56 premières valeurs sont, pour chaque
   action, son numéro si elle est apprise, 0 sinon (relevé du 2026-10-11, test sur ce relevé).
-- **Recettes** : le jeu ne les a pas (mélange résolu par le serveur). `XivEureka/Donnees/logos.json`,
+- **Recettes** : le jeu ne les a pas (mélange résolu par le serveur). `XivEureka/Data/logos.json`,
   extrait de ffxiv-eureka.com et recoupé avec Logogram Helper (55/56 identiques ; pour Restauration
   le site a une recette à 3 mnemes de plus, gardée).
 - **Noms, icônes, descriptions** : feuilles Item, Action, ActionTransient, BNpcName, Weather,
   dans la langue du client.
 - **Carte** : texture `ui/map/<id>/<id>_m.tex` de la ligne Map en cours, repères de la feuille
-  MapMarker (X/Y en pixels de la texture 2048), formule monde ↔ carte de `GeometrieCarte`.
-- **NM** : `XivEureka/Donnees/nm.json` (Pyros pour l'instant) : niveau, élément, conditions et
+  MapMarker (X/Y en pixels de la texture 2048), formule monde ↔ carte de `MapGeometry`.
+- **NM** : `XivEureka/Data/nm.json` (Pyros pour l'instant) : niveau, élément, conditions et
   respawn de ffxiv-eureka.com (les météos y sont des numéros de la feuille Weather), coordonnées
   des FATE et logogrammes du wiki, lieux de prépa **approximatifs** (carte communautaire).
   Anémos, Pagos, Hydatos : à ajouter quand on y va.
 - **Niveau élémentaire** : `PlayerState.GetContentValue(2)`, à confirmer en jeu avec
   `/xiveureka niveau`.
+
+## Conventions
+
+- **Code et commentaires en anglais** (le plugin pourrait devenir public un jour) ; les textes
+  affichés en jeu restent en français pour l'instant. Ce README et le plan restent en français.
+- Les données (`Data/*.json`) ont des clés anglaises et une ligne `source`.
+- Configuration : version 2 depuis le passage à l'anglais (2026-10-15). Un fichier version 1
+  (noms français) est migré au chargement par `ConfigurationMigration`, l'ancien gardé en
+  `XivEureka.json.v1.bak`.
 
 ## Construire, tester, charger
 

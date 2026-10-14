@@ -1,0 +1,45 @@
+{
+ "source": "NMs: ffxiv-eureka.com (\"site\" id, level, element, spawn conditions, respawn; captured 2026-10-14) and consolegameswiki (FATE coordinates, logograms, rare items). Prep places: approximate, read off the community Pyros map (Noranda La'luna, v20.2019.3.9). Ids: game sheets BNpcName, Fate, Item. Weathers: English names of the EurekaWeather slices.",
+ "zones": [
+  {
+   "territory": 795,
+   "respawnMinutes": 120,
+   "nm": [
+    { "npc": 7759, "site": 38, "fate": 1388, "level": 35, "element": "water", "x": 26.6, "y": 26.3, "shard": 24009, "items": [],
+      "prep": { "npc": 7776, "level": 40, "night": true, "places": [[30.5, 27.9], [28.3, 24.8]] } },
+    { "npc": 7753, "site": 39, "fate": 1389, "level": 36, "element": "lightning", "x": 29.1, "y": 29.6, "shard": 24011, "items": [],
+      "prep": { "npc": 7772, "level": 41, "weather": "Thunder", "places": [[28.0, 29.4], [23.7, 33.5]] } },
+    { "npc": 7740, "site": 40, "fate": 1390, "level": 37, "element": "wind", "x": 31.9, "y": 32.0, "shard": 24014, "items": [],
+      "prep": { "npc": 7808, "level": 42, "places": [[32.4, 30.9]] } },
+    { "npc": 7736, "site": 41, "fate": 1391, "level": 38, "element": "ice", "x": 23.7, "y": 37.3, "shard": 24009, "items": [14098],
+      "prep": { "npc": 7812, "level": 43, "places": [[21.0, 36.9]] } },
+    { "npc": 7742, "site": 42, "fate": 1392, "level": 39, "element": "wind", "x": 19.3, "y": 28.1, "shard": 24011, "items": [], "weather": "Umbral Wind",
+      "prep": { "npc": 7814, "level": 44, "places": [[16.6, 29.2]] } },
+    { "npc": 7746, "site": 43, "fate": 1393, "level": 40, "element": "earth", "x": 17.9, "y": 14.3, "shard": 24014, "items": [],
+      "prep": { "npc": 7779, "level": 45, "night": true, "places": [[19.2, 14.1], [24.9, 20.8]] } },
+    { "npc": 7754, "site": 44, "fate": 1394, "level": 41, "element": "lightning", "x": 10.2, "y": 14.0, "shard": 24009, "items": [],
+      "prep": { "npc": 7821, "level": 46, "places": [[11.0, 14.3]] } },
+    { "npc": 7726, "site": 45, "fate": 1395, "level": 42, "element": "fire", "x": 12.8, "y": 11.5, "shard": 24011, "items": [],
+      "prep": { "npc": 7824, "level": 47, "places": [[15.1, 9.9]] } },
+    { "npc": 7727, "site": 46, "fate": 1396, "level": 43, "element": "fire", "x": 15.4, "y": 6.6, "shard": 24014, "items": [],
+      "prep": { "npc": 7825, "level": 48, "places": [[15.8, 6.1]] } },
+    { "npc": 7760, "site": 47, "fate": 1397, "level": 44, "element": "water", "x": 21.5, "y": 11.9, "shard": 24009, "items": [],
+      "prep": { "npc": 7830, "level": 49, "places": [[18.5, 8.6], [18.5, 11.5]] } },
+    { "npc": 7748, "site": 48, "fate": 1398, "level": 45, "element": "earth", "x": 22.0, "y": 7.9, "shard": 24011, "items": [24285],
+      "prep": { "npc": 7832, "level": 50, "places": [[23.2, 8.6]] } },
+    { "npc": 7756, "site": 49, "fate": 1399, "level": 46, "element": "lightning", "x": 27.0, "y": 9.1, "shard": 24014, "items": [], "weather": "Thunder",
+      "prep": { "npc": 7836, "level": 51, "places": [[28.4, 9.4]] } },
+    { "npc": 7750, "site": 50, "fate": 1400, "level": 47, "element": "earth", "x": 30.0, "y": 11.6, "shard": 24009, "items": [24000],
+      "prep": { "npc": 7837, "level": 52, "places": [[30.9, 10.3]] } },
+    { "npc": 7729, "site": 51, "fate": 1401, "level": 48, "element": "fire", "x": 31.6, "y": 14.9, "shard": 24011, "items": [],
+      "prep": { "npc": 7841, "level": 53, "places": [[32.9, 15.4]] } },
+    { "npc": 7763, "site": 52, "fate": 1402, "level": 49, "element": "water", "x": 11.0, "y": 34.0, "shard": 24014, "items": [24286],
+      "prep": { "npc": 7845, "level": 54, "places": [[9.5, 33.2]] } },
+    { "npc": 7739, "site": 53, "fate": 1403, "level": 50, "element": "ice", "x": 23.9, "y": 30.0, "shard": 24011, "items": [24287], "weather": "Blizzards",
+      "prep": { "npc": 7848, "level": 55, "places": [[16.8, 33.4], [17.4, 35.8]] } },
+    { "npc": 7731, "site": 54, "fate": 1404, "level": 50, "element": "fire", "x": 35.5, "y": 6.1, "shard": 24009, "items": [23913, 24123], "weather": "Heat Waves",
+      "prep": { "npc": 7846, "level": 55, "places": [[33.6, 8.3], [38.6, 16.9]] } }
+   ]
+  }
+ ]
+}

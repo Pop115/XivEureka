@@ -1,8 +1,8 @@
 {
- "source": "Recettes : ffxiv-eureka.com/logograms (relevé du 2026-10-11). Noms, icônes et descriptions : données du jeu.",
- "eclats": [
+ "source": "Recipes: ffxiv-eureka.com/logograms (captured 2026-10-11). Names, icons and descriptions: game data.",
+ "shards": [
   {
-   "objet": 24007,
+   "item": 24007,
    "mnemes": [
     24015,
     24016,
@@ -14,7 +14,7 @@
    ]
   },
   {
-   "objet": 24008,
+   "item": 24008,
    "mnemes": [
     24022,
     24028,
@@ -24,49 +24,49 @@
    ]
   },
   {
-   "objet": 24009,
+   "item": 24009,
    "mnemes": [
     24020,
     24032
    ]
   },
   {
-   "objet": 24010,
+   "item": 24010,
    "mnemes": [
     24018,
     24021
    ]
   },
   {
-   "objet": 24011,
+   "item": 24011,
    "mnemes": [
     24019,
     24034
    ]
   },
   {
-   "objet": 24012,
+   "item": 24012,
    "mnemes": [
     24025,
     24029
    ]
   },
   {
-   "objet": 24013,
+   "item": 24013,
    "mnemes": [
     24026,
     24027
    ]
   },
   {
-   "objet": 24014,
+   "item": 24014,
    "mnemes": [
     24023,
     24035
    ]
   },
   {
-   "objet": 24809,
+   "item": 24809,
    "mnemes": [
     24810,
     24813,
@@ -77,158 +77,158 @@
  ],
  "mnemes": [
   {
-   "objet": 24015,
+   "item": 24015,
    "type": "offensive"
   },
   {
-   "objet": 24016,
+   "item": 24016,
    "type": "offensive"
   },
   {
-   "objet": 24017,
+   "item": 24017,
    "type": "protective"
   },
   {
-   "objet": 24037,
+   "item": 24037,
    "type": "protective"
   },
   {
-   "objet": 24033,
+   "item": 24033,
    "type": "curative"
   },
   {
-   "objet": 24030,
+   "item": 24030,
    "type": "tactical"
   },
   {
-   "objet": 24024,
+   "item": 24024,
    "type": "inimical"
   },
   {
-   "objet": 24036,
+   "item": 24036,
    "type": "curative"
   },
   {
-   "objet": 24038,
+   "item": 24038,
    "type": "curative"
   },
   {
-   "objet": 24028,
+   "item": 24028,
    "type": "tactical"
   },
   {
-   "objet": 24031,
+   "item": 24031,
    "type": "inimical"
   },
   {
-   "objet": 24022,
+   "item": 24022,
    "type": "mitigative"
   },
   {
-   "objet": 24020,
+   "item": 24020,
    "type": "offensive"
   },
   {
-   "objet": 24032,
+   "item": 24032,
    "type": "offensive"
   },
   {
-   "objet": 24018,
+   "item": 24018,
    "type": "protective"
   },
   {
-   "objet": 24021,
+   "item": 24021,
    "type": "protective"
   },
   {
-   "objet": 24019,
+   "item": 24019,
    "type": "curative"
   },
   {
-   "objet": 24034,
+   "item": 24034,
    "type": "curative"
   },
   {
-   "objet": 24025,
+   "item": 24025,
    "type": "tactical"
   },
   {
-   "objet": 24029,
+   "item": 24029,
    "type": "tactical"
   },
   {
-   "objet": 24026,
+   "item": 24026,
    "type": "inimical"
   },
   {
-   "objet": 24027,
+   "item": 24027,
    "type": "inimical"
   },
   {
-   "objet": 24023,
+   "item": 24023,
    "type": "mitigative"
   },
   {
-   "objet": 24035,
+   "item": 24035,
    "type": "mitigative"
   },
   {
-   "objet": 24813,
+   "item": 24813,
    "type": "offensive"
   },
   {
-   "objet": 24811,
+   "item": 24811,
    "type": "offensive"
   },
   {
-   "objet": 24812,
+   "item": 24812,
    "type": "offensive"
   },
   {
-   "objet": 24810,
+   "item": 24810,
    "type": "tactical"
   }
  ],
  "actions": [
   {
-   "numero": 1,
+   "number": 1,
    "action": 12958,
    "roles": "H",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24015
     ]
    ]
   },
   {
-   "numero": 2,
+   "number": 2,
    "action": 12959,
    "roles": "T",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24016
     ]
    ]
   },
   {
-   "numero": 3,
+   "number": 3,
    "action": 12960,
    "roles": "MPHC",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24017
     ]
    ]
   },
   {
-   "numero": 4,
+   "number": 4,
    "action": 12961,
    "roles": "T",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24018
     ],
@@ -253,11 +253,11 @@
    ]
   },
   {
-   "numero": 5,
+   "number": 5,
    "action": 12962,
    "roles": "H",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24019
     ],
@@ -278,11 +278,11 @@
    ]
   },
   {
-   "numero": 6,
+   "number": 6,
    "action": 12963,
    "roles": "MPC",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24020
     ],
@@ -298,11 +298,11 @@
    ]
   },
   {
-   "numero": 7,
+   "number": 7,
    "action": 12964,
    "roles": "T",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24029,
      24029
@@ -310,11 +310,11 @@
    ]
   },
   {
-   "numero": 8,
+   "number": 8,
    "action": 12965,
    "roles": "H",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24020,
      24034
@@ -331,11 +331,11 @@
    ]
   },
   {
-   "numero": 9,
+   "number": 9,
    "action": 12966,
    "roles": "MPC",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24020,
      24018
@@ -348,11 +348,11 @@
    ]
   },
   {
-   "numero": 10,
+   "number": 10,
    "action": 12967,
    "roles": "THMPC",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24810
     ],
@@ -373,11 +373,11 @@
    ]
   },
   {
-   "numero": 11,
+   "number": 11,
    "action": 12968,
    "roles": "THMPC",
-   "utilisations": 1,
-   "recettes": [
+   "uses": 1,
+   "recipes": [
     [
      24021
     ],
@@ -393,22 +393,22 @@
    ]
   },
   {
-   "numero": 12,
+   "number": 12,
    "action": 12969,
    "roles": "THMPC",
-   "utilisations": null,
-   "recettes": [
+   "uses": null,
+   "recipes": [
     [
      24022
     ]
    ]
   },
   {
-   "numero": 13,
+   "number": 13,
    "action": 12970,
    "roles": "THMPC",
-   "utilisations": null,
-   "recettes": [
+   "uses": null,
+   "recipes": [
     [
      24023
     ],
@@ -419,11 +419,11 @@
    ]
   },
   {
-   "numero": 14,
+   "number": 14,
    "action": 12971,
    "roles": "THMPC",
-   "utilisations": 30,
-   "recettes": [
+   "uses": 30,
+   "recipes": [
     [
      24038,
      24027
@@ -446,11 +446,11 @@
    ]
   },
   {
-   "numero": 15,
+   "number": 15,
    "action": 12972,
    "roles": "THMPC",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24020,
      24032
@@ -463,22 +463,22 @@
    ]
   },
   {
-   "numero": 16,
+   "number": 16,
    "action": 12973,
    "roles": "THMPC",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24024
     ]
    ]
   },
   {
-   "numero": 17,
+   "number": 17,
    "action": 12974,
    "roles": "THMPC",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24024,
      24026
@@ -496,11 +496,11 @@
    ]
   },
   {
-   "numero": 18,
+   "number": 18,
    "action": 12975,
    "roles": "THMPC",
-   "utilisations": 20,
-   "recettes": [
+   "uses": 20,
+   "recipes": [
     [
      24025,
      24025
@@ -513,11 +513,11 @@
    ]
   },
   {
-   "numero": 19,
+   "number": 19,
    "action": 12976,
    "roles": "THMPC",
-   "utilisations": 50,
-   "recettes": [
+   "uses": 50,
+   "recipes": [
     [
      24025
     ],
@@ -528,11 +528,11 @@
    ]
   },
   {
-   "numero": 20,
+   "number": 20,
    "action": 12977,
    "roles": "MPC",
-   "utilisations": 50,
-   "recettes": [
+   "uses": 50,
+   "recipes": [
     [
      24026
     ],
@@ -548,11 +548,11 @@
    ]
   },
   {
-   "numero": 21,
+   "number": 21,
    "action": 12978,
    "roles": "TMP",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24018,
      24026
@@ -569,11 +569,11 @@
    ]
   },
   {
-   "numero": 22,
+   "number": 22,
    "action": 12979,
    "roles": "MPHC",
-   "utilisations": null,
-   "recettes": [
+   "uses": null,
+   "recipes": [
     [
      24027
     ],
@@ -594,22 +594,22 @@
    ]
   },
   {
-   "numero": 23,
+   "number": 23,
    "action": 12980,
    "roles": "TH",
-   "utilisations": null,
-   "recettes": [
+   "uses": null,
+   "recipes": [
     [
      24028
     ]
    ]
   },
   {
-   "numero": 24,
+   "number": 24,
    "action": 12981,
    "roles": "TMPHC",
-   "utilisations": 50,
-   "recettes": [
+   "uses": 50,
+   "recipes": [
     [
      24029
     ],
@@ -620,11 +620,11 @@
    ]
   },
   {
-   "numero": 25,
+   "number": 25,
    "action": 12982,
    "roles": "THMPC",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24030,
      24029
@@ -637,33 +637,33 @@
    ]
   },
   {
-   "numero": 26,
+   "number": 26,
    "action": 12983,
    "roles": "THMPC",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24030
     ]
    ]
   },
   {
-   "numero": 27,
+   "number": 27,
    "action": 12984,
    "roles": "THMPC",
-   "utilisations": 50,
-   "recettes": [
+   "uses": 50,
+   "recipes": [
     [
      24031
     ]
    ]
   },
   {
-   "numero": 28,
+   "number": 28,
    "action": 12985,
    "roles": "THMPC",
-   "utilisations": 30,
-   "recettes": [
+   "uses": 30,
+   "recipes": [
     [
      24032
     ],
@@ -679,11 +679,11 @@
    ]
   },
   {
-   "numero": 29,
+   "number": 29,
    "action": 12986,
    "roles": "THMPC",
-   "utilisations": 50,
-   "recettes": [
+   "uses": 50,
+   "recipes": [
     [
      24032,
      24023
@@ -700,11 +700,11 @@
    ]
   },
   {
-   "numero": 30,
+   "number": 30,
    "action": 12987,
    "roles": "T",
-   "utilisations": 50,
-   "recettes": [
+   "uses": 50,
+   "recipes": [
     [
      24020,
      24025
@@ -717,11 +717,11 @@
    ]
   },
   {
-   "numero": 31,
+   "number": 31,
    "action": 12988,
    "roles": "TMPC",
-   "utilisations": 50,
-   "recettes": [
+   "uses": 50,
+   "recipes": [
     [
      24036,
      24027
@@ -734,22 +734,22 @@
    ]
   },
   {
-   "numero": 32,
+   "number": 32,
    "action": 12989,
    "roles": "TMPC",
-   "utilisations": null,
-   "recettes": [
+   "uses": null,
+   "recipes": [
     [
      24033
     ]
    ]
   },
   {
-   "numero": 33,
+   "number": 33,
    "action": 12990,
    "roles": "MPC",
-   "utilisations": 50,
-   "recettes": [
+   "uses": 50,
+   "recipes": [
     [
      24034
     ],
@@ -770,11 +770,11 @@
    ]
   },
   {
-   "numero": 34,
+   "number": 34,
    "action": 12991,
    "roles": "THMPC",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24035
     ],
@@ -795,11 +795,11 @@
    ]
   },
   {
-   "numero": 35,
+   "number": 35,
    "action": 12992,
    "roles": "TMPC",
-   "utilisations": 50,
-   "recettes": [
+   "uses": 50,
+   "recipes": [
     [
      24032,
      24019
@@ -816,11 +816,11 @@
    ]
   },
   {
-   "numero": 36,
+   "number": 36,
    "action": 12993,
    "roles": "TMPC",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24031,
      24034
@@ -837,44 +837,44 @@
    ]
   },
   {
-   "numero": 37,
+   "number": 37,
    "action": 12994,
    "roles": "TMPC",
-   "utilisations": null,
-   "recettes": [
+   "uses": null,
+   "recipes": [
     [
      24036
     ]
    ]
   },
   {
-   "numero": 38,
+   "number": 38,
    "action": 12995,
    "roles": "MPHC",
-   "utilisations": null,
-   "recettes": [
+   "uses": null,
+   "recipes": [
     [
      24037
     ]
    ]
   },
   {
-   "numero": 39,
+   "number": 39,
    "action": 12996,
    "roles": "TMPC",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24038
     ]
    ]
   },
   {
-   "numero": 40,
+   "number": 40,
    "action": 12997,
    "roles": "HC",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24020,
      24018,
@@ -883,11 +883,11 @@
    ]
   },
   {
-   "numero": 41,
+   "number": 41,
    "action": 12998,
    "roles": "MPHC",
-   "utilisations": 30,
-   "recettes": [
+   "uses": 30,
+   "recipes": [
     [
      24022,
      24018,
@@ -896,11 +896,11 @@
    ]
   },
   {
-   "numero": 42,
+   "number": 42,
    "action": 12999,
    "roles": "MPHC",
-   "utilisations": 30,
-   "recettes": [
+   "uses": 30,
+   "recipes": [
     [
      24018,
      24023,
@@ -909,11 +909,11 @@
    ]
   },
   {
-   "numero": 43,
+   "number": 43,
    "action": 13000,
    "roles": "THMPC",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24022,
      24019,
@@ -922,11 +922,11 @@
    ]
   },
   {
-   "numero": 44,
+   "number": 44,
    "action": 13001,
    "roles": "T",
-   "utilisations": 30,
-   "recettes": [
+   "uses": 30,
+   "recipes": [
     [
      24031,
      24020,
@@ -935,11 +935,11 @@
    ]
   },
   {
-   "numero": 45,
+   "number": 45,
    "action": 13002,
    "roles": "H",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24015,
      24019,
@@ -948,11 +948,11 @@
    ]
   },
   {
-   "numero": 46,
+   "number": 46,
    "action": 13003,
    "roles": "H",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24015,
      24027,
@@ -961,11 +961,11 @@
    ]
   },
   {
-   "numero": 47,
+   "number": 47,
    "action": 13004,
    "roles": "H",
-   "utilisations": 50,
-   "recettes": [
+   "uses": 50,
+   "recipes": [
     [
      24019,
      24027,
@@ -974,11 +974,11 @@
    ]
   },
   {
-   "numero": 48,
+   "number": 48,
    "action": 13005,
    "roles": "HC",
-   "utilisations": 10,
-   "recettes": [
+   "uses": 10,
+   "recipes": [
     [
      24813
     ],
@@ -990,11 +990,11 @@
    ]
   },
   {
-   "numero": 49,
+   "number": 49,
    "action": 13006,
    "roles": "TM",
-   "utilisations": 10,
-   "recettes": [
+   "uses": 10,
+   "recipes": [
     [
      24812
     ],
@@ -1006,11 +1006,11 @@
    ]
   },
   {
-   "numero": 50,
+   "number": 50,
    "action": 13007,
    "roles": "P",
-   "utilisations": 30,
-   "recettes": [
+   "uses": 30,
+   "recipes": [
     [
      24811
     ],
@@ -1022,11 +1022,11 @@
    ]
   },
   {
-   "numero": 51,
+   "number": 51,
    "action": 14476,
    "roles": "MPC",
-   "utilisations": 99,
-   "recettes": [
+   "uses": 99,
+   "recipes": [
     [
      24810,
      24810
@@ -1039,11 +1039,11 @@
    ]
   },
   {
-   "numero": 52,
+   "number": 52,
    "action": 14477,
    "roles": "C",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24015,
      24019,
@@ -1057,11 +1057,11 @@
    ]
   },
   {
-   "numero": 53,
+   "number": 53,
    "action": 14478,
    "roles": "M",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24020,
      24020,
@@ -1075,11 +1075,11 @@
    ]
   },
   {
-   "numero": 54,
+   "number": 54,
    "action": 14479,
    "roles": "P",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24025,
      24026,
@@ -1093,11 +1093,11 @@
    ]
   },
   {
-   "numero": 55,
+   "number": 55,
    "action": 14480,
    "roles": "T",
-   "utilisations": 3,
-   "recettes": [
+   "uses": 3,
+   "recipes": [
     [
      24017,
      24037,
@@ -1111,11 +1111,11 @@
    ]
   },
   {
-   "numero": 56,
+   "number": 56,
    "action": 14481,
    "roles": "H",
-   "utilisations": 10,
-   "recettes": [
+   "uses": 10,
+   "recipes": [
     [
      24036,
      24038,

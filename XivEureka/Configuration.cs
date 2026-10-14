@@ -4,105 +4,106 @@ using Dalamud.Configuration;
 
 namespace XivEureka;
 
-/// <summary>Ce que le plugin retient d'un personnage : son dernier stock lu et ses actions apprises.</summary>
+/// <summary>What the plugin remembers about a character: its last read stock and its learned actions.</summary>
 [Serializable]
-public sealed class EtatPersonnage
+public sealed class CharacterState
 {
-    public string Nom { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
 
-    /// <summary>Mnemes possédées (numéro d'objet → quantité), au dernier passage au manipulateur.</summary>
+    /// <summary>Owned mnemes (item id → quantity), as of the last visit to the manipulator.</summary>
     public Dictionary<uint, int> Stock { get; set; } = [];
 
-    /// <summary>Quand <see cref="Stock"/> a été lu dans le jeu ; null tant qu'il ne l'a jamais été.</summary>
-    public DateTime? StockLuLe { get; set; }
+    /// <summary>When <see cref="Stock"/> was read in game; null while it never was.</summary>
+    public DateTime? StockReadAt { get; set; }
 
     /// <summary>
-    /// Actions Logos apprises (ligne de la feuille Action). Lues dans le journal des actions Logos
-    /// quand il est ouvert ; cochables à la main entre deux passages.
+    /// Learned Logos actions (Action sheet rows). Read from the Logos action notebook when it is
+    /// open; can be ticked by hand between two reads.
     /// </summary>
-    public HashSet<uint> Apprises { get; set; } = [];
+    public HashSet<uint> Learned { get; set; } = [];
 
-    /// <summary>Quand <see cref="Apprises"/> a été lu dans le journal ; null s'il ne l'a jamais été.</summary>
-    public DateTime? ApprisesLuesLe { get; set; }
+    /// <summary>When <see cref="Learned"/> was read from the notebook; null if it never was.</summary>
+    public DateTime? LearnedReadAt { get; set; }
 }
 
-/// <summary>Le tracker suivi : son identifiant, la zone où on l'a suivi, et depuis quand (UTC).</summary>
+/// <summary>The followed tracker: its id, the zone it was followed in, and since when (UTC).</summary>
 [Serializable]
-public sealed class TrackerSauve
+public sealed class SavedTracker
 {
     public string Id { get; set; } = string.Empty;
-    public uint Territoire { get; set; }
-    public DateTime Depuis { get; set; }
+    public uint Territory { get; set; }
+    public DateTime Since { get; set; }
 }
 
-/// <summary>Ce que l'onglet Carte affiche (cases « Calques »).</summary>
+/// <summary>What the Map tab shows ("Calques" checkboxes).</summary>
 [Serializable]
-public sealed class CalquesCarte
+public sealed class MapLayers
 {
-    public bool Reperes { get; set; } = true;
-    public bool NomsDeZone { get; set; } = true;
-    public bool Groupe { get; set; } = true;
+    public bool Points { get; set; } = true;
+    public bool AreaNames { get; set; } = true;
+    public bool Party { get; set; } = true;
     public bool Fates { get; set; } = true;
     public bool Pops { get; set; } = true;
-    public bool Nm { get; set; } = true;
-    public bool Prepa { get; set; } = true;
+    public bool Nms { get; set; } = true;
+    public bool Prep { get; set; } = true;
 }
 
 [Serializable]
 public sealed class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 1;
+    /// <summary>2 since the code moved to English names (version 1 is migrated by <see cref="ConfigurationMigration"/>).</summary>
+    public int Version { get; set; } = 2;
 
-    /// <summary>Un état par personnage (ContentId), pour les joueurs qui en ont plusieurs à Eurêka.</summary>
-    public Dictionary<ulong, EtatPersonnage> Personnages { get; set; } = [];
+    /// <summary>One state per character (ContentId), for players with several in Eureka.</summary>
+    public Dictionary<ulong, CharacterState> Characters { get; set; } = [];
 
-    /// <summary>Ouvrir la fenêtre Logos quand on ouvre le manipulateur Logos en jeu.</summary>
-    public bool OuvrirAvecLeManipulateur { get; set; } = true;
+    /// <summary>Open the Logos window when the Logos manipulator opens in game.</summary>
+    public bool OpenWithManipulator { get; set; } = true;
 
-    /// <summary>Annoncer (toast, chat avec lien de carte) chaque nouvelle FATE dans une zone d'Eurêka.</summary>
-    public bool AlerterFates { get; set; } = true;
+    /// <summary>Announce (toast, chat with map link) every new FATE in a Eureka zone.</summary>
+    public bool AlertFates { get; set; } = true;
 
-    /// <summary>Poser le drapeau de la carte du jeu sur une nouvelle FATE.</summary>
-    public bool DrapeauSurFate { get; set; } = true;
+    /// <summary>Set the game map flag on a new FATE.</summary>
+    public bool FlagOnFate { get; set; } = true;
 
-    /// <summary>Lire le chat d'Eurêka (cris, LS, CWLS…) pour les annonces de pop et les liens de tracker.</summary>
-    public bool EcouterChat { get; set; } = true;
+    /// <summary>Read the Eureka chat (shouts, LS, CWLS…) for pop announcements and tracker links.</summary>
+    public bool ListenToChat { get; set; } = true;
 
-    /// <summary>Poser le drapeau sur la position d'un pop annoncé dans le chat.</summary>
-    public bool DrapeauSurChat { get; set; } = true;
+    /// <summary>Set the flag on the position of a pop announced in the chat.</summary>
+    public bool FlagOnChatPop { get; set; } = true;
 
-    /// <summary>Son du jeu avec les alertes.</summary>
-    public bool SonAlertes { get; set; } = true;
+    /// <summary>Game sound with the alerts.</summary>
+    public bool AlertSound { get; set; } = true;
 
-    /// <summary>Calques de l'onglet Carte.</summary>
-    public CalquesCarte Calques { get; set; } = new();
+    /// <summary>Map tab layers.</summary>
+    public MapLayers Layers { get; set; } = new();
 
-    /// <summary>Zone d'Eurêka montrée par l'onglet Carte hors d'Eurêka : la dernière visitée (Pyros au départ).</summary>
-    public uint DerniereZone { get; set; } = 795;
+    /// <summary>Eureka zone shown by the Map tab outside Eureka: the last one visited (Pyros at first).</summary>
+    public uint LastZone { get; set; } = 795;
 
-    /// <summary>Suivre en direct le tracker ffxiv-eureka.com crié dans le chat de la zone.</summary>
-    public bool SuivreTrackerCrie { get; set; } = true;
+    /// <summary>Follow live the ffxiv-eureka.com tracker shouted in the zone chat.</summary>
+    public bool FollowShoutedTracker { get; set; } = true;
 
-    /// <summary>Sans tracker crié ni choisi après quelques minutes dans la zone, en créer un.</summary>
-    public bool CreerTrackerAuto { get; set; } = true;
+    /// <summary>With no tracker shouted or picked after a few minutes in the zone, create one.</summary>
+    public bool AutoCreateTracker { get; set; } = true;
 
-    /// <summary>Sur un tracker dont on a le mot de passe (créé par le plugin), signaler les NM tués.</summary>
-    public bool SignalerMorts { get; set; } = true;
+    /// <summary>On a tracker whose password we hold (created by the plugin), report the NMs killed.</summary>
+    public bool ReportKills { get; set; } = true;
 
-    /// <summary>Tracker suivi dans la zone en cours, pour le reprendre si le plugin redémarre sur place.</summary>
-    public TrackerSauve? TrackerEnCours { get; set; }
+    /// <summary>Tracker followed in the current zone, to resume it if the plugin restarts on the spot.</summary>
+    public SavedTracker? CurrentTracker { get; set; }
 
-    /// <summary>Mots de passe des trackers créés par le plugin (identifiant → mot de passe), pour y écrire.</summary>
-    public Dictionary<string, string> MotsDePasseTrackers { get; set; } = [];
+    /// <summary>Passwords of the trackers created by the plugin (id → password), to write to them.</summary>
+    public Dictionary<string, string> TrackerPasswords { get; set; } = [];
 
-    /// <summary>Dernier tracker ffxiv-eureka.com vu dans le chat (identifiant, ex. « bZFR-s »).</summary>
-    public string? DernierTracker { get; set; }
+    /// <summary>Last ffxiv-eureka.com tracker seen in the chat (id, e.g. "bZFR-s").</summary>
+    public string? LastTracker { get; set; }
 
-    public EtatPersonnage Personnage(ulong contentId, string nom)
+    public CharacterState Character(ulong contentId, string name)
     {
-        if (!Personnages.TryGetValue(contentId, out var etat))
-            Personnages[contentId] = etat = new EtatPersonnage();
-        if (!string.IsNullOrEmpty(nom)) etat.Nom = nom;
-        return etat;
+        if (!Characters.TryGetValue(contentId, out var state))
+            Characters[contentId] = state = new CharacterState();
+        if (!string.IsNullOrEmpty(name)) state.Name = name;
+        return state;
     }
 }

@@ -8,39 +8,39 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 namespace XivEureka;
 
 /// <summary>
-/// Relevés bruts de ce que le jeu expose, pour trouver où lire une information avant de s'en
-/// servir (ex. : les actions Logos apprises). Écrits dans le dossier de configuration du plugin,
-/// sous <c>releves/</c>. Outil de développement : il ne sert à rien en usage normal.
+/// Raw captures of what the game exposes, to find where to read a piece of information before
+/// relying on it (e.g. the learned Logos actions). Written to the plugin config folder, under
+/// <c>releves/</c>. A development tool: it does nothing useful in normal use.
 /// </summary>
 public static unsafe class Diagnostic
 {
-    private static readonly JsonSerializerOptions Indente = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
-    /// <summary>Écrit le relevé d'une fenêtre du jeu (ses valeurs) et des tableaux Logos connus.</summary>
-    public static string Ecrire(string dossierConfig, string nom, AtkUnitBase* fenetre)
+    /// <summary>Writes the capture of a game window (its values) and of the known Logos arrays.</summary>
+    public static string Write(string configFolder, string name, AtkUnitBase* window)
     {
-        var releve = new Dictionary<string, object> { ["date"] = DateTime.Now.ToString("s"), ["fenetre"] = nom };
-        if (fenetre != null)
+        var capture = new Dictionary<string, object> { ["date"] = DateTime.Now.ToString("s"), ["window"] = name };
+        if (window != null)
         {
-            var valeurs = new List<string>();
-            foreach (var v in fenetre->AtkValuesSpan) valeurs.Add(Valeur(v));
-            releve["visible"] = fenetre->IsVisible;
-            releve["valeurs"] = valeurs;
+            var values = new List<string>();
+            foreach (var v in window->AtkValuesSpan) values.Add(Format(v));
+            capture["visible"] = window->IsVisible;
+            capture["values"] = values;
         }
-        var tableaux = &RaptureAtkModule.Instance()->AtkArrayDataHolder;
+        var arrays = &RaptureAtkModule.Instance()->AtkArrayDataHolder;
         foreach (var index in new[] { 137, 138 })
         {
-            var a = tableaux->GetNumberArrayData(index);
-            releve[$"NumberArray {index}"] = a == null || a->IntArray == null ? "absent" : a->Span.ToArray();
+            var a = arrays->GetNumberArrayData(index);
+            capture[$"NumberArray {index}"] = a == null || a->IntArray == null ? "missing" : a->Span.ToArray();
         }
-        var dossier = Path.Combine(dossierConfig, "releves");
-        Directory.CreateDirectory(dossier);
-        var chemin = Path.Combine(dossier, $"{nom}.json");
-        File.WriteAllText(chemin, JsonSerializer.Serialize(releve, Indente));
-        return chemin;
+        var folder = Path.Combine(configFolder, "releves");
+        Directory.CreateDirectory(folder);
+        var path = Path.Combine(folder, $"{name}.json");
+        File.WriteAllText(path, JsonSerializer.Serialize(capture, Indented));
+        return path;
     }
 
-    private static string Valeur(AtkValue v) => v.Type switch
+    private static string Format(AtkValue v) => v.Type switch
     {
         AtkValueType.Bool => "b:" + v.Bool,
         AtkValueType.Int => "i:" + v.Int,
