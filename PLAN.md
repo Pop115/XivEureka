@@ -1,7 +1,9 @@
 # Plan Xiv Eurêka (2026-10-11)
 
 Principes demandés : **rien à taper** (tout s'ouvre ou se déclenche depuis l'UI du jeu), **aspect
-proche de l'UI du jeu**, **la carte du jeu** pour tout ce qui est position (pas de carte du plugin).
+proche de l'UI du jeu**. Positions : **carte propre au plugin** (onglet « Carte », décision du
+2026-10-14 : sur la carte du jeu on ne distingue pas ce qui vient du plugin) ; le drapeau du jeu
+reste pour les alertes.
 Penser **Bozja** dès la conception (mêmes besoins : fragments ↔ éclats, CE ↔ FATE, actions de
 fortune ↔ actions Logos).
 
@@ -14,6 +16,64 @@ fortune ↔ actions Logos).
   `Zones/Meteo.cs` (météo et heure d'Eorzéa locales), `Zones/AnalyseChat.cs`, `Zones/CarteJeu.cs`.
 - Suivant : 2 (conseils de farm : données `acquired-by` et NM du site, niveau élémentaire via
   `PlayerState.GetContentValue(2)`, conditions météo/nuit des NM avec `Meteo.Prochaine`).
+
+## Onglet « Carte » (2026-10-14, à valider avec Pop)
+
+La fenêtre du plugin devient « Xiv Eurêka » avec deux onglets : **Actions Logos** | **Carte**.
+L'onglet Carte montre la zone d'Eurêka où l'on est (ou celle choisie hors d'Eurêka).
+
+```
+┌ Xiv Eurêka ─────────────────────────────────────────────────────────────────┐
+│ [Actions Logos] [Carte]                                                     │
+│ Pyros · ET 17:01 · Vagues de chaleur → Orage dans 12 min → Blizzard → …     │
+├──────────────────────────────────────────────────┬──────────────────────────┤
+│ (texture de la carte du jeu, molette = zoom,     │ OÙ ALLER MAINTENANT      │
+│  glisser = déplacer)                             │ ① Skoll Nv50 ❄ blizzard   │
+│        ◆Penthesilea 50                           │   dans 20 min : prépa    │
+│   ◆Eldthurs 43   ⚑                               │   Pyros Shuck (14,33),   │
+│      ◆Lamebrix 45  ◆Dux 46 ⚡43min               │   loin, partir tôt  [→]  │
+│  ◆Lesath 42   ◆Iris 44  ✦FATE 62% 18min          │ ② FATE Glaukopis en      │
+│ ◆Aetolus 41  ◆Batym 40 🌙5min                     │   cours, 62 %      [→]  │
+│                    ⌂ Firing Chamber (Nv39)        │ ③ Ton niveau 41 : mobs   │
+│      ⌂ Northpoint                                │   41-43 à SW Ice Needles │
+│               ▲ toi  ● groupe                    │ ④ Logos : il te manque   │
+│   ◆Askalaphos 39 🌀160min  ◆Leucosia 35          │   des « Protecteurs » :  │
+│ ◆Ying-Yang 49   ◆Skoll 50   ◆Flauros 36          │   Flauros, Askalaphos…   │
+│      ░░ zone de prépa Skoll      ◆Sophist 37     │──────────────────────────│
+│              ◆Graffiacane 38                     │ Calques : ☑ NM ☑ prépa   │
+│ X 23.4 Y 30.1 (sous la souris)                   │ ☑ FATE ☑ pops chat       │
+│                                                  │ ☑ groupe ☐ mobs ☐ quêtes │
+└──────────────────────────────────────────────────┴──────────────────────────┘
+```
+
+Survol d'un NM : fiche (niveau, élément, mob de prépa et où, condition météo/nuit et quand,
+logogramme lâché, statut tracker). Clic sur une ligne « Où aller » : centre la carte dessus ;
+bouton → pose aussi le drapeau du jeu.
+
+**Ce que la carte du jeu apporte, repris ici** : ma position et ma direction (`IClientState`),
+le groupe (`IPartyList`), le drapeau posé (`AgentMap`), les éthérites et noms de lieux (feuille
+`MapMarker`, plage de la ligne `Map`), les FATE en cours avec % et temps restant (`IFateTable`),
+les coordonnées sous la souris. En plus, du plugin : NM, zones de prépa, pops du chat (avec leur
+âge), élémentaires vus à proximité (table des objets), objectifs de quête par niveau.
+
+**Données** : fond = texture de la carte du jeu (`ui/map/z3fc/00/z3fc00_m.tex` pour Pyros, ligne
+Map 484, échelle 100) → marche pour les 4 zones, Hydatos compris, sans image tierce. Positions des
+FATE : en direct dans le jeu ; la colonne `Fate.Location` n'est pas une ligne de Level (vérifié),
+donc positions fixes dans `Donnees/zones/<zone>.json` relevées sur le wiki : par NM la FATE
+(numéro), niveau, élément, coordonnées, mob de prépa (nom, niveau, zone x/y/rayon), condition
+(météo ou nuit), logogramme lâché ; mobs de montée de niveau ; points des élémentaires ;
+objectifs de quête. Noms affichés dans la langue du client via les feuilles (Fate, BNpcName).
+
+**Étapes** (chacune testée et commitée) :
+- C1 POC : fenêtre à onglets, texture de la carte, zoom/déplacement, ma position. Test : formule
+  coordonnées monde ↔ carte sur des points connus (éthérite de Northpoint). Vérif en jeu : la
+  flèche est au même endroit que sur la carte du jeu.
+- C2 : ce que donne le jeu (groupe, drapeau, éthérites, FATE en cours, pops du chat, bandeau
+  météo/heure — la météo de l'ancienne barre d'infos serveur vient ici).
+- C3 : `pyros.json` (17 NM, prépas, conditions) → icônes, zones de prépa, comptes à rebours.
+- C4 : panneau « Où aller » (règles simples, classées, cliquables). Relié à l'étape 2 (Logos).
+- C5 : tracker en direct (étape 5) → statut des NM sur la carte. Anémos/Pagos/Hydatos : leur JSON
+  quand on y va (Hydatos pas encore débloqué).
 
 ## 0. À vérifier avant de coder (outils existants)
 - Plugins Dalamud Eurêka/Bozja à lire (pas copier) : un « Eureka helper »/auto-pop qui parle au
