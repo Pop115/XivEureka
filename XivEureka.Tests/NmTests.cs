@@ -50,7 +50,7 @@ public class SituationsTests
     private static readonly DateTimeOffset Maintenant = DateTimeOffset.FromUnixTimeSeconds(1_760_000_000L);
 
     private static NmEureka Nm(uint pnj, ushort fate, Condition? condition = null, Condition? prepa = null, int niveau = 40, uint eclat = 24009) =>
-        new(pnj, fate, niveau, "fire", new Vector2(20, 20), eclat, [], condition ?? new Condition(null, false),
+        new(pnj, 0, fate, niveau, "fire", new Vector2(20, 20), eclat, [], condition ?? new Condition(null, false),
             new Prepa(1, niveau + 5, prepa ?? new Condition(null, false), [new Vector2(21, 21)]));
 
     [Fact]
@@ -85,7 +85,7 @@ public class SituationsTests
     {
         var zone = new NmZone(795, 120, [Nm(10, 500)]);
         var fin = Maintenant.UtcDateTime.AddMinutes(-30);
-        var s = Situations.Calculer(Pyros, zone, [], new Dictionary<ushort, DateTime> { [500] = fin }, Maintenant).Single();
+        var s = Situations.Calculer(Pyros, zone, [], new Dictionary<ushort, DateTime> { [500] = fin }, new HashSet<ushort>(), Maintenant).Single();
         Assert.True(s.EnRespawn(Maintenant));
         Assert.Equal(Maintenant.AddMinutes(90), s.RespawnAuPlusTot);
         Assert.False(s.EnRespawn(Maintenant.AddMinutes(91)));
@@ -98,7 +98,7 @@ public class ConseilsTests
     private static readonly NomsJeu Noms = new(p => $"NM{p}", m => m, o => $"Objet{o}");
 
     private static NmEureka Nm(uint pnj, int niveau, uint eclat = 24009, Condition? condition = null) =>
-        new(pnj, (ushort)(1000 + pnj), niveau, "fire", new Vector2(pnj, 10), eclat, [], condition ?? new Condition(null, false),
+        new(pnj, 0, (ushort)(1000 + pnj), niveau, "fire", new Vector2(pnj, 10), eclat, [], condition ?? new Condition(null, false),
             new Prepa(pnj + 100, niveau + 5, new Condition(null, false), [new Vector2(pnj, 12)]));
 
     private static SituationNm Libre(NmEureka nm) => new(nm, null, null, null, null);

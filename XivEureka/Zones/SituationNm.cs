@@ -15,7 +15,7 @@ public sealed record Fenetre(DateTimeOffset Debut, DateTimeOffset Fin)
 /// tué dans cette instance, et quand sa condition et celle de sa prépa sont (ou seront) remplies.
 /// </summary>
 public sealed record SituationNm(NmEureka Nm, FateCarte? Fate, DateTimeOffset? RespawnAuPlusTot,
-    Fenetre? FenetreNm, Fenetre? FenetrePrepa)
+    Fenetre? FenetreNm, Fenetre? FenetrePrepa, bool Prepare = false)
 {
     public bool EnRespawn(DateTimeOffset maintenant) => Fate == null && RespawnAuPlusTot > maintenant;
 
@@ -27,7 +27,7 @@ public sealed record SituationNm(NmEureka Nm, FateCarte? Fate, DateTimeOffset? R
 public static class Situations
 {
     public static IReadOnlyList<SituationNm> Calculer(ZoneEureka zone, NmZone nms, IReadOnlyList<FateCarte> fates,
-        IReadOnlyDictionary<ushort, DateTime> terminees, DateTimeOffset maintenant) =>
+        IReadOnlyDictionary<ushort, DateTime> terminees, IReadOnlySet<ushort> prepares, DateTimeOffset maintenant) =>
         nms.Nm.Select(nm =>
         {
             var fate = fates.FirstOrDefault(f => f.Id == nm.Fate);
@@ -35,7 +35,8 @@ public static class Situations
                 ? new DateTimeOffset(DateTime.SpecifyKind(fin, DateTimeKind.Utc)).AddMinutes(nms.RespawnMinutes)
                 : null;
             return new SituationNm(nm, fate, respawn,
-                ProchaineFenetre(zone, nm.Condition, maintenant), ProchaineFenetre(zone, nm.Prepa.Condition, maintenant));
+                ProchaineFenetre(zone, nm.Condition, maintenant), ProchaineFenetre(zone, nm.Prepa.Condition, maintenant),
+                prepares.Contains(nm.Fate));
         }).ToList();
 
     /// <summary>La fenêtre en cours ou la prochaine où la condition est remplie ; null sans condition.</summary>

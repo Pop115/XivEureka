@@ -22,10 +22,10 @@ public sealed record Prepa(uint Pnj, int Niveau, Condition Condition, IReadOnlyL
 
 /// <summary>
 /// Un NM d'Eurêka. <see cref="Pnj"/> : ligne BNpcName (nom dans la langue du client) ;
-/// <see cref="Fate"/> : sa FATE ; <see cref="Position"/> : coordonnées de carte de la FATE ;
+/// <see cref="Site"/> : son numéro sur ffxiv-eureka.com ; <see cref="Fate"/> : sa FATE ; <see cref="Position"/> : coordonnées de carte de la FATE ;
 /// <see cref="Eclat"/> : le logogramme (éclat Logos non identifié) qu'il lâche ; <see cref="Objets"/> : ses objets rares.
 /// </summary>
-public sealed record NmEureka(uint Pnj, ushort Fate, int Niveau, string Element, Vector2 Position, uint Eclat,
+public sealed record NmEureka(uint Pnj, int Site, ushort Fate, int Niveau, string Element, Vector2 Position, uint Eclat,
     IReadOnlyList<uint> Objets, Condition Condition, Prepa Prepa);
 
 /// <summary>Les NM d'une zone et leur délai de réapparition.</summary>
@@ -41,7 +41,7 @@ public sealed class CatalogueNm(IReadOnlyList<NmZone> zones)
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var brut = JsonSerializer.Deserialize<Fichier>(json, options) ?? throw new InvalidDataException("nm.json vide");
         return new CatalogueNm(brut.Zones.Select(z => new NmZone(z.Territoire, z.RespawnMinutes, z.Nm.Select(n => new NmEureka(
-            n.Pnj, n.Fate, n.Niveau, n.Element, new Vector2(n.X, n.Y), n.Eclat, n.Objets,
+            n.Pnj, n.Site, n.Fate, n.Niveau, n.Element, new Vector2(n.X, n.Y), n.Eclat, n.Objets,
             new Condition(n.Meteo, n.Nuit),
             new Prepa(n.Prepa.Pnj, n.Prepa.Niveau, new Condition(n.Prepa.Meteo, n.Prepa.Nuit),
                 n.Prepa.Lieux.Select(l => new Vector2(l[0], l[1])).ToList()))).ToList())).ToList());
@@ -56,7 +56,7 @@ public sealed class CatalogueNm(IReadOnlyList<NmZone> zones)
 
     private sealed record Fichier(List<FichierZone> Zones);
     private sealed record FichierZone(uint Territoire, int RespawnMinutes, List<FichierNm> Nm);
-    private sealed record FichierNm(uint Pnj, ushort Fate, int Niveau, string Element, float X, float Y, uint Eclat,
+    private sealed record FichierNm(uint Pnj, int Site, ushort Fate, int Niveau, string Element, float X, float Y, uint Eclat,
         List<uint> Objets, string? Meteo, bool Nuit, FichierPrepa Prepa);
     private sealed record FichierPrepa(uint Pnj, int Niveau, string? Meteo, bool Nuit, List<float[]> Lieux);
 }

@@ -11,6 +11,7 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using XivEureka.Fenetres;
 using XivEureka.Logos;
+using XivEureka.Tracker;
 using XivEureka.Zones;
 
 namespace XivEureka;
@@ -48,6 +49,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly FenetrePrincipale fenetre;
     private readonly FenetreReglages fenetreReglages;
     private readonly CompagnonZone compagnon;
+    private readonly SuiviTracker tracker;
     private DateTime prochaineLecture = DateTime.MinValue;
     private bool stockEnDirect;
 
@@ -56,15 +58,19 @@ public sealed class Plugin : IDalamudPlugin
         configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         catalogue = CatalogueLogos.Integre();
         compagnon = new CompagnonZone(configuration, ClientState, Framework, FateTable, ChatGui, ToastGui, Log, Sauver);
+        var catalogueNm = CatalogueNm.Integre();
+        tracker = new SuiviTracker(configuration, ClientState, ObjectTable, Framework, ChatGui, Log, catalogueNm, Sauver);
+        compagnon.TrackerCrie += tracker.TrackerCrie;
+        compagnon.FateReussie += tracker.FateReussie;
         var textes = new TextesJeu(DataManager);
         var nomsMeteo = new NomsMeteo(DataManager);
         var logos = new OngletLogos(catalogue, textes, TextureProvider, EtatCourant, () => stockEnDirect, Sauver);
         var carte = new OngletCarte(configuration, new LecteurCartes(DataManager),
             new LecteurEtatCarte(ClientState, ObjectTable, PartyList, FateTable, compagnon.PopsRecents),
-            CatalogueNm.Integre(),
+            catalogueNm,
             new NomsJeu(textes.Pnj, m => nomsMeteo[m], o => textes.Objet(o).Nom),
             TextureProvider,
-            new SourcesCarte(compagnon.FatesTerminees, NiveauElementaire, EclatsUtiles,
+            new SourcesCarte(FatesTerminees, tracker.PreparesParFate, NiveauElementaire, EclatsUtiles, tracker,
                 (territoire, map, position) => CarteJeu.Drapeau(territoire, map, position, ouvrir: false)),
             Sauver);
         fenetre = new FenetrePrincipale(logos, carte);
@@ -94,6 +100,9 @@ public sealed class Plugin : IDalamudPlugin
         AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, FenetreManipulateur, SurManipulateurOuvert);
         AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, SurFenetreOuverte);
         Framework.Update -= SurTrame;
+        compagnon.TrackerCrie -= tracker.TrackerCrie;
+        compagnon.FateReussie -= tracker.FateReussie;
+        tracker.Dispose();
         compagnon.Dispose();
         CommandManager.RemoveHandler(Commande);
         fenetres.RemoveAllWindows();
@@ -103,6 +112,18 @@ public sealed class Plugin : IDalamudPlugin
         PlayerState.IsLoaded && PlayerState.ContentId != 0
             ? configuration.Personnage(PlayerState.ContentId, PlayerState.CharacterName)
             : null;
+
+    /// <summary>
+    /// FATE de NM terminées et quand (UTC) : celles vues finir dans l'instance et celles du tracker
+    /// suivi ; pour une même FATE, la plus récente.
+    /// </summary>
+    private IReadOnlyDictionary<ushort, DateTime> FatesTerminees()
+    {
+        var morts = new Dictionary<ushort, DateTime>(compagnon.FatesTerminees());
+        foreach (var (fate, quand) in tracker.MortsParFate())
+            if (!morts.TryGetValue(fate, out var vu) || quand > vu) morts[fate] = quand;
+        return morts;
+    }
 
     /// <summary>Éclats Logos qui feraient avancer des actions pas encore apprises (vide sans stock lu).</summary>
     private IReadOnlyDictionary<uint, int> EclatsUtiles()

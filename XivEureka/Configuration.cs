@@ -26,6 +26,15 @@ public sealed class EtatPersonnage
     public DateTime? ApprisesLuesLe { get; set; }
 }
 
+/// <summary>Le tracker suivi : son identifiant, la zone où on l'a suivi, et depuis quand (UTC).</summary>
+[Serializable]
+public sealed class TrackerSauve
+{
+    public string Id { get; set; } = string.Empty;
+    public uint Territoire { get; set; }
+    public DateTime Depuis { get; set; }
+}
+
 /// <summary>Ce que l'onglet Carte affiche (cases « Calques »).</summary>
 [Serializable]
 public sealed class CalquesCarte
@@ -70,6 +79,21 @@ public sealed class Configuration : IPluginConfiguration
 
     /// <summary>Zone d'Eurêka montrée par l'onglet Carte hors d'Eurêka : la dernière visitée (Pyros au départ).</summary>
     public uint DerniereZone { get; set; } = 795;
+
+    /// <summary>Suivre en direct le tracker ffxiv-eureka.com crié dans le chat de la zone.</summary>
+    public bool SuivreTrackerCrie { get; set; } = true;
+
+    /// <summary>Sans tracker crié ni choisi après quelques minutes dans la zone, en créer un.</summary>
+    public bool CreerTrackerAuto { get; set; } = true;
+
+    /// <summary>Sur un tracker dont on a le mot de passe (créé par le plugin), signaler les NM tués.</summary>
+    public bool SignalerMorts { get; set; } = true;
+
+    /// <summary>Tracker suivi dans la zone en cours, pour le reprendre si le plugin redémarre sur place.</summary>
+    public TrackerSauve? TrackerEnCours { get; set; }
+
+    /// <summary>Mots de passe des trackers créés par le plugin (identifiant → mot de passe), pour y écrire.</summary>
+    public Dictionary<string, string> MotsDePasseTrackers { get; set; } = [];
 
     /// <summary>Dernier tracker ffxiv-eureka.com vu dans le chat (identifiant, ex. « bZFR-s »).</summary>
     public string? DernierTracker { get; set; }

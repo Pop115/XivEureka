@@ -47,6 +47,7 @@ public sealed class CompagnonZone : IDisposable
     private readonly SuiviFates fates = new();
     private readonly Dictionary<string, DateTime> dernieresAlertes = [];
     private readonly List<PopAnnonce> pops = [];
+    private readonly HashSet<ushort> reussiesSignalees = [];
     private DateTime prochainPassage = DateTime.MinValue;
 
     public CompagnonZone(Configuration configuration, IClientState clientState, IFramework framework, IFateTable fateTable,
@@ -65,6 +66,12 @@ public sealed class CompagnonZone : IDisposable
         clientState.TerritoryChanged += SurChangementZone;
         chat.ChatMessage += SurMessage;
     }
+
+    /// <summary>Un lien ffxiv-eureka.com/xxxx vu dans le chat d'Eurêka (identifiant du tracker).</summary>
+    public event Action<string>? TrackerCrie;
+
+    /// <summary>Une FATE de NM vue réussie (état « Ended » du jeu, à valider en jeu), une fois par passage.</summary>
+    public event Action<ushort>? FateReussie;
 
     public void Dispose()
     {
@@ -89,6 +96,7 @@ public sealed class CompagnonZone : IDisposable
     {
         fates.Reinitialiser();
         pops.Clear();
+        reussiesSignalees.Clear();
     }
 
     private void SurTrame(IFramework _)
@@ -103,6 +111,12 @@ public sealed class CompagnonZone : IDisposable
             .Where(f => !SuiviFates.EstFateLapin(f.GameData.Value.Rule))
             .Select(f => new FateVue(f.FateId, f.Name.TextValue, f.Position)));
         foreach (var fate in nouvelles) AnnoncerFate(fate);
+
+        foreach (var f in fateTable.Where(f => !SuiviFates.EstFateLapin(f.GameData.Value.Rule)))
+        {
+            if (f.State == FateState.Running) reussiesSignalees.Remove(f.FateId); // elle revient : nouveau passage
+            else if (f.State == FateState.Ended && reussiesSignalees.Add(f.FateId)) FateReussie?.Invoke(f.FateId);
+        }
     }
 
     private void AnnoncerFate(FateVue fate)
@@ -130,6 +144,7 @@ public sealed class CompagnonZone : IDisposable
     {
         var lu = AnalyseChat.Analyser(texte.TextValue, fates.EnCours.Select(f => f.Nom));
 
+        if (lu.Tracker != null) TrackerCrie?.Invoke(lu.Tracker);
         if (lu.Tracker != null && lu.Tracker != configuration.DernierTracker)
         {
             configuration.DernierTracker = lu.Tracker;

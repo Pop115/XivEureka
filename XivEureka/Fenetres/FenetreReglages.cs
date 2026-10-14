@@ -32,6 +32,12 @@ public sealed class FenetreReglages : Window
         Case("Drapeau sur la carte pour un pop annoncé", () => configuration.DrapeauSurChat, v => configuration.DrapeauSurChat = v);
         Case("Son avec les alertes", () => configuration.SonAlertes, v => configuration.SonAlertes = v);
 
+        ImGui.Spacing();
+        ImGui.TextDisabled("Tracker ffxiv-eureka.com");
+        Case("Suivre le tracker crié dans le chat", () => configuration.SuivreTrackerCrie, v => configuration.SuivreTrackerCrie = v);
+        Case("Créer un tracker si aucun n'est crié en 3 min", () => configuration.CreerTrackerAuto, v => configuration.CreerTrackerAuto = v);
+        Case("Signaler les NM tués sur mon tracker", () => configuration.SignalerMorts, v => configuration.SignalerMorts = v);
+
         if (configuration.DernierTracker is { } tracker)
         {
             ImGui.Spacing();

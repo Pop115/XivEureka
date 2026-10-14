@@ -6,6 +6,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
+using XivEureka.Tracker;
 using XivEureka.Zones;
 
 namespace XivEureka.Fenetres;
@@ -13,8 +14,10 @@ namespace XivEureka.Fenetres;
 /// <summary>Ce que l'onglet Carte reçoit du reste du plugin, en plus des données du jeu.</summary>
 public sealed record SourcesCarte(
     Func<IReadOnlyDictionary<ushort, DateTime>> FatesTerminees,
+    Func<IReadOnlySet<ushort>> Prepares,
     Func<int?> NiveauElementaire,
     Func<IReadOnlyDictionary<uint, int>> EclatsUtiles,
+    SuiviTracker Tracker,
     Action<uint, uint, Vector3> PoserDrapeau);
 
 /// <summary>
@@ -131,7 +134,7 @@ public sealed class OngletCarte
             conseils = [];
             return;
         }
-        situations = Situations.Calculer(zone, nms, etat.Fates, sources.FatesTerminees(), maintenant);
+        situations = Situations.Calculer(zone, nms, etat.Fates, sources.FatesTerminees(), sources.Prepares(), maintenant);
         conseils = Conseils.Calculer(situations, maintenant, sources.NiveauElementaire(), sources.EclatsUtiles(), noms);
     }
 
@@ -172,12 +175,6 @@ public sealed class OngletCarte
             ImGui.SameLine();
             ImGui.TextUnformatted($"· niveau élémentaire {niveau}");
         }
-        if (configuration.DernierTracker is { } tracker)
-        {
-            ImGui.SameLine();
-            ImGui.TextColored(Gris, $"· tracker {tracker}");
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip($"Dernier tracker crié dans le chat : https://ffxiv-eureka.com/{tracker}");
-        }
 
         // Météo : l'actuelle puis les six suivantes, avec dans combien de temps.
         var premiere = true;
@@ -190,7 +187,50 @@ public sealed class OngletCarte
             if (ImGui.IsItemHovered()) ImGui.SetTooltip($"{p.Debut.ToLocalTime():HH:mm} → {p.Fin.ToLocalTime():HH:mm} (heure locale)");
             premiere = false;
         }
+        if (aEureka) DessinerTracker();
         ImGui.Spacing();
+    }
+
+    /// <summary>Ligne du tracker : lequel, son état, et les gestes utiles (copier, ouvrir, créer, changer).</summary>
+    private void DessinerTracker()
+    {
+        var t = sources.Tracker;
+        ImGui.TextColored(t.Suivi != null ? Jaune : Gris, "Tracker :");
+        ImGui.SameLine();
+        ImGui.TextUnformatted(t.Statut);
+        if (t.IdSuivi is { } id)
+        {
+            var lien = $"https://ffxiv-eureka.com/{id}";
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Copier le lien")) ImGui.SetClipboardText(lien);
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("À crier dans le chat pour que les autres le suivent.");
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Ouvrir")) Dalamud.Utility.Util.OpenLink(lien);
+        }
+        else if (t.CreationPrevue is { } quand)
+        {
+            ImGui.SameLine();
+            ImGui.TextColored(Gris, $"· création dans {Formats.Duree(quand - DateTime.UtcNow)} si aucun n'est crié");
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Créer maintenant")) t.CreerMaintenant();
+        }
+        else
+        {
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Créer un tracker")) t.CreerMaintenant();
+        }
+
+        var autres = t.AutresTrackers;
+        if (autres.Count == 0) return;
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(220);
+        using var choix = ImRaii.Combo("##autres-trackers", $"{autres.Count} autre(s) tracker(s) de la zone");
+        if (!choix) return;
+        foreach (var autre in autres)
+        {
+            var maj = autre.MajLe is { } m ? $"mis à jour il y a {Formats.Duree(DateTimeOffset.UtcNow - m)}" : "jamais mis à jour";
+            if (ImGui.Selectable($"{autre.Id} · {autre.Morts.Count} NM tué(s) · {maj}")) t.Choisir(autre.Id);
+        }
     }
 
     // ---------- la carte ----------
@@ -346,6 +386,7 @@ public sealed class OngletCarte
     {
         if (s.Fate is { } f) return EtiquetteFate(f);
         if (s.EnRespawn(maintenant)) return $"respawn ≥ {Formats.Duree(s.RespawnAuPlusTot!.Value - maintenant)}";
+        if (s.Prepare) return "préparé";
         if (s.Attente is not { } fenetre) return null;
         var condition = s.FenetreNm != null ? s.Nm.Condition : s.Nm.Prepa.Condition;
         var nom = condition.Meteo is { } m ? noms.Meteo(m) : "nuit";

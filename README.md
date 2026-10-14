@@ -78,5 +78,16 @@ Le journal Dalamud dit « Relevé écrit : … ».
 - [x] Onglet Carte (étapes C1 à C4 du plan).
 - [ ] À valider en jeu : drapeau (coordonnées monde), noms de météo FR, textes des pops réels,
   sens de la flèche (orientation), niveau élémentaire (`/xiveureka niveau`), lieux de prépa.
-- [ ] Tracker en direct (websocket de ffxiv-eureka.com) : statut des NM même sans les avoir vus tués.
+- [x] Tracker en direct : voir « Tracker » ci-dessous.
+
+## Tracker ffxiv-eureka.com
+
+Un tracker est temporaire et lié à une instance. Le plugin suit celui crié dans le chat de la zone
+(canal Phoenix `instance:<id>` sur `wss://ffxiv-eureka.com/socket/websocket?vsn=2.0.0`, lecture
+sans mot de passe) ; sans tracker au bout de 3 min, il en crée un (`POST /api/instances`, JSON:API
+`zone-id`), garde son mot de passe, le rattache au data center (`set_instance_information`) et
+l'écrit dans le chat pour qu'on le crie. Sur un tracker créé par le plugin seulement, les NM vus
+tués (FATE à l'état `Ended`, à valider en jeu) sont signalés (`set_kill_time`). Le canal
+`datacenter:<n>` liste les autres trackers ouverts de la zone (choix dans l'onglet Carte).
+Protocole relu dans le JS du site et essayé le 2026-10-14 ; messages réels dans les tests.
 - Note : `/eureka` n'est jamais parvenue au plugin (aucun appel, aucune erreur) — d'où `/xiveureka`.
