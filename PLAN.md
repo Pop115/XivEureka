@@ -44,6 +44,9 @@ donc positions fixes dans `Donnees/zones/<zone>.json` relevées sur le wiki : pa
 (météo ou nuit), logogramme lâché ; mobs de montée de niveau ; points des élémentaires ;
 objectifs de quête. Noms affichés dans la langue du client via les feuilles (Fate, BNpcName).
 
+**État (2026-10-14)** : C1 à C4 faits et testés hors jeu (55 tests), pas encore vus en jeu.
+Le respawn vient des FATE vues finir dans l'instance (120 min) en attendant le tracker (C5).
+
 **Étapes** (chacune testée et commitée) :
 - C1 POC : fenêtre à onglets, texture de la carte, zoom/déplacement, ma position. Test : formule
   coordonnées monde ↔ carte sur des points connus (éthérite de Northpoint). Vérif en jeu : la

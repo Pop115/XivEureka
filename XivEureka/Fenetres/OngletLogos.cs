@@ -235,9 +235,7 @@ public sealed class OngletLogos
     private static void AligneTexte(float hauteurLigne) =>
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + ((hauteurLigne - ImGui.GetTextLineHeight()) / 2));
 
-    /// <summary>« Éclat Logos d'apprenti non identifié » → « Éclat Logos d'apprenti ».</summary>
-    private static string NomEclat(string nom) =>
-        nom.EndsWith(" non identifié", StringComparison.Ordinal) ? nom[..^" non identifié".Length] : nom;
+    private static string NomEclat(string nom) => TextesJeu.SansNonIdentifie(nom);
 
     // ---------- fiche de l'action ----------
 

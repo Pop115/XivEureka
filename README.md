@@ -5,12 +5,22 @@ jeu. Il grandit au fil des besoins.
 
 ## Ce qu'il fait
 
-- **Actions Logos** (`/xiveureka`, ou le bouton du plugin dans `/xlplugins`) : la page de
+Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlplugins`) à deux onglets :
+
+- **Actions Logos** : la page de
   ffxiv-eureka.com/logograms, mais avec le stock lu dans le jeu. Mnemes par éclat à gauche, les 56
   actions au centre, fiche de l'action (description, recettes, stock/besoin) à droite. En violet :
   pas encore apprise et fabricable tout de suite. Les actions apprises sont lues dans le journal des
   actions Logos (ouvert en parlant à Drake) ; clic droit sur une action pour corriger entre-temps.
   La fenêtre s'ouvre toute seule avec le manipulateur Logos.
+- **Carte** (`/xiveureka carte`) : la carte du jeu de la zone d'Eurêka, redessinée par le plugin.
+  Repères et noms de zone du jeu, toi (flèche), ton groupe, le drapeau, et en plus les 17 NM de la
+  zone avec leur état (FATE en cours, respawn ≥ N min s'il a été vu finir, météo ou nuit à venir),
+  la zone de prépa du NM choisi, les pops criés dans le chat. En haut : heure d'Eorzéa, jour/nuit,
+  météo à venir. À droite : « Où aller maintenant » (FATE en cours, météo ou nuit dans la
+  demi-heure avec la prépa, NM à ton niveau, NM qui lâchent les éclats Logos qui te manquent), la
+  fiche du NM choisi et les calques. Molette : zoom ; glisser : déplacer ; clic : fiche ; clic
+  droit : drapeau du jeu. Hors d'Eurêka : la dernière zone visitée, au choix.
 - **FATE** (zones d'Eurêka) : chaque nouvelle FATE de NM est annoncée par un toast du jeu et un message
   avec lien de carte, et le drapeau de la carte du jeu est posé dessus (celles déjà là à l'arrivée
   ne sont pas annoncées). Les FATE lapin sont ignorées (on ne les fait pas) : dans la feuille Fate,
@@ -33,7 +43,16 @@ jeu. Il grandit au fil des besoins.
 - **Recettes** : le jeu ne les a pas (mélange résolu par le serveur). `XivEureka/Donnees/logos.json`,
   extrait de ffxiv-eureka.com et recoupé avec Logogram Helper (55/56 identiques ; pour Restauration
   le site a une recette à 3 mnemes de plus, gardée).
-- **Noms, icônes, descriptions** : feuilles Item, Action et ActionTransient, dans la langue du client.
+- **Noms, icônes, descriptions** : feuilles Item, Action, ActionTransient, BNpcName, Weather,
+  dans la langue du client.
+- **Carte** : texture `ui/map/<id>/<id>_m.tex` de la ligne Map en cours, repères de la feuille
+  MapMarker (X/Y en pixels de la texture 2048), formule monde ↔ carte de `GeometrieCarte`.
+- **NM** : `XivEureka/Donnees/nm.json` (Pyros pour l'instant) : niveau, élément, conditions et
+  respawn de ffxiv-eureka.com (les météos y sont des numéros de la feuille Weather), coordonnées
+  des FATE et logogrammes du wiki, lieux de prépa **approximatifs** (carte communautaire).
+  Anémos, Pagos, Hydatos : à ajouter quand on y va.
+- **Niveau élémentaire** : `PlayerState.GetContentValue(2)`, à confirmer en jeu avec
+  `/xiveureka niveau`.
 
 ## Construire, tester, charger
 
@@ -56,5 +75,8 @@ Le journal Dalamud dit « Relevé écrit : … ».
 - [x] Détecter dans le chat les liens de tracker (ffxiv-eureka.com) — retenus ; suivi en direct : étape 5.
 - [x] Détecter les messages « pop » (position d'un NM) et poser le drapeau sur la carte du jeu.
 - [x] Annoncer les nouvelles FATE avec drapeau.
-- [ ] À valider en jeu : drapeau (coordonnées monde), noms de météo FR, textes des pops réels.
+- [x] Onglet Carte (étapes C1 à C4 du plan).
+- [ ] À valider en jeu : drapeau (coordonnées monde), noms de météo FR, textes des pops réels,
+  sens de la flèche (orientation), niveau élémentaire (`/xiveureka niveau`), lieux de prépa.
+- [ ] Tracker en direct (websocket de ffxiv-eureka.com) : statut des NM même sans les avoir vus tués.
 - Note : `/eureka` n'est jamais parvenue au plugin (aucun appel, aucune erreur) — d'où `/xiveureka`.

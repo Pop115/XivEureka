@@ -75,6 +75,9 @@ public sealed class CompagnonZone : IDisposable
 
     private ZoneEureka? ZoneCourante => Meteo.Zone(clientState.TerritoryType);
 
+    /// <summary>Les FATE vues finir dans cette instance, et quand (UTC) : pour le respawn des NM sur la carte.</summary>
+    public IReadOnlyDictionary<ushort, DateTime> FatesTerminees() => fates.Terminees;
+
     /// <summary>Les pops annoncés dans le chat depuis moins de dix minutes, pour la carte du plugin.</summary>
     public IReadOnlyList<PopAnnonce> PopsRecents()
     {

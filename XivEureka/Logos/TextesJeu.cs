@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
 
@@ -15,6 +17,7 @@ public sealed class TextesJeu(IDataManager donnees)
 {
     private readonly Dictionary<uint, TexteJeu> objets = [];
     private readonly Dictionary<uint, TexteJeu> actions = [];
+    private readonly Dictionary<uint, string> pnj = [];
 
     public TexteJeu Objet(uint id)
     {
@@ -32,6 +35,19 @@ public sealed class TextesJeu(IDataManager donnees)
         var description = donnees.GetExcelSheet<ActionTransient>().GetRowOrDefault(id)?.Description.ExtractText() ?? string.Empty;
         return actions[id] = new TexteJeu(nom, Raccourcir(nom), ligne?.Icon ?? 0u, description);
     }
+
+    /// <summary>Nom d'un PNJ ou monstre (feuille BNpcName), avec une majuscule : « shuck Pyros » → « Shuck Pyros ».</summary>
+    public string Pnj(uint id)
+    {
+        if (pnj.TryGetValue(id, out var nom)) return nom;
+        var brut = donnees.GetExcelSheet<BNpcName>().GetRowOrDefault(id)?.Singular.ExtractText();
+        return pnj[id] = string.IsNullOrEmpty(brut) ? $"Monstre {id}"
+            : char.ToUpper(brut[0], CultureInfo.CurrentCulture) + brut[1..];
+    }
+
+    /// <summary>« Éclat Logos d'apprenti non identifié » → « Éclat Logos d'apprenti ».</summary>
+    public static string SansNonIdentifie(string nom) =>
+        nom.EndsWith(" non identifié", StringComparison.Ordinal) ? nom[..^" non identifié".Length] : nom;
 
     /// <summary>
     /// « Évocation Logos : Bouclier » → « Bouclier » : le préfixe commun n'aide pas à distinguer

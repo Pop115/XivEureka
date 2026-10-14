@@ -56,12 +56,17 @@ public sealed class Plugin : IDalamudPlugin
         configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         catalogue = CatalogueLogos.Integre();
         compagnon = new CompagnonZone(configuration, ClientState, Framework, FateTable, ChatGui, ToastGui, Log, Sauver);
-        var logos = new OngletLogos(catalogue, new TextesJeu(DataManager), TextureProvider,
-            EtatCourant, () => stockEnDirect, Sauver);
+        var textes = new TextesJeu(DataManager);
+        var nomsMeteo = new NomsMeteo(DataManager);
+        var logos = new OngletLogos(catalogue, textes, TextureProvider, EtatCourant, () => stockEnDirect, Sauver);
         var carte = new OngletCarte(configuration, new LecteurCartes(DataManager),
             new LecteurEtatCarte(ClientState, ObjectTable, PartyList, FateTable, compagnon.PopsRecents),
-            new NomsMeteo(DataManager), TextureProvider, Sauver,
-            (territoire, map, position) => CarteJeu.Drapeau(territoire, map, position, ouvrir: false));
+            CatalogueNm.Integre(),
+            new NomsJeu(textes.Pnj, m => nomsMeteo[m], o => textes.Objet(o).Nom),
+            TextureProvider,
+            new SourcesCarte(compagnon.FatesTerminees, NiveauElementaire, EclatsUtiles,
+                (territoire, map, position) => CarteJeu.Drapeau(territoire, map, position, ouvrir: false)),
+            Sauver);
         fenetre = new FenetrePrincipale(logos, carte);
         fenetres.AddWindow(fenetre);
         fenetreReglages = new FenetreReglages(configuration, Sauver);
@@ -99,6 +104,34 @@ public sealed class Plugin : IDalamudPlugin
             ? configuration.Personnage(PlayerState.ContentId, PlayerState.CharacterName)
             : null;
 
+    /// <summary>Éclats Logos qui feraient avancer des actions pas encore apprises (vide sans stock lu).</summary>
+    private IReadOnlyDictionary<uint, int> EclatsUtiles()
+    {
+        var etat = EtatCourant();
+        return etat?.StockLuLe == null ? new Dictionary<uint, int>() : Fabrication.EclatsUtiles(catalogue, etat.Stock, etat.Apprises);
+    }
+
+    /// <summary>
+    /// Niveau élémentaire d'Eurêka : valeur de contenu n° 2 du joueur (recherche de l'étape 0, à
+    /// valider en jeu). Null si la valeur n'est pas un niveau plausible.
+    /// </summary>
+    private static unsafe int? NiveauElementaire()
+    {
+        var etat = FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.Instance();
+        if (etat == null) return null;
+        var niveau = (int)etat->GetContentValue(2);
+        return niveau is >= 1 and <= 60 ? niveau : null;
+    }
+
+    /// <summary>Développement : les valeurs de contenu 0 à 9 du joueur, pour vérifier que la n° 2 est le niveau élémentaire.</summary>
+    private static unsafe void AfficherValeursContenu()
+    {
+        var etat = FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.Instance();
+        if (etat == null) return;
+        var valeurs = Enumerable.Range(0, 10).Select(i => $"{i}={etat->GetContentValue((uint)i)}");
+        ChatGui.Print($"Valeurs de contenu : {string.Join(" ", valeurs)} (niveau élémentaire attendu en 2)", "Xiv Eurêka");
+    }
+
     private void Sauver() => PluginInterface.SavePluginConfig(configuration);
 
     private void BasculerFenetre() => fenetre.Toggle();
@@ -108,6 +141,11 @@ public sealed class Plugin : IDalamudPlugin
         if (arguments.Trim().StartsWith("rel", StringComparison.OrdinalIgnoreCase))
         {
             EcrireReleve(LecteurEclats.Fenetre);
+            return;
+        }
+        if (arguments.Trim().StartsWith("niv", StringComparison.OrdinalIgnoreCase))
+        {
+            AfficherValeursContenu();
             return;
         }
         if (arguments.Trim().StartsWith("carte", StringComparison.OrdinalIgnoreCase))

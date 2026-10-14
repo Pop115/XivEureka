@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -25,18 +26,28 @@ public sealed class SuiviFates
     public static bool EstFateLapin(byte regle) => regle == RegleCollecte;
 
     private readonly Dictionary<ushort, FateVue> enCours = [];
+    private readonly Dictionary<ushort, DateTime> terminees = [];
     private bool premierPassage = true;
 
     public IReadOnlyCollection<FateVue> EnCours => enCours.Values;
 
     /// <summary>
+    /// Les FATE vues finir dans cette instance (réussies ou non) et quand (UTC) : départ du délai de
+    /// réapparition du NM. Une FATE déjà finie à l'arrivée dans la zone n'y est pas.
+    /// </summary>
+    public IReadOnlyDictionary<ushort, DateTime> Terminees => terminees;
+
+    /// <summary>
     /// Les FATE apparues depuis le dernier appel. Au premier appel (arrivée dans la zone) on ne
     /// renvoie rien : celles déjà là ne sont pas des nouvelles.
     /// </summary>
-    public IReadOnlyList<FateVue> MettreAJour(IEnumerable<FateVue> fates)
+    public IReadOnlyList<FateVue> MettreAJour(IEnumerable<FateVue> fates, DateTime? maintenant = null)
     {
         var vues = fates.GroupBy(f => f.Id).ToDictionary(g => g.Key, g => g.First());
         var nouvelles = premierPassage ? [] : vues.Values.Where(f => !enCours.ContainsKey(f.Id)).ToList();
+        foreach (var finie in enCours.Keys.Where(id => !vues.ContainsKey(id)))
+            terminees[finie] = maintenant ?? DateTime.UtcNow;
+        foreach (var revenue in nouvelles) terminees.Remove(revenue.Id);
         enCours.Clear();
         foreach (var (id, f) in vues) enCours[id] = f;
         premierPassage = false;
@@ -47,6 +58,7 @@ public sealed class SuiviFates
     public void Reinitialiser()
     {
         enCours.Clear();
+        terminees.Clear();
         premierPassage = true;
     }
 

@@ -42,6 +42,29 @@ public static class Fabrication
         return new EtatAction(action, apprises.Contains(action.Action), recettes.Max(r => r.Possibles), plusProche, recettes);
     }
 
+    /// <summary>
+    /// Pour chaque éclat non identifié, combien d'actions pas encore apprises (et pas fabricables
+    /// tout de suite) il ferait avancer : il peut donner une mneme qui manque à leur recette la plus
+    /// proche. Sert à dire quels NM taper.
+    /// </summary>
+    public static Dictionary<uint, int> EclatsUtiles(CatalogueLogos catalogue, IReadOnlyDictionary<uint, int> stock,
+        IReadOnlySet<uint> apprises)
+    {
+        var utiles = new Dictionary<uint, int>();
+        foreach (var action in catalogue.Actions)
+        {
+            var etat = Action(action, stock, apprises);
+            if (etat.Apprise || etat.Possibles > 0) continue;
+            var manquantes = etat.PlusProche.Besoins
+                .Where(b => stock.GetValueOrDefault(b.Key) < b.Value)
+                .Select(b => b.Key)
+                .ToHashSet();
+            foreach (var eclat in catalogue.Eclats.Where(e => e.Mnemes.Any(manquantes.Contains)))
+                utiles[eclat.Objet] = utiles.GetValueOrDefault(eclat.Objet) + 1;
+        }
+        return utiles;
+    }
+
     /// <summary>Pour chaque mneme, combien d'actions pas encore apprises s'en servent.</summary>
     public static Dictionary<uint, int> Utilite(IEnumerable<ActionLogos> actions, IReadOnlySet<uint> apprises)
     {

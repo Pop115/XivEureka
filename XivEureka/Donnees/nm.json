@@ -1,0 +1,45 @@
+{
+ "source": "NM : ffxiv-eureka.com (niveau, élément, conditions, respawn ; relevé du 2026-10-14) et wiki consolegameswiki (coordonnées des FATE, logogrammes, objets rares). Lieux de prépa : approximatifs, relevés sur la carte communautaire de Pyros (Noranda La'luna, v20.2019.3.9). Numéros : feuilles BNpcName, Fate, Item du jeu. Météos : noms anglais des tranches de Meteo.cs.",
+ "zones": [
+  {
+   "territoire": 795,
+   "respawnMinutes": 120,
+   "nm": [
+    { "pnj": 7759, "fate": 1388, "niveau": 35, "element": "water", "x": 26.6, "y": 26.3, "eclat": 24009, "objets": [],
+      "prepa": { "pnj": 7776, "niveau": 40, "nuit": true, "lieux": [[30.5, 27.9], [28.3, 24.8]] } },
+    { "pnj": 7753, "fate": 1389, "niveau": 36, "element": "lightning", "x": 29.1, "y": 29.6, "eclat": 24011, "objets": [],
+      "prepa": { "pnj": 7772, "niveau": 41, "meteo": "Thunder", "lieux": [[28.0, 29.4], [23.7, 33.5]] } },
+    { "pnj": 7740, "fate": 1390, "niveau": 37, "element": "wind", "x": 31.9, "y": 32.0, "eclat": 24014, "objets": [],
+      "prepa": { "pnj": 7808, "niveau": 42, "lieux": [[32.4, 30.9]] } },
+    { "pnj": 7736, "fate": 1391, "niveau": 38, "element": "ice", "x": 23.7, "y": 37.3, "eclat": 24009, "objets": [14098],
+      "prepa": { "pnj": 7812, "niveau": 43, "lieux": [[21.0, 36.9]] } },
+    { "pnj": 7742, "fate": 1392, "niveau": 39, "element": "wind", "x": 19.3, "y": 28.1, "eclat": 24011, "objets": [], "meteo": "Umbral Wind",
+      "prepa": { "pnj": 7814, "niveau": 44, "lieux": [[16.6, 29.2]] } },
+    { "pnj": 7746, "fate": 1393, "niveau": 40, "element": "earth", "x": 17.9, "y": 14.3, "eclat": 24014, "objets": [],
+      "prepa": { "pnj": 7779, "niveau": 45, "nuit": true, "lieux": [[19.2, 14.1], [24.9, 20.8]] } },
+    { "pnj": 7754, "fate": 1394, "niveau": 41, "element": "lightning", "x": 10.2, "y": 14.0, "eclat": 24009, "objets": [],
+      "prepa": { "pnj": 7821, "niveau": 46, "lieux": [[11.0, 14.3]] } },
+    { "pnj": 7726, "fate": 1395, "niveau": 42, "element": "fire", "x": 12.8, "y": 11.5, "eclat": 24011, "objets": [],
+      "prepa": { "pnj": 7824, "niveau": 47, "lieux": [[15.1, 9.9]] } },
+    { "pnj": 7727, "fate": 1396, "niveau": 43, "element": "fire", "x": 15.4, "y": 6.6, "eclat": 24014, "objets": [],
+      "prepa": { "pnj": 7825, "niveau": 48, "lieux": [[15.8, 6.1]] } },
+    { "pnj": 7760, "fate": 1397, "niveau": 44, "element": "water", "x": 21.5, "y": 11.9, "eclat": 24009, "objets": [],
+      "prepa": { "pnj": 7830, "niveau": 49, "lieux": [[18.5, 8.6], [18.5, 11.5]] } },
+    { "pnj": 7748, "fate": 1398, "niveau": 45, "element": "earth", "x": 22.0, "y": 7.9, "eclat": 24011, "objets": [24285],
+      "prepa": { "pnj": 7832, "niveau": 50, "lieux": [[23.2, 8.6]] } },
+    { "pnj": 7756, "fate": 1399, "niveau": 46, "element": "lightning", "x": 27.0, "y": 9.1, "eclat": 24014, "objets": [], "meteo": "Thunder",
+      "prepa": { "pnj": 7836, "niveau": 51, "lieux": [[28.4, 9.4]] } },
+    { "pnj": 7750, "fate": 1400, "niveau": 47, "element": "earth", "x": 30.0, "y": 11.6, "eclat": 24009, "objets": [24000],
+      "prepa": { "pnj": 7837, "niveau": 52, "lieux": [[30.9, 10.3]] } },
+    { "pnj": 7729, "fate": 1401, "niveau": 48, "element": "fire", "x": 31.6, "y": 14.9, "eclat": 24011, "objets": [],
+      "prepa": { "pnj": 7841, "niveau": 53, "lieux": [[32.9, 15.4]] } },
+    { "pnj": 7763, "fate": 1402, "niveau": 49, "element": "water", "x": 11.0, "y": 34.0, "eclat": 24014, "objets": [24286],
+      "prepa": { "pnj": 7845, "niveau": 54, "lieux": [[9.5, 33.2]] } },
+    { "pnj": 7739, "fate": 1403, "niveau": 50, "element": "ice", "x": 23.9, "y": 30.0, "eclat": 24011, "objets": [24287], "meteo": "Blizzards",
+      "prepa": { "pnj": 7848, "niveau": 55, "lieux": [[16.8, 33.4], [17.4, 35.8]] } },
+    { "pnj": 7731, "fate": 1404, "niveau": 50, "element": "fire", "x": 35.5, "y": 6.1, "eclat": 24009, "objets": [23913, 24123], "meteo": "Heat Waves",
+      "prepa": { "pnj": 7846, "niveau": 55, "lieux": [[33.6, 8.3], [38.6, 16.9]] } }
+   ]
+  }
+ ]
+}
