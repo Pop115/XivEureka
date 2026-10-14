@@ -22,29 +22,9 @@ fortune ↔ actions Logos).
 La fenêtre du plugin devient « Xiv Eurêka » avec deux onglets : **Actions Logos** | **Carte**.
 L'onglet Carte montre la zone d'Eurêka où l'on est (ou celle choisie hors d'Eurêka).
 
-```
-┌ Xiv Eurêka ─────────────────────────────────────────────────────────────────┐
-│ [Actions Logos] [Carte]                                                     │
-│ Pyros · ET 17:01 · Vagues de chaleur → Orage dans 12 min → Blizzard → …     │
-├──────────────────────────────────────────────────┬──────────────────────────┤
-│ (texture de la carte du jeu, molette = zoom,     │ OÙ ALLER MAINTENANT      │
-│  glisser = déplacer)                             │ ① Skoll Nv50 ❄ blizzard   │
-│        ◆Penthesilea 50                           │   dans 20 min : prépa    │
-│   ◆Eldthurs 43   ⚑                               │   Pyros Shuck (14,33),   │
-│      ◆Lamebrix 45  ◆Dux 46 ⚡43min               │   loin, partir tôt  [→]  │
-│  ◆Lesath 42   ◆Iris 44  ✦FATE 62% 18min          │ ② FATE Glaukopis en      │
-│ ◆Aetolus 41  ◆Batym 40 🌙5min                     │   cours, 62 %      [→]  │
-│                    ⌂ Firing Chamber (Nv39)        │ ③ Ton niveau 41 : mobs   │
-│      ⌂ Northpoint                                │   41-43 à SW Ice Needles │
-│               ▲ toi  ● groupe                    │ ④ Logos : il te manque   │
-│   ◆Askalaphos 39 🌀160min  ◆Leucosia 35          │   des « Protecteurs » :  │
-│ ◆Ying-Yang 49   ◆Skoll 50   ◆Flauros 36          │   Flauros, Askalaphos…   │
-│      ░░ zone de prépa Skoll      ◆Sophist 37     │──────────────────────────│
-│              ◆Graffiacane 38                     │ Calques : ☑ NM ☑ prépa   │
-│ X 23.4 Y 30.1 (sous la souris)                   │ ☑ FATE ☑ pops chat       │
-│                                                  │ ☑ groupe ☐ mobs ☐ quêtes │
-└──────────────────────────────────────────────────┴──────────────────────────┘
-```
+Ébauche interactive (privée) : https://claude.ai/artifact/3cGtPaUKMKCseyV69GqAh5 — carte à
+gauche (NM cliquables, zone de prépa du NM choisi, éthérites, groupe, toi, drapeau, pop du chat),
+bandeau météo + tracker en haut, « Où aller maintenant » + fiche du NM + calques à droite.
 
 Survol d'un NM : fiche (niveau, élément, mob de prépa et où, condition météo/nuit et quand,
 logogramme lâché, statut tracker). Clic sur une ligne « Où aller » : centre la carte dessus ;
@@ -119,6 +99,11 @@ objectifs de quête. Noms affichés dans la langue du client via les feuilles (F
   d'éclats utiles. Aucune carte propre au plugin.
 
 ## 5. Tracker en jeu
+
+Un tracker ffxiv-eureka.com est **temporaire et lié à une instance** : quelqu'un le crée, le crie
+dans le chat, tout le monde le suit jusqu'à la fin de l'instance ou de son usage (ex. `C2Vsxk`).
+Donc pas d'identifiant à retenir d'une session à l'autre : le plugin prend le dernier crié dans
+la zone en cours, et l'oublie au changement de zone/instance.
 - Coller ou cliquer un lien `ffxiv-eureka.com/xxxx` dans le chat → le plugin le détecte (chat) et
   propose de le suivre.
 - Fenêtre « Tracker » : NM de la zone, statut (up/pop/respawn dans N min), heure d'Eorzéa et météo
