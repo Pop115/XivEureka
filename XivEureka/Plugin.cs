@@ -39,6 +39,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IToastGui ToastGui { get; private set; } = null!;
     [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] internal static IPartyList PartyList { get; private set; } = null!;
+    [PluginService] internal static IDtrBar DtrBar { get; private set; } = null!;
 
     private const string Command = "/xiveureka";
     private const string ManipulatorWindow = "EurekaMagiciteItemSynthesis";
@@ -51,6 +52,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly SettingsWindow settingsWindow;
     private readonly ZoneCompanion companion;
     private readonly TrackerSession tracker;
+    private readonly ServerInfoEntry serverInfoEntry;
     private DateTime nextRead = DateTime.MinValue;
     private bool liveStock;
 
@@ -79,6 +81,7 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(mainWindow);
         settingsWindow = new SettingsWindow(configuration, Save);
         windows.AddWindow(settingsWindow);
+        serverInfoEntry = new ServerInfoEntry(configuration, DtrBar, ClientState, Framework, weatherNames, mainWindow);
 
         CommandManager.AddHandler(Command, new CommandInfo(OnCommand)
         {
@@ -104,6 +107,7 @@ public sealed class Plugin : IDalamudPlugin
         Framework.Update -= OnFrameworkUpdate;
         companion.TrackerShouted -= tracker.OnTrackerShouted;
         companion.FateSucceeded -= tracker.OnFateSucceeded;
+        serverInfoEntry.Dispose();
         tracker.Dispose();
         companion.Dispose();
         CommandManager.RemoveHandler(Command);

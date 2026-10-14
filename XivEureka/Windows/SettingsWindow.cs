@@ -22,6 +22,9 @@ public sealed class SettingsWindow : Window
     public override void Draw()
     {
         var c = configuration;
+        Checkbox("« Eurêka » dans la barre d'infos serveur (clic : ouvrir)", () => c.ServerInfoEntry, v => c.ServerInfoEntry = v);
+
+        ImGui.Spacing();
         ImGui.TextDisabled("Actions Logos");
         Checkbox("Ouvrir avec le manipulateur Logos", () => c.OpenWithManipulator, v => c.OpenWithManipulator = v);
 

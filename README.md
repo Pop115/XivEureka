@@ -21,6 +21,8 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   demi-heure avec la prépa, NM à ton niveau, NM qui lâchent les éclats Logos qui te manquent), la
   fiche du NM choisi et les calques. Molette : zoom ; glisser : déplacer ; clic : fiche ; clic
   droit : drapeau du jeu. Hors d'Eurêka : la dernière zone visitée, au choix.
+- **Barre d'infos serveur** : une entrée courte « Eurêka » ; clic : la carte à Eurêka, les actions
+  Logos ailleurs ; clic droit : les actions Logos ; infobulle : heure d'Eorzéa et météo.
 - **FATE** (zones d'Eurêka) : chaque nouvelle FATE de NM est annoncée par un toast du jeu et un message
   avec lien de carte, et le drapeau de la carte du jeu est posé dessus (celles déjà là à l'arrivée
   ne sont pas annoncées). Les FATE lapin sont ignorées (on ne les fait pas) : dans la feuille Fate,

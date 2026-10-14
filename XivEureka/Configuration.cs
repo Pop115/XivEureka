@@ -57,6 +57,9 @@ public sealed class Configuration : IPluginConfiguration
     /// <summary>One state per character (ContentId), for players with several in Eureka.</summary>
     public Dictionary<ulong, CharacterState> Characters { get; set; } = [];
 
+    /// <summary>Show the short "Eurêka" entry in the server info bar (click opens the plugin).</summary>
+    public bool ServerInfoEntry { get; set; } = true;
+
     /// <summary>Open the Logos window when the Logos manipulator opens in game.</summary>
     public bool OpenWithManipulator { get; set; } = true;
 
