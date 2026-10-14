@@ -51,8 +51,7 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   respawn de ffxiv-eureka.com (les météos y sont des numéros de la feuille Weather), coordonnées
   des FATE et logogrammes du wiki, lieux de prépa **approximatifs** (carte communautaire).
   Anémos, Pagos, Hydatos : à ajouter quand on y va.
-- **Niveau élémentaire** : `PlayerState.GetContentValue(2)`, à confirmer en jeu avec
-  `/xiveureka niveau`.
+- **Niveau élémentaire** : `PlayerState.GetContentValue(2)` (vu juste en jeu le 2026-10-15 : 45).
 
 ## Conventions
 
@@ -86,7 +85,8 @@ Le journal Dalamud dit « Relevé écrit : … ».
 - [x] Annoncer les nouvelles FATE avec drapeau.
 - [x] Onglet Carte (étapes C1 à C4 du plan).
 - [ ] À valider en jeu : drapeau (coordonnées monde), noms de météo FR, textes des pops réels,
-  sens de la flèche (orientation), niveau élémentaire (`/xiveureka niveau`), lieux de prépa.
+  sens de la flèche (orientation), lieux de prépa, signalement des morts sur le tracker créé.
+- [x] Vu en jeu le 2026-10-15 : onglet Carte, tracker créé et suivi, niveau élémentaire.
 - [x] Tracker en direct : voir « Tracker » ci-dessous.
 
 ## Tracker ffxiv-eureka.com

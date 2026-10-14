@@ -45,6 +45,9 @@ public sealed class MapTab
     private static readonly uint PopRed = Color(1f, 0.3f, 0.3f);
     private static readonly uint MeCream = Color(1f, 0.96f, 0.76f);
     private static readonly uint AreaInk = Color(0.33f, 0.25f, 0.13f);
+    private static readonly uint AreaInkFaint = Color(0.33f, 0.25f, 0.13f, 0.55f);
+    private static readonly uint OpenGreen = Color(0.18f, 0.55f, 0.32f);
+    private static readonly uint ComingAmber = Color(0.72f, 0.47f, 0.08f);
     private static readonly uint Parchment = Color(0.94f, 0.89f, 0.73f);
     private static readonly uint NmFill = Color(0.11f, 0.11f, 0.13f);
     private static readonly uint RespawnFill = Color(0.36f, 0.35f, 0.39f);
@@ -275,16 +278,22 @@ public sealed class MapTab
         var layers = configuration.Layers;
         var g = map.Geometry;
         var scale = Math.Clamp(zoom / fit, 1f, 1.6f);
+        var now = DateTimeOffset.UtcNow;
+        var nmRadius = 13 * scale;
+        var labels = new LabelPlacer();
 
-        if (layers.AreaNames)
-            foreach (var p in map.Points.Where(p => p.IsAreaName))
-                CenteredText(draw, Screen(p.Pixel), p.Name!, AreaInk, Parchment);
+        // Obstacles first, so that labels go around the markers rather than over them.
+        if (layers.Nms)
+            foreach (var s in statuses)
+                labels.AddObstacle(ScreenRect.Centered(Screen(g.PixelFromCoordinates(s.Nm.Position)), new Vector2((nmRadius + 3) * 2)));
+        if (state.Me is { } meObstacle) labels.AddObstacle(ScreenRect.Centered(Screen(g.Pixel(meObstacle)), new Vector2(28)));
 
         if (layers.Points)
             foreach (var p in map.Points.Where(p => !p.IsAreaName))
             {
                 var s = Screen(p.Pixel);
                 Icon(draw, p.Icon, s, 22 * scale);
+                labels.AddObstacle(ScreenRect.Centered(s, new Vector2(22 * scale)));
                 if (p.Name != null && Near(mouse, s, 12 * scale)) ImGui.SetTooltip(p.Name);
             }
 
@@ -296,7 +305,9 @@ public sealed class MapTab
                 var radius = PrepRadius * 50 * g.Scale / 100f * zoom;
                 draw.AddCircleFilled(s, radius, (PrepPurple & 0x00FFFFFF) | 0x38000000);
                 draw.AddCircle(s, radius, PrepPurple, 0, 2);
-                CenteredText(draw, s + new Vector2(0, radius + 8), $"prépa : {names.Npc(chosen.Nm.Prep.Npc)}", PrepPurple, Parchment);
+                var text = $"prépa : {names.Npc(chosen.Nm.Prep.Npc)}";
+                var rect = labels.PlaceAround(s, radius, ImGui.CalcTextSize(text));
+                OutlinedText(draw, rect.Min, text, PrepPurple, Parchment);
             }
 
         if (layers.Fates)
@@ -305,13 +316,26 @@ public sealed class MapTab
                 // FATE without an NM entry (zone without data): drawn as on the game map.
                 var s = Screen(g.Pixel(f.Position));
                 Icon(draw, f.Icon, s, 26 * scale);
-                CenteredText(draw, s + new Vector2(0, 16 * scale), FateLabel(f), White, Black);
+                var text = FateLabel(f);
+                var rect = labels.PlaceAround(s, 13 * scale, ImGui.CalcTextSize(text));
+                OutlinedText(draw, rect.Min, text, White, Black);
             }
 
-        var now = DateTimeOffset.UtcNow;
         if (layers.Nms)
-            foreach (var s in statuses)
-                DrawNm(draw, s, Screen(g.PixelFromCoordinates(s.Nm.Position)), mouse, now, scale);
+        {
+            foreach (var s in statuses) DrawNmMarker(draw, s, Screen(g.PixelFromCoordinates(s.Nm.Position)), now, nmRadius);
+            // The chosen NM's label is placed first: it gets the best spot.
+            foreach (var s in statuses.OrderByDescending(s => s.Nm.Npc == chosenNm))
+                DrawNmLabel(draw, labels, s, Screen(g.PixelFromCoordinates(s.Nm.Position)), now, nmRadius);
+        }
+
+        // Area names last and only where there is room: NM labels matter more.
+        if (layers.AreaNames)
+            foreach (var p in map.Points.Where(p => p.IsAreaName))
+            {
+                var rect = ScreenRect.Centered(Screen(p.Pixel), ImGui.CalcTextSize(p.Name!));
+                if (labels.TryPlace(rect)) draw.AddText(rect.Min, AreaInkFaint, p.Name!);
+            }
 
         if (layers.Pops)
             foreach (var pop in state.Pops)
@@ -319,10 +343,12 @@ public sealed class MapTab
                 var s = Screen(g.Pixel(pop.Position));
                 var pulse = 10 + (4 * MathF.Sin((float)ImGui.GetTime() * 4));
                 draw.AddCircle(s, pulse, PopRed, 0, 3);
-                CenteredText(draw, s - new Vector2(0, 26), $"{pop.Title} · il y a {Formatting.Duration(DateTime.UtcNow - pop.When)}", White, Black);
+                var text = $"{pop.Title} · il y a {Formatting.Duration(DateTime.UtcNow - pop.When)}";
+                var rect = labels.PlaceAround(s, 14, ImGui.CalcTextSize(text));
+                OutlinedText(draw, rect.Min, text, White, Black);
             }
 
-        if (state.Flag is { } flag) Icon(draw, FlagIcon, Screen(g.Pixel(flag)), 24 * scale);
+        if (state.Flag is { } flag) FlagPin(draw, Screen(g.Pixel(flag)), 22 * scale);
 
         if (layers.Party)
             foreach (var member in state.Party)
@@ -342,7 +368,12 @@ public sealed class MapTab
             draw.AddText(origin + new Vector2(11, size.Y - 24), White, text);
             if (ImGui.IsMouseClicked(ImGuiMouseButton.Right)) ImGui.OpenPopup("##map-menu");
             if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && ImGui.GetIO().MouseDragMaxDistanceSqr[0] < 16)
-                chosenNm = statuses.FirstOrDefault(s => Near(mouse, Screen(g.PixelFromCoordinates(s.Nm.Position)), 16 * scale))?.Nm.Npc ?? chosenNm;
+                chosenNm = statuses.FirstOrDefault(s => Near(mouse, Screen(g.PixelFromCoordinates(s.Nm.Position)), nmRadius + 3))?.Nm.Npc ?? chosenNm;
+            if (layers.Nms && statuses.FirstOrDefault(s => Near(mouse, Screen(g.PixelFromCoordinates(s.Nm.Position)), nmRadius + 2)) is { } under)
+            {
+                using var tooltip = ImRaii.Tooltip();
+                DrawNmSheet(under, now, buttons: false);
+            }
         }
 
         using (var menu = ImRaii.Popup("##map-menu"))
@@ -359,9 +390,9 @@ public sealed class MapTab
         if (ImGui.SmallButton(followMe ? "Suit ma position" : "Centrer sur moi")) followMe = true;
     }
 
-    private void DrawNm(ImDrawListPtr draw, NmStatus s, Vector2 p, Vector2 mouse, DateTimeOffset now, float scale)
+    /// <summary>The NM's disc: fill = state (FATE, respawning, idle), ring = element, level inside; cream halo when chosen.</summary>
+    private void DrawNmMarker(ImDrawListPtr draw, NmStatus s, Vector2 p, DateTimeOffset now, float radius)
     {
-        var radius = 13 * scale;
         var element = Elements.GetValueOrDefault(s.Nm.Element, (Color: White, Name: s.Nm.Element));
         var fill = s.Fate != null ? FateRed : s.IsRespawning(now) ? RespawnFill : NmFill;
         if (s.Fate != null) draw.AddCircleFilled(p, radius + 6, (FateRed & 0x00FFFFFF) | 0x60000000);
@@ -370,28 +401,38 @@ public sealed class MapTab
         draw.AddCircle(p, radius, element.Color, 0, 3);
         var level = s.Nm.Level.ToString();
         draw.AddText(p - (ImGui.CalcTextSize(level) / 2), White, level);
-
-        CenteredText(draw, p + new Vector2(0, radius + 8), names.Npc(s.Nm.Npc), AreaInk, Parchment);
-        if (Badge(s, now) is { } badge)
-            CenteredText(draw, p + new Vector2(0, radius + 22), badge, White, Black);
-
-        if (Near(mouse, p, radius + 2) && ImGui.IsWindowHovered())
-        {
-            using var tooltip = ImRaii.Tooltip();
-            DrawNmSheet(s, now, buttons: false);
-        }
     }
 
-    /// <summary>The small text under the NM's name: FATE, respawn, prepped, or condition to come.</summary>
-    private string? Badge(NmStatus s, DateTimeOffset now)
+    /// <summary>Name, and below it the state as a colored pill, placed where it overlaps nothing.</summary>
+    private void DrawNmLabel(ImDrawListPtr draw, LabelPlacer labels, NmStatus s, Vector2 p, DateTimeOffset now, float radius)
     {
-        if (s.Fate is { } f) return FateLabel(f);
-        if (s.IsRespawning(now)) return $"respawn ≥ {Formatting.Duration(s.RespawnNotBefore!.Value - now)}";
-        if (s.Prepped) return "préparé";
+        var name = names.Npc(s.Nm.Npc);
+        var nameSize = ImGui.CalcTextSize(name);
+        var badge = Badge(s, now);
+        var badgeSize = badge is { } b ? ImGui.CalcTextSize(b.Text) + new Vector2(8, 2) : Vector2.Zero;
+        var block = new Vector2(Math.Max(nameSize.X, badgeSize.X), nameSize.Y + (badge != null ? badgeSize.Y + 2 : 0));
+        var rect = labels.PlaceAround(p, radius + 2, block);
+
+        var middle = (rect.Min.X + rect.Max.X) / 2;
+        OutlinedText(draw, new Vector2(middle - (nameSize.X / 2), rect.Min.Y), name, s.Nm.Npc == chosenNm ? Black : AreaInk, Parchment);
+        if (badge is not { } pill) return;
+        var pillMin = new Vector2(middle - (badgeSize.X / 2), rect.Min.Y + nameSize.Y + 2);
+        draw.AddRectFilled(pillMin, pillMin + badgeSize, pill.Color, 4);
+        draw.AddText(pillMin + new Vector2(4, 1), White, pill.Text);
+    }
+
+    /// <summary>The state under the NM's name, with its pill color: FATE, respawn, prepped, or condition open / to come.</summary>
+    private (string Text, uint Color)? Badge(NmStatus s, DateTimeOffset now)
+    {
+        if (s.Fate is { } f) return (FateLabel(f), FateRed);
+        if (s.IsRespawning(now)) return ($"respawn ≥ {Formatting.Duration(s.RespawnNotBefore!.Value - now)}", RespawnFill);
+        if (s.Prepped) return ("préparé", PrepPurple);
         if (s.Wait is not { } window) return null;
         var condition = s.NmWindow != null ? s.Nm.Condition : s.Nm.Prep.Condition;
         var name = condition.Weather is { } w ? names.Weather(w) : "nuit";
-        return window.IsOpen(now) ? $"{name} en cours" : $"{name} dans {Formatting.Duration(window.Start - now)}";
+        return window.IsOpen(now)
+            ? ($"{name} en cours", OpenGreen)
+            : ($"{name} dans {Formatting.Duration(window.Start - now)}", ComingAmber);
     }
 
     private static string FateLabel(MapFate f) =>
@@ -489,7 +530,7 @@ public sealed class MapTab
         ImGui.TextUnformatted("Condition : " + ConditionText(s, now));
         var drops = new[] { nm.Shard }.Concat(nm.Items).Select(i => GameTexts.WithoutUnidentified(names.Item(i)));
         ImGui.TextUnformatted("Lâche : " + string.Join(", ", drops));
-        ImGui.TextUnformatted("État : " + (Badge(s, now) is { } badge ? badge
+        ImGui.TextUnformatted("État : " + (Badge(s, now) is { } badge ? badge.Text
             : s.RespawnNotBefore != null ? "réapparu (2 h passées)" : "inconnu (pas vu tué dans cette instance)"));
         ImGui.PopTextWrapPos();
 
@@ -544,18 +585,28 @@ public sealed class MapTab
 
     private void Icon(ImDrawListPtr draw, uint icon, Vector2 iconCenter, float size)
     {
-        if (icon == 0 || !textures.TryGetFromGameIcon(new GameIconLookup(icon), out var shared)
-                      || !shared.TryGetWrap(out var image, out _)) return;
+        if (IconTexture(icon) is not { } image) return;
         var half = new Vector2(size / 2);
-        draw.AddImage(image.Handle, iconCenter - half, iconCenter + half);
+        draw.AddImage(image, iconCenter - half, iconCenter + half);
     }
 
-    private static void CenteredText(ImDrawListPtr draw, Vector2 textCenter, string text, uint color, uint outline)
+    private ImTextureID? IconTexture(uint icon) =>
+        icon != 0 && textures.TryGetFromGameIcon(new GameIconLookup(icon), out var shared) && shared.TryGetWrap(out var image, out _)
+            ? image.Handle : null;
+
+    private static void OutlinedText(ImDrawListPtr draw, Vector2 topLeft, string text, uint color, uint outline)
     {
-        var p = textCenter - (ImGui.CalcTextSize(text) / 2);
         foreach (var d in new[] { new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1), new Vector2(0, 1) })
-            draw.AddText(p + d, outline, text);
-        draw.AddText(p, color, text);
+            draw.AddText(topLeft + d, outline, text);
+        draw.AddText(topLeft, color, text);
+    }
+
+    /// <summary>The game flag as a pin standing on its point, so it never covers what is there.</summary>
+    private void FlagPin(ImDrawListPtr draw, Vector2 point, float size)
+    {
+        draw.AddCircleFilled(point, 3, Black);
+        if (IconTexture(FlagIcon) is not { } image) return;
+        draw.AddImage(image, point + new Vector2(-size * 0.2f, -size), point + new Vector2(size * 0.8f, 0));
     }
 
     private static bool Near(Vector2 a, Vector2 b, float radius) => Vector2.DistanceSquared(a, b) <= radius * radius;
