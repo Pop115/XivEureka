@@ -1,6 +1,6 @@
 # Xiv Eurêka
 
-Plugin Dalamud **privé** (jamais publié, dépôt git local) : un compagnon pour Eurêka, branché sur le
+Plugin Dalamud : un compagnon pour Eurêka, branché sur le
 jeu. Il grandit au fil des besoins.
 
 ## Ce qu'il fait
