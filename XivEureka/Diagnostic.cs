@@ -17,9 +17,10 @@ public static unsafe class Diagnostic
     private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
     /// <summary>Writes the capture of a game window (its values) and of the known Logos arrays.</summary>
-    public static string Write(string configFolder, string name, AtkUnitBase* window)
+    public static string Write(string configFolder, string name, AtkUnitBase* window, IReadOnlyDictionary<string, object>? extra = null)
     {
         var capture = new Dictionary<string, object> { ["date"] = DateTime.Now.ToString("s"), ["window"] = name };
+        if (extra != null) foreach (var (key, value) in extra) capture[key] = value;
         if (window != null)
         {
             var values = new List<string>();
@@ -33,9 +34,8 @@ public static unsafe class Diagnostic
             var a = arrays->GetNumberArrayData(index);
             capture[$"NumberArray {index}"] = a == null || a->IntArray == null ? "missing" : a->Span.ToArray();
         }
-        var folder = Path.Combine(configFolder, "releves");
-        Directory.CreateDirectory(folder);
-        var path = Path.Combine(folder, $"{name}.json");
+        var path = Path.Combine(configFolder, "releves", $"{name}.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, JsonSerializer.Serialize(capture, Indented));
         return path;
     }

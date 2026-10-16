@@ -52,8 +52,15 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   quantité, numéro d'objet, ligne EurekaMagiciteItem (relevé du 2026-10-11, test sur ce relevé).
 - **Apprises** : fenêtre `EurekaMagiaActionNotebook` ; ses 56 premières valeurs sont, pour chaque
   action, son numéro si elle est apprise, 0 sinon (relevé du 2026-10-11, test sur ce relevé).
-  Une action apprise au mélangeur est ajoutée tout de suite grâce au message système LogMessage
-  9070 (« Vous avez découvert l'action Logos “…” »), dont le seul paramètre est le nom de l'action.
+- **Mélangeur** : fenêtre `EurekaMagiciteItemSynthesis` (relevé du 2026-10-16, tests sur ce relevé).
+  Valeur 0 = état (2 = « Extraction réussie. » affiché), valeurs 15 à 20 = numéros d'objet des 6
+  emplacements (0 = vide), valeur 27 = numéro dans le journal de l'action obtenue. Le jeu retire un
+  mneme de la liste des éclats dès qu'il est posé, et vide les emplacements quand il est dépensé :
+  stock = liste + mnemes posés. L'action affichée en résultat est marquée apprise aussitôt (le
+  message système 9070, « Vous avez découvert l'action Logos “…” », sert de secours).
+  Logique dans `LogosTracker`, sans rien du jeu : scénarios par persona (`LogosScenarioTests`, sur
+  un faux jeu qui écrit les fenêtres au format réel) et sessions randomisées à graine fixe
+  (`LogosRandomTests`).
 - **Recettes** : le jeu ne les a pas (mélange résolu par le serveur). `XivEureka/Data/logos.json`,
   extrait de ffxiv-eureka.com et recoupé avec Logogram Helper (55/56 identiques ; pour Restauration
   le site a une recette à 3 mnemes de plus, gardée).

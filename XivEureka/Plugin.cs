@@ -43,7 +43,8 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IDtrBar DtrBar { get; private set; } = null!;
 
     private const string Command = "/xiveureka";
-    private const string ManipulatorWindow = "EurekaMagiciteItemSynthesis";
+    private const string ManipulatorWindow = ManipulatorReader.Window;
+    private const string LogosAetherWindow = "EurekaMagiciteItemAtherList";
     private static readonly TimeSpan ReadInterval = TimeSpan.FromMilliseconds(500);
 
     private readonly Configuration configuration;
@@ -55,6 +56,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly ZoneCompanion companion;
     private readonly TrackerSession tracker;
     private readonly ServerInfoEntry serverInfoEntry;
+    private readonly LogosTracker logosTracker;
     private DateTime nextRead = DateTime.MinValue;
     private bool liveStock;
 
@@ -62,6 +64,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         configuration = LoadConfiguration();
         catalog = LogosCatalog.Embedded();
+        logosTracker = new LogosTracker(catalog);
         companion = new ZoneCompanion(configuration, ClientState, Framework, FateTable, ChatGui, ToastGui, Log, Save);
         var nmCatalog = NmCatalog.Embedded();
         tracker = new TrackerSession(configuration, ClientState, ObjectTable, Framework, ChatGui, Log, nmCatalog, Save);
@@ -195,6 +198,8 @@ public sealed class Plugin : IDalamudPlugin
         if (argument.StartsWith("rel", StringComparison.OrdinalIgnoreCase))
         {
             WriteCapture(ShardReader.Window);
+            WriteCapture(ManipulatorWindow);
+            WriteCapture(LogosAetherWindow);
             return;
         }
         if (argument.StartsWith("niv", StringComparison.OrdinalIgnoreCase))
@@ -211,8 +216,9 @@ public sealed class Plugin : IDalamudPlugin
     }
 
     /// <summary>
-    /// Twice a second: if the shard window is open, read the stock again and save it when it
-    /// changed. So the plugin window stays right even away from the manipulator.
+    /// Twice a second: what the shard list, the manipulator and the notebook show goes to the
+    /// <see cref="LogosTracker"/>, saved when it changed. So the plugin window stays right even away
+    /// from the manipulator.
     /// </summary>
     private void OnFrameworkUpdate(IFramework framework)
     {
@@ -222,30 +228,11 @@ public sealed class Plugin : IDalamudPlugin
         var state = CurrentCharacter();
         if (state == null) return;
         liveStock = ShardReader.IsWindowOpen(GameGui.GetAddonByName(ShardReader.Window, 1).Address);
-        if (liveStock) ReadStock(state);
-        ReadLearned(state);
-    }
-
-    private void ReadStock(CharacterState state)
-    {
-        var stock = ShardReader.Read();
-        if (stock == null) return;
-        var changed = stock.Count != state.Stock.Count || stock.Any(s => state.Stock.GetValueOrDefault(s.Key, -1) != s.Value);
-        if (!changed && state.StockReadAt != null) return;
-        state.Stock = stock;
-        state.StockReadAt = DateTime.Now;
-        Save();
-    }
-
-    /// <summary>The Logos action notebook is authoritative: it replaces what was ticked by hand.</summary>
-    private void ReadLearned(CharacterState state)
-    {
-        var learned = NotebookReader.Read(GameGui.GetAddonByName(NotebookReader.Window, 1).Address, catalog);
-        if (learned == null) return;
-        if (learned.SetEquals(state.Learned) && state.LearnedReadAt != null) return;
-        state.Learned = learned;
-        state.LearnedReadAt = DateTime.Now;
-        Save();
+        var snapshot = new LogosSnapshot(
+            liveStock ? ShardReader.Read() : null,
+            ManipulatorReader.Read(GameGui.GetAddonByName(ManipulatorReader.Window, 1).Address),
+            NotebookReader.Read(GameGui.GetAddonByName(NotebookReader.Window, 1).Address, catalog));
+        if (logosTracker.Update(state, snapshot, DateTime.Now)) Save();
     }
 
     /// <summary>
