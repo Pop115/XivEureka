@@ -5,7 +5,7 @@
     <Author>Pop115</Author>
     <Name>Xiv Eurêka</Name>
     <Punchline>Eureka companion: Logos shards and actions, NM map, live tracker.</Punchline>
-    <Description>Private plugin. Reads the Logos mnemes from the game and shows the craftable Logos actions; Eureka map with NMs, prep areas and suggestions; follows the ffxiv-eureka.com tracker of the instance.</Description>
+    <Description>Reads the Logos mnemes from the game and shows the craftable Logos actions; Eureka map with NMs, prep areas and suggestions; follows the ffxiv-eureka.com tracker of the instance.</Description>
     <Tags>eureka;logos</Tags>
     <Nullable>enable</Nullable>
   </PropertyGroup>

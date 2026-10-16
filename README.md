@@ -3,6 +3,16 @@
 Plugin Dalamud : un compagnon pour Eurêka, branché sur le
 jeu. Il grandit au fil des besoins.
 
+## Installer
+
+`/xlsettings` → Experimental → Custom Plugin Repositories, ajouter
+`https://github.com/Pop115/XivEureka/releases/latest/download/repo.json`, enregistrer, puis
+installer « Xiv Eurêka » depuis `/xlplugins`. Textes en jeu en français.
+
+**Publier une version** : `git tag v0.1.0 && git push origin v0.1.0`. La CI GitHub
+(`.github/workflows/build.yml`) construit, teste et publie une release avec `latest.zip` et
+`repo.json` ; Dalamud propose alors la mise à jour.
+
 ## Ce qu'il fait
 
 Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlplugins`) à deux onglets :
