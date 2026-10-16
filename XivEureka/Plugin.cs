@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
+using Dalamud.Game.Chat;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
@@ -47,6 +48,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private readonly Configuration configuration;
     private readonly LogosCatalog catalog;
+    private readonly GameTexts texts;
     private readonly WindowSystem windows = new("XivEureka");
     private readonly MainWindow mainWindow;
     private readonly SettingsWindow settingsWindow;
@@ -66,7 +68,7 @@ public sealed class Plugin : IDalamudPlugin
         companion.TrackerShouted += tracker.OnTrackerShouted;
         companion.FateSucceeded += tracker.OnFateSucceeded;
 
-        var texts = new GameTexts(DataManager);
+        texts = new GameTexts(DataManager);
         var weatherNames = new WeatherNames(DataManager);
         var logosTab = new LogosTab(catalog, texts, TextureProvider, CurrentCharacter, () => liveStock, Save);
         var mapTab = new MapTab(configuration, new MapReader(DataManager),
@@ -89,6 +91,7 @@ public sealed class Plugin : IDalamudPlugin
         });
 
         Framework.Update += OnFrameworkUpdate;
+        ChatGui.LogMessage += OnLogMessage;
         AddonLifecycle.RegisterListener(AddonEvent.PostSetup, ManipulatorWindow, OnManipulatorOpened);
         AddonLifecycle.RegisterListener(AddonEvent.PostSetup, OnWindowOpened);
 
@@ -105,6 +108,7 @@ public sealed class Plugin : IDalamudPlugin
         AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, ManipulatorWindow, OnManipulatorOpened);
         AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, OnWindowOpened);
         Framework.Update -= OnFrameworkUpdate;
+        ChatGui.LogMessage -= OnLogMessage;
         companion.TrackerShouted -= tracker.OnTrackerShouted;
         companion.FateSucceeded -= tracker.OnFateSucceeded;
         serverInfoEntry.Dispose();
@@ -242,6 +246,26 @@ public sealed class Plugin : IDalamudPlugin
         state.Learned = learned;
         state.LearnedReadAt = DateTime.Now;
         Save();
+    }
+
+    /// <summary>
+    /// An action just learned at the manipulator is added at once, without waiting for the
+    /// notebook to be opened again (which stays authoritative).
+    /// </summary>
+    private void OnLogMessage(ILogMessage message)
+    {
+        if (message.LogMessageId != LearnedMessage.Id) return;
+        var state = CurrentCharacter();
+        if (state == null) return;
+        var names = catalog.Actions.Select(a => (a.Action, texts.Action(a.Action).Name));
+        for (var i = 0; i < message.ParameterCount; i++)
+        {
+            if (!message.TryGetStringParameter(i, out var text)) continue;
+            if (LearnedMessage.Match(text.ExtractText(), names) is not { } action) continue;
+            if (state.Learned.Add(action)) Save();
+            return;
+        }
+        Log.Warning("Learned Logos action not recognised: {Message}", message.FormatLogMessageForDebugging());
     }
 
     private void OnManipulatorOpened(AddonEvent type, AddonArgs args)

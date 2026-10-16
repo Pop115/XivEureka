@@ -52,6 +52,8 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   quantité, numéro d'objet, ligne EurekaMagiciteItem (relevé du 2026-10-11, test sur ce relevé).
 - **Apprises** : fenêtre `EurekaMagiaActionNotebook` ; ses 56 premières valeurs sont, pour chaque
   action, son numéro si elle est apprise, 0 sinon (relevé du 2026-10-11, test sur ce relevé).
+  Une action apprise au mélangeur est ajoutée tout de suite grâce au message système LogMessage
+  9070 (« Vous avez découvert l'action Logos “…” »), dont le seul paramètre est le nom de l'action.
 - **Recettes** : le jeu ne les a pas (mélange résolu par le serveur). `XivEureka/Data/logos.json`,
   extrait de ffxiv-eureka.com et recoupé avec Logogram Helper (55/56 identiques ; pour Restauration
   le site a une recette à 3 mnemes de plus, gardée).

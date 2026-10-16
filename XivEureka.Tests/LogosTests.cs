@@ -160,3 +160,34 @@ public class NotebookReaderTests
         Assert.Null(NotebookReader.Decode(Enumerable.Repeat(99L, 56).ToList(), catalog));
     }
 }
+
+public class LearnedMessageTests
+{
+    // French names from the Action sheet (client of 2026-10-16).
+    private static readonly (uint, string)[] Actions =
+    [
+        (12958, "Mémoire d'un prêtre guerrier"),
+        (12974, "Évocation Logos : Méga Paralysie"),
+        (12989, "Évocation Logos : Soin"),
+    ];
+
+    [Fact]
+    public void Matches_the_full_name_ignoring_case_and_quotes()
+    {
+        Assert.Equal(12974u, LearnedMessage.Match("“Évocation Logos : méga paralysie”", Actions));
+        Assert.Equal(12958u, LearnedMessage.Match("Mémoire d'un prêtre guerrier", Actions));
+    }
+
+    [Fact]
+    public void Matches_the_short_name()
+    {
+        Assert.Equal(12989u, LearnedMessage.Match("Soin", Actions));
+    }
+
+    [Fact]
+    public void Unknown_names_match_nothing()
+    {
+        Assert.Null(LearnedMessage.Match("Soin X", Actions));
+        Assert.Null(LearnedMessage.Match("", Actions));
+    }
+}
