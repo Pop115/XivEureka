@@ -118,7 +118,7 @@ public class LogosRandomTests
     // ---------- whole sessions ----------
 
     /// <summary>
-    /// A random session at the manipulator: open, place, take back, place a whole recipe, extract,
+    /// A random session at the manipulator: loot and appraise shards, open, place, take back, place a whole recipe, extract,
     /// go through "Remplacer", dismiss, close, glance at the notebook. After every tick:
     /// the plugin's stock is what the character really owns (shard list + placed), it never
     /// believes an action learned that is not, an action is learned as soon as its result shows,
@@ -176,7 +176,7 @@ public class LogosRandomTests
                         && x.Recipe.GroupBy(i => i).All(g => game.ShardList.GetValueOrDefault(g.Key) >= g.Count()))
             .ToList();
         var matches = Catalog.Actions.Any(a => a.Recipes.Any(r => r.Order().SequenceEqual(game.Slots.Order())));
-        switch (rng.Next(7))
+        switch (rng.Next(8))
         {
             case 0 when game.Slots.Count < 6 && game.ShardList.Count > 0:
                 var item = game.ShardList.Keys.ElementAt(rng.Next(game.ShardList.Count));
@@ -195,6 +195,12 @@ public class LogosRandomTests
             case 6:
                 game.CloseManipulator();
                 return "close";
+            case 7:
+                var shard = Catalog.Shards[rng.Next(Catalog.Shards.Count)];
+                var mneme = shard.Mnemes[rng.Next(shard.Mnemes.Count)];
+                game.Loot(shard.Item);
+                game.Appraise(shard.Item, mneme);
+                return $"loot {shard.Item}, appraised into {mneme}";
             default:
                 return "wait";
         }

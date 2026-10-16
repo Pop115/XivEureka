@@ -58,7 +58,8 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   mneme de la liste des éclats dès qu'il est posé, et vide les emplacements quand il est dépensé :
   stock = liste + mnemes posés. L'action affichée en résultat est marquée apprise aussitôt (le
   message système 9070, « Vous avez découvert l'action Logos “…” », sert de secours).
-  Logique dans `LogosTracker`, sans rien du jeu : scénarios par persona (`LogosScenarioTests`, sur
+  Logique dans `LogosTracker` et `LogosBoard`, sans rien du jeu : scénarios par persona, dont un
+  de A à Z (arrivée, journal, éclat suggéré, butin, analyse, fabrication) (`LogosScenarioTests`, sur
   un faux jeu qui écrit les fenêtres au format réel) et sessions randomisées à graine fixe
   (`LogosRandomTests`).
 - **Recettes** : le jeu ne les a pas (mélange résolu par le serveur). `XivEureka/Data/logos.json`,

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using XivEureka.Logos;
+using XivEureka.Zones;
 using Xunit;
 
 namespace XivEureka.Tests;
@@ -23,10 +24,10 @@ public class LogosScenarioTests
         public CharacterState State { get; } = new() { Name = "Test" };
         public int Saves { get; private set; }
 
-        public void Tick()
+        public void Tick(bool shardListOpen = true)
         {
             now = now.AddMilliseconds(500);
-            if (tracker.Update(State, game.Snapshot(), now)) Saves++;
+            if (tracker.Update(State, game.Snapshot(shardListOpen), now)) Saves++;
         }
 
         public int Owned(uint item) => State.Stock.GetValueOrDefault(item);
@@ -190,6 +191,99 @@ public class LogosScenarioTests
         Assert.False(tracker.Update(plugin.State, new LogosSnapshot(), DateTime.Now));
         Assert.Equal(7, plugin.Owned(24015));
         Assert.Equal(saves, plugin.Saves);
+    }
+
+    /// <summary>
+    /// Zoé, from A to Z: arrives in Pyros with a fresh plugin, reads her notebook at Drake, opens
+    /// the shard list, is told which NM to hunt, gets the shard, appraises it (first into a mneme
+    /// she does not need, then into the right one), crafts the action, and the board follows each
+    /// step: counts in the header, "to learn now", the action's state, the useful shards.
+    /// </summary>
+    [Fact]
+    public void Zoe_from_arrival_to_her_new_action()
+    {
+        var pyros = NmCatalog.Embedded().Zone(795)!;
+        uint ShardOf(uint mneme) => Catalog.Shards.Single(s => s.Mnemes.Contains(mneme)).Item;
+        // An action with a two-mneme recipe a + b, b from a shard a Pyros NM drops that gives other mnemes too.
+        var (target, a, b) = Catalog.Actions
+            .SelectMany(x => x.Recipes.Where(r => r.Count == 2 && r[0] != r[1]).Select(r => (Action: x, A: r[0], B: r[1])))
+            .First(x => pyros.Nms.Any(n => n.Shard == ShardOf(x.B))
+                        && Catalog.Shards.Single(s => s.Item == ShardOf(x.B)).Mnemes.Count > 1);
+        var shard = ShardOf(b);
+        var other = Catalog.Shards.Single(s => s.Item == shard).Mnemes.First(m => m != b);
+        // She already knows everything a, b and other can make, except the target (one-mneme
+        // actions are learned first), so the target is the only one that can become "to learn".
+        var mnemes = new[] { a, b, other };
+        var known = Catalog.Actions
+            .Where(x => x != target && x.Recipes.Any(r => r.GroupBy(m => m).All(g => mnemes.Count(m => m == g.Key) >= g.Count())))
+            .Select(x => x.Number).ToList();
+        var game = new FakeLogosGame(Catalog, new() { [a] = 1 }, known);
+        var plugin = new Plugin(game);
+        LogosBoard Board() => LogosBoard.Of(Catalog, plugin.State);
+        var names = new GameNames(n => $"NM{n}", w => w, i => $"Item{i}");
+        IReadOnlyList<Suggestion> WhereToGo() => Suggestions.Compute(
+            pyros.Nms.Select(n => new NmStatus(n, null, null, null, null)).ToList(), DateTimeOffset.UtcNow, null,
+            Board().UsefulShards, names, max: 50);
+
+        // A. Fresh plugin, no Logos window open: nothing read, nothing suggested.
+        plugin.Tick(shardListOpen: false);
+        Assert.Equal(0, Board().Learned);
+        Assert.Empty(Board().UsefulShards);
+        Assert.DoesNotContain(WhereToGo(), s => s.Title.StartsWith("Logos"));
+
+        // B. The notebook at Drake.
+        game.NotebookOpen = true;
+        plugin.Tick(shardListOpen: false);
+        game.NotebookOpen = false;
+        Assert.Equal(known.Count, Board().Learned);
+        Assert.Empty(Board().UsefulShards);
+        Assert.Equal(56, Board().Total);
+
+        // C. The shard list: one mneme short of the target; its shard is worth hunting.
+        plugin.Tick();
+        Assert.Equal(0, Board().ToLearn);
+        var state = Board().Actions[target.Number];
+        Assert.False(state.Learned);
+        Assert.Equal(1, state.Closest.Missing);
+        var withoutTarget = Crafting.UsefulShards(Catalog, plugin.State.Stock, new HashSet<uint>(plugin.State.Learned) { target.Action });
+        Assert.Equal(withoutTarget.GetValueOrDefault(shard) + 1, Board().UsefulShards[shard]);
+        Assert.Contains(WhereToGo(), s => s.Title == $"Logos – Item{shard}");
+
+        // D. The NM drops the shard twice; the first appraisal is no luck.
+        game.Loot(shard);
+        game.Loot(shard);
+        game.OpenManipulator();
+        game.Appraise(shard, other);
+        plugin.Tick();
+        Assert.False(Board().Actions[target.Number].ToLearn);
+        game.Appraise(shard, b);
+        plugin.Tick();
+        Assert.True(Board().Actions[target.Number].ToLearn);
+        Assert.Equal(1, Board().Actions[target.Number].Craftable);
+        Assert.Equal(1, Board().ToLearn);
+
+        // E. Craft: placing keeps it "to learn", the result learns it, the slots emptying spends a and b.
+        game.Place(a);
+        game.Place(b);
+        plugin.Tick();
+        Assert.Equal(1, Board().ToLearn);
+        Assert.Equal(target.Number, game.Extract().Number);
+        plugin.Tick();
+        Assert.True(Board().Actions[target.Number].Learned);
+        Assert.Equal(known.Count + 1, Board().Learned);
+        Assert.Equal(0, Board().ToLearn);
+        game.DismissResult();
+        game.CloseManipulator();
+        plugin.Tick();
+        Assert.Equal(0, plugin.Owned(a));
+        Assert.Equal(0, plugin.Owned(b));
+        Assert.Equal(1, plugin.Owned(other));
+
+        // F. Back at Drake: the notebook agrees.
+        game.NotebookOpen = true;
+        plugin.Tick();
+        Assert.Equal(game.TrueLearned, plugin.State.Learned);
+        Assert.Equal(known.Count + 1, Board().Learned);
     }
 
     // ---------- the real session of 2026-10-16 ----------

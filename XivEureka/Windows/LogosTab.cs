@@ -65,13 +65,14 @@ public sealed class LogosTab
             return;
         }
 
-        var states = catalog.Actions.ToDictionary(a => a.Number, a => Crafting.Action(a, state.Stock, state.Learned));
+        var board = LogosBoard.Of(catalog, state);
+        var states = board.Actions.ToDictionary(e => e.Key, e => e.Value);
         var height = ImGui.GetContentRegionAvail().Y;
         using (var left = ImRaii.Child("##notebook", new Vector2(ImGui.GetContentRegionAvail().X - SheetWidth - Gap, height), false))
         {
             if (left)
             {
-                DrawHeader(state, states);
+                DrawHeader(state, board);
                 DrawGrid(state, states);
                 ImGui.Spacing();
                 ImGui.Separator();
@@ -85,18 +86,17 @@ public sealed class LogosTab
 
     // ---------- header ----------
 
-    private void DrawHeader(CharacterState state, Dictionary<int, ActionState> states)
+    private void DrawHeader(CharacterState state, LogosBoard board)
     {
         ImGui.TextUnformatted("ACTIONS LOGOS");
         ImGui.SameLine();
-        ImGui.TextColored(Yellow, $"{state.Learned.Count}");
+        ImGui.TextColored(Yellow, $"{board.Learned}");
         ImGui.SameLine(0, 0);
-        ImGui.TextUnformatted($"/{catalog.Actions.Count}");
-        var toLearn = states.Values.Count(e => e.ToLearn);
-        if (toLearn > 0)
+        ImGui.TextUnformatted($"/{board.Total}");
+        if (board.ToLearn > 0)
         {
             ImGui.SameLine();
-            ImGui.TextColored(Yellow, $"· {toLearn} à apprendre maintenant (cases qui clignotent)");
+            ImGui.TextColored(Yellow, $"· {board.ToLearn} à apprendre maintenant (cases qui clignotent)");
         }
 
         ImGui.TextColored(Grey, Provenance(state));

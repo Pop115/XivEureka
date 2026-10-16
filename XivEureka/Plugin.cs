@@ -164,7 +164,7 @@ public sealed class Plugin : IDalamudPlugin
     private IReadOnlyDictionary<uint, int> UsefulShards()
     {
         var state = CurrentCharacter();
-        return state?.StockReadAt == null ? new Dictionary<uint, int>() : Crafting.UsefulShards(catalog, state.Stock, state.Learned);
+        return state == null ? new Dictionary<uint, int>() : LogosBoard.Of(catalog, state).UsefulShards;
     }
 
     /// <summary>

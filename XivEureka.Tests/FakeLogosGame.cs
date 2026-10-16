@@ -38,6 +38,25 @@ public sealed class FakeLogosGame(LogosCatalog catalog, Dictionary<uint, int> st
 
     public HashSet<uint> TrueLearned => [.. catalog.Actions.Where(a => LearnedNumbers.Contains(a.Number)).Select(a => a.Action)];
 
+    /// <summary>Unidentified Logos shards in the inventory (item → count), dropped by NMs.</summary>
+    public Dictionary<uint, int> Shards { get; } = [];
+
+    /// <summary>An NM drops a shard.</summary>
+    public void Loot(uint shard) => Shards[shard] = Shards.GetValueOrDefault(shard) + 1;
+
+    /// <summary>
+    /// The shard is appraised at the manipulator and turns into one of its mnemes (random in game,
+    /// chosen here), which appears in the shard list.
+    /// </summary>
+    public void Appraise(uint shard, uint mneme)
+    {
+        if (Shards.GetValueOrDefault(shard) <= 0) throw new InvalidOperationException($"no shard {shard}");
+        if (!catalog.Shards.Single(s => s.Item == shard).Mnemes.Contains(mneme))
+            throw new InvalidOperationException($"shard {shard} cannot give mneme {mneme}");
+        if (--Shards[shard] == 0) Shards.Remove(shard);
+        list[mneme] = list.GetValueOrDefault(mneme) + 1;
+    }
+
     public void OpenManipulator() => ManipulatorOpen = true;
 
     public void CloseManipulator()

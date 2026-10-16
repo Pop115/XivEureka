@@ -44,8 +44,8 @@ public static class Crafting
 
     /// <summary>
     /// For each unidentified shard, how many not-yet-learned actions (not craftable right now) it
-    /// would move forward: it can yield a mneme missing from their closest recipe. Tells which NMs
-    /// to hit.
+    /// would move forward: it can yield a mneme missing from one of their closest recipes (all
+    /// those missing the fewest mnemes). Tells which NMs to hit.
     /// </summary>
     public static Dictionary<uint, int> UsefulShards(LogosCatalog catalog, IReadOnlyDictionary<uint, int> stock,
         IReadOnlySet<uint> learned)
@@ -55,9 +55,10 @@ public static class Crafting
         {
             var state = Action(action, stock, learned);
             if (state.Learned || state.Craftable > 0) continue;
-            var missing = state.Closest.Needs
-                .Where(n => stock.GetValueOrDefault(n.Key) < n.Value)
-                .Select(n => n.Key)
+            // Every recipe as close as the closest one counts: with a + b owned toward [a, b, c]
+            // and nothing toward [d], both c's and d's shards bring the action one mneme away.
+            var missing = state.Recipes.Where(r => r.Missing == state.Closest.Missing)
+                .SelectMany(r => r.Needs.Where(n => stock.GetValueOrDefault(n.Key) < n.Value).Select(n => n.Key))
                 .ToHashSet();
             foreach (var shard in catalog.Shards.Where(s => s.Mnemes.Any(missing.Contains)))
                 useful[shard.Item] = useful.GetValueOrDefault(shard.Item) + 1;
