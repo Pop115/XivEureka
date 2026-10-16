@@ -101,6 +101,45 @@ public class LogosRandomTests
         Assert.All(recipes.GroupBy(r => r.Key), g => Assert.Single(g.Select(r => r.Number).Distinct()));
     }
 
+    // ---------- hunt plan ----------
+
+    /// <summary>
+    /// The "Quoi taper" chain agrees with the board for any stock and notebook: same useful shards
+    /// with the same counts, craftable actions apart, each needed mneme really missing and given by
+    /// its shard, and every action not learned nor craftable reachable through some shard.
+    /// </summary>
+    [Theory, MemberData(nameof(Seeds))]
+    public void Hunt_plan_agrees_with_the_board(int seed)
+    {
+        var rng = new Random(seed);
+        var stock = RandomStock(rng);
+        var learned = new HashSet<uint>(Catalog.Actions.Where(a => rng.Next(2) == 0).Select(a => a.Action));
+        var zones = XivEureka.Zones.NmCatalog.Embedded().Zones;
+
+        var plan = Hunt.Compute(Catalog, zones, stock, learned);
+
+        var useful = Crafting.UsefulShards(Catalog, stock, learned);
+        Assert.Equal(useful.OrderBy(u => u.Key), plan.Shards.ToDictionary(s => s.Shard, s => s.Actions.Count).OrderBy(u => u.Key));
+        Assert.Equal(Catalog.Actions.Count(a => !learned.Contains(a.Action)), plan.NotLearned);
+        Assert.Equal(Catalog.Actions.Where(a => Crafting.Action(a, stock, learned).ToLearn).Select(a => a.Number),
+            plan.CraftableNow.Select(a => a.Number));
+        foreach (var shard in plan.Shards)
+        {
+            var gives = Catalog.Shards.Single(s => s.Item == shard.Shard).Mnemes;
+            Assert.Equal(gives.Order(), shard.Mnemes.Select(m => m.Mneme).Order());
+            Assert.All(shard.Sources, src => Assert.Equal(shard.Shard, src.Nm.Shard));
+            foreach (var need in shard.Mnemes.SelectMany(m => m.NeededBy.Select(n => (m, n))))
+            {
+                Assert.InRange(need.n.Missing, 1, 3);
+                Assert.True(need.n.Action.Recipes.Any(r => r.Count(x => x == need.m.Mneme) >= stock.GetValueOrDefault(need.m.Mneme) + need.n.Missing));
+                Assert.DoesNotContain(need.n.Action.Action, learned);
+            }
+        }
+        var reachable = plan.Shards.SelectMany(s => s.Actions).Select(a => a.Number).ToHashSet();
+        foreach (var action in Catalog.Actions.Where(a => !learned.Contains(a.Action) && Crafting.Action(a, stock, learned).Craftable == 0))
+            Assert.Contains(action.Number, reachable);
+    }
+
     // ---------- learned message ----------
 
     [Theory, MemberData(nameof(Seeds))]

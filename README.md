@@ -15,7 +15,7 @@ installer « Xiv Eurêka » depuis `/xlplugins`. Textes en jeu en français.
 
 ## Ce qu'il fait
 
-Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlplugins`) à deux onglets :
+Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlplugins`) à trois onglets :
 
 - **Actions Logos** : la page de
   ffxiv-eureka.com/logograms, mais avec le stock lu dans le jeu. Mnemes par éclat à gauche, les 56
@@ -23,10 +23,17 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   pas encore apprise et fabricable tout de suite. Les actions apprises sont lues dans le journal des
   actions Logos (ouvert en parlant à Drake) ; clic droit sur une action pour corriger entre-temps.
   La fenêtre s'ouvre toute seule avec le manipulateur Logos.
+- **Quoi taper** : la chaîne actions pas apprises → mnemes manquants → éclats Logos → NM qui les
+  lâchent. En haut, les actions fabricables tout de suite (aller au mélangeur). Puis un bloc par
+  éclat utile, le plus utile d'abord : les actions qu'il fait avancer, les NM qui le lâchent (état
+  en direct pour la zone de la carte, faisables d'abord, bouton « Carte »), et les mnemes qu'il
+  peut donner à l'analyse avec ce qui manque pour quelles actions. Calcul dans `Hunt`.
 - **Carte** (`/xiveureka carte`) : la carte du jeu de la zone d'Eurêka, redessinée par le plugin.
   Repères et noms de zone du jeu, toi (flèche), ton groupe, le drapeau, et en plus les 17 NM de la
   zone avec leur état (FATE en cours, respawn ≥ N min s'il a été vu finir, météo ou nuit à venir),
-  la zone de prépa du NM choisi, les pops criés dans le chat. En haut : heure d'Eorzéa, jour/nuit,
+  la zone de prépa du NM choisi, les pops criés dans le chat. Les NM pas faisables pour l'instant
+  (respawn, météo ou nuit à attendre) sont cachés, sauf le NM choisi ; calque « NM pas faisables »
+  pour les revoir. En haut : heure d'Eorzéa, jour/nuit,
   météo à venir. À droite : « Où aller maintenant » (FATE en cours, météo ou nuit dans la
   demi-heure avec la prépa, NM à ton niveau, NM qui lâchent les éclats Logos qui te manquent), la
   fiche du NM choisi et les calques. Molette : zoom ; glisser : déplacer ; clic : fiche ; clic

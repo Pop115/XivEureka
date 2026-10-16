@@ -22,6 +22,28 @@ public sealed record NmStatus(EurekaNm Nm, MapFate? Fate, DateTimeOffset? Respaw
 
     /// <summary>The first window to wait for (NM or prep); null if no condition.</summary>
     public TimeWindow? Wait => NmWindow ?? PrepWindow;
+
+    /// <summary>
+    /// Can be done now: its FATE runs, it is prepped, or it is not respawning and its condition
+    /// (if any) holds.
+    /// </summary>
+    public bool IsDoable(DateTimeOffset now) =>
+        Fate != null || Prepped || (!IsRespawning(now) && (Wait == null || Wait.IsOpen(now)));
+
+    /// <summary>
+    /// Short French state for lists: "FATE en cours", "préparé", "respawn ≥ 12 min", "Neige en
+    /// cours", "nuit dans 8 min", "disponible". <paramref name="weatherName"/> names a weather.
+    /// </summary>
+    public string Describe(DateTimeOffset now, Func<string, string> weatherName)
+    {
+        if (Fate != null) return "FATE en cours";
+        if (Prepped) return "préparé";
+        if (IsRespawning(now)) return $"respawn ≥ {Formatting.Duration(RespawnNotBefore!.Value - now)}";
+        if (Wait is not { } window) return "disponible";
+        var condition = NmWindow != null ? Nm.Condition : Nm.Prep.Condition;
+        var name = condition.Weather is { } w ? weatherName(w) : "nuit";
+        return window.IsOpen(now) ? $"{name} en cours" : $"{name} dans {Formatting.Duration(window.Start - now)}";
+    }
 }
 
 /// <summary>Computes NM statuses with nothing from the game: running FATEs and known kill times.</summary>

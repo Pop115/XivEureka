@@ -82,7 +82,13 @@ public sealed class Plugin : IDalamudPlugin
             new MapSources(EndedFates, tracker.PreppedByFate, ElementalLevel, UsefulShards, tracker,
                 (territory, map, position) => InGameMap.SetFlag(territory, map, position, open: false)),
             Save);
-        mainWindow = new MainWindow(logosTab, mapTab);
+        var huntTab = new HuntTab(catalog, nmCatalog, texts, TextureProvider, CurrentCharacter, mapTab.StatusesNow,
+            w => weatherNames[w], nm =>
+            {
+                mapTab.ShowNm(nm);
+                mainWindow.Open(MainWindow.Tab.Map);
+            });
+        mainWindow = new MainWindow(logosTab, huntTab, mapTab);
         windows.AddWindow(mainWindow);
         settingsWindow = new SettingsWindow(configuration, Save);
         windows.AddWindow(settingsWindow);

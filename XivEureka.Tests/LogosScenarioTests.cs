@@ -248,6 +248,14 @@ public class LogosScenarioTests
         var withoutTarget = Crafting.UsefulShards(Catalog, plugin.State.Stock, new HashSet<uint>(plugin.State.Learned) { target.Action });
         Assert.Equal(withoutTarget.GetValueOrDefault(shard) + 1, Board().UsefulShards[shard]);
         Assert.Contains(WhereToGo(), s => s.Title == $"Logos – Item{shard}");
+        // "Quoi taper": the shard, the Pyros NMs that drop it, and the mneme missing for the target.
+        HuntPlan Plan() => Hunt.Compute(Catalog, NmCatalog.Embedded().Zones, plugin.State.Stock, plugin.State.Learned);
+        var hunt = Plan().Shards.Single(s => s.Shard == shard);
+        Assert.Contains(target, hunt.Actions);
+        Assert.Equal(pyros.Nms.Where(n => n.Shard == shard).Select(n => n.Npc).Order(), hunt.Sources.Select(s => s.Nm.Npc).Order());
+        Assert.All(hunt.Sources, s => Assert.Equal(795u, s.Territory));
+        Assert.Contains(hunt.Mnemes.Single(m => m.Mneme == b).NeededBy, n => n.Action == target && n.Missing == 1);
+        Assert.Empty(Plan().CraftableNow);
 
         // D. The NM drops the shard twice; the first appraisal is no luck.
         game.Loot(shard);
@@ -261,6 +269,8 @@ public class LogosScenarioTests
         Assert.True(Board().Actions[target.Number].ToLearn);
         Assert.Equal(1, Board().Actions[target.Number].Craftable);
         Assert.Equal(1, Board().ToLearn);
+        Assert.Equal([target], Plan().CraftableNow);
+        Assert.DoesNotContain(Plan().Shards, s => s.Actions.Contains(target));
 
         // E. Craft: placing keeps it "to learn", the result learns it, the slots emptying spends a and b.
         game.Place(a);
@@ -278,6 +288,9 @@ public class LogosScenarioTests
         Assert.Equal(0, plugin.Owned(a));
         Assert.Equal(0, plugin.Owned(b));
         Assert.Equal(1, plugin.Owned(other));
+        Assert.DoesNotContain(target, Plan().CraftableNow);
+        Assert.DoesNotContain(Plan().Shards, s => s.Actions.Contains(target));
+        Assert.Equal(56 - known.Count - 1, Plan().NotLearned);
 
         // F. Back at Drake: the notebook agrees.
         game.NotebookOpen = true;

@@ -77,6 +77,7 @@ public sealed class MapTab
     private Vector2 center;
     private bool followMe = true;
     private uint? chosenNm;
+    private Vector2? pendingCenter;
 
     private DateTime nextCompute = DateTime.MinValue;
     private IReadOnlyList<NmStatus> statuses = [];
@@ -93,6 +94,23 @@ public sealed class MapTab
         this.textures = textures;
         this.sources = sources;
         this.save = save;
+    }
+
+    /// <summary>NM statuses of the zone shown (current Eureka zone, else the last one), for the hunt tab.</summary>
+    public (uint Territory, IReadOnlyList<NmStatus> Statuses) StatusesNow()
+    {
+        var state = stateReader.Read();
+        var inEureka = EurekaWeather.Zone(state.Territory) != null;
+        var zone = EurekaWeather.Zone(inEureka ? state.Territory : configuration.LastZone) ?? EurekaWeather.Zones[2];
+        Compute(zone, inEureka ? state : MapState.Empty);
+        return (zone.Territory, statuses);
+    }
+
+    /// <summary>Chooses the NM and centers the map on it at the next draw.</summary>
+    public void ShowNm(EurekaNm nm)
+    {
+        chosenNm = nm.Npc;
+        pendingCenter = nm.Position;
     }
 
     public void Draw()
@@ -115,6 +133,12 @@ public sealed class MapTab
         {
             ImGui.TextColored(Grey, "Carte introuvable dans les données du jeu.");
             return;
+        }
+
+        if (pendingCenter is { } c)
+        {
+            CenterOnCoordinates(map, c);
+            pendingCenter = null;
         }
 
         var height = ImGui.GetContentRegionAvail().Y;
@@ -281,10 +305,12 @@ public sealed class MapTab
         var now = DateTimeOffset.UtcNow;
         var nmRadius = 13 * scale;
         var labels = new LabelPlacer();
+        // NMs that cannot be done now are hidden (unless asked for, or chosen): no point in the time left.
+        var shown = statuses.Where(s => layers.UnavailableNms || s.IsDoable(now) || s.Nm.Npc == chosenNm).ToList();
 
         // Obstacles first, so that labels go around the markers rather than over them.
         if (layers.Nms)
-            foreach (var s in statuses)
+            foreach (var s in shown)
                 labels.AddObstacle(ScreenRect.Centered(Screen(g.PixelFromCoordinates(s.Nm.Position)), new Vector2((nmRadius + 3) * 2)));
         if (state.Me is { } meObstacle) labels.AddObstacle(ScreenRect.Centered(Screen(g.Pixel(meObstacle)), new Vector2(28)));
 
@@ -323,9 +349,9 @@ public sealed class MapTab
 
         if (layers.Nms)
         {
-            foreach (var s in statuses) DrawNmMarker(draw, s, Screen(g.PixelFromCoordinates(s.Nm.Position)), now, nmRadius);
+            foreach (var s in shown) DrawNmMarker(draw, s, Screen(g.PixelFromCoordinates(s.Nm.Position)), now, nmRadius);
             // The chosen NM's label is placed first: it gets the best spot.
-            foreach (var s in statuses.OrderByDescending(s => s.Nm.Npc == chosenNm))
+            foreach (var s in shown.OrderByDescending(s => s.Nm.Npc == chosenNm))
                 DrawNmLabel(draw, labels, s, Screen(g.PixelFromCoordinates(s.Nm.Position)), now, nmRadius);
         }
 
@@ -368,8 +394,8 @@ public sealed class MapTab
             draw.AddText(origin + new Vector2(11, size.Y - 24), White, text);
             if (ImGui.IsMouseClicked(ImGuiMouseButton.Right)) ImGui.OpenPopup("##map-menu");
             if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && ImGui.GetIO().MouseDragMaxDistanceSqr[0] < 16)
-                chosenNm = statuses.FirstOrDefault(s => Near(mouse, Screen(g.PixelFromCoordinates(s.Nm.Position)), nmRadius + 3))?.Nm.Npc ?? chosenNm;
-            if (layers.Nms && statuses.FirstOrDefault(s => Near(mouse, Screen(g.PixelFromCoordinates(s.Nm.Position)), nmRadius + 2)) is { } under)
+                chosenNm = shown.FirstOrDefault(s => Near(mouse, Screen(g.PixelFromCoordinates(s.Nm.Position)), nmRadius + 3))?.Nm.Npc ?? chosenNm;
+            if (layers.Nms && shown.FirstOrDefault(s => Near(mouse, Screen(g.PixelFromCoordinates(s.Nm.Position)), nmRadius + 2)) is { } under)
             {
                 using var tooltip = ImRaii.Tooltip();
                 DrawNmSheet(under, now, buttons: false);
@@ -513,6 +539,7 @@ public sealed class MapTab
                 ImGui.TableNextColumn(); Checkbox("Repères du jeu", () => k.Points, v => k.Points = v);
                 ImGui.TableNextColumn(); Checkbox("Noms de zone", () => k.AreaNames, v => k.AreaNames = v);
                 ImGui.TableNextColumn(); Checkbox("Autres FATE", () => k.Fates, v => k.Fates = v);
+                ImGui.TableNextColumn(); Checkbox("NM pas faisables", () => k.UnavailableNms, v => k.UnavailableNms = v);
             }
         }
         ImGui.TextColored(Grey, "Molette : zoom · glisser : déplacer · clic : fiche du NM · clic droit : drapeau.");

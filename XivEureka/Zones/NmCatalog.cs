@@ -36,6 +36,8 @@ public sealed class NmCatalog(IReadOnlyList<ZoneNms> zones)
 {
     public ZoneNms? Zone(uint territory) => zones.FirstOrDefault(z => z.Territory == territory);
 
+    public IReadOnlyList<ZoneNms> Zones => zones;
+
     public static NmCatalog Read(Stream json)
     {
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };

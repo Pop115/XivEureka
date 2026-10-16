@@ -46,6 +46,9 @@ public sealed class MapLayers
     public bool Pops { get; set; } = true;
     public bool Nms { get; set; } = true;
     public bool Prep { get; set; } = true;
+
+    /// <summary>Also NMs that cannot be done now (respawning, or waiting for a weather or the night).</summary>
+    public bool UnavailableNms { get; set; }
 }
 
 [Serializable]

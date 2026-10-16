@@ -148,3 +148,39 @@ public class SuggestionsTests
         Assert.Equal("Logos – Item24011", logos.Title); // 24009 has no available source
     }
 }
+
+public class NmDoableTests
+{
+    private static EurekaNm Nm(SpawnCondition? condition = null) =>
+        new(1, 0, 1001, 50, "fire", new Vector2(10, 10), 24009, [], condition ?? new SpawnCondition(null, false),
+            new PrepMob(2, 55, new SpawnCondition(null, false), [new Vector2(11, 11)]));
+
+    private static readonly DateTimeOffset Now = new(2026, 10, 17, 20, 0, 0, TimeSpan.Zero);
+    private static readonly MapFate Running = new(1001, "F", System.Numerics.Vector3.Zero, 20, 35, TimeSpan.FromMinutes(24), 0, false);
+
+    [Fact]
+    public void Doable_states()
+    {
+        var snow = new SpawnCondition("Snow", false);
+        Assert.True(new NmStatus(Nm(), null, null, null, null).IsDoable(Now));
+        Assert.True(new NmStatus(Nm(), Running, Now.AddHours(1), null, null).IsDoable(Now));
+        Assert.True(new NmStatus(Nm(snow), null, null, new TimeWindow(Now.AddHours(1), Now.AddHours(2)), null, Prepped: true).IsDoable(Now));
+        Assert.True(new NmStatus(Nm(snow), null, null, new TimeWindow(Now.AddMinutes(-5), Now.AddMinutes(20)), null).IsDoable(Now));
+        Assert.True(new NmStatus(Nm(), null, Now.AddMinutes(-1), null, null).IsDoable(Now)); // respawned
+        Assert.False(new NmStatus(Nm(), null, Now.AddMinutes(30), null, null).IsDoable(Now));
+        Assert.False(new NmStatus(Nm(snow), null, null, new TimeWindow(Now.AddMinutes(10), Now.AddMinutes(40)), null).IsDoable(Now));
+    }
+
+    [Fact]
+    public void Describes_the_state_in_a_few_words()
+    {
+        var snow = new SpawnCondition("Snow", false);
+        string Of(NmStatus s) => s.Describe(Now, w => w == "Snow" ? "Neige" : w);
+        Assert.Equal("disponible", Of(new NmStatus(Nm(), null, null, null, null)));
+        Assert.Equal("FATE en cours", Of(new NmStatus(Nm(), Running, null, null, null)));
+        Assert.Equal("respawn ≥ 30 min", Of(new NmStatus(Nm(), null, Now.AddMinutes(30), null, null)));
+        Assert.Equal("Neige dans 10 min", Of(new NmStatus(Nm(snow), null, null, new TimeWindow(Now.AddMinutes(10), Now.AddMinutes(40)), null)));
+        Assert.Equal("Neige en cours", Of(new NmStatus(Nm(snow), null, null, new TimeWindow(Now.AddMinutes(-1), Now.AddMinutes(40)), null)));
+        Assert.Equal("nuit dans 8 min", Of(new NmStatus(Nm(new SpawnCondition(null, true)), null, null, new TimeWindow(Now.AddMinutes(8), Now.AddMinutes(30)), null)));
+    }
+}
