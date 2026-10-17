@@ -609,8 +609,8 @@ public sealed class MapTab
         ImGui.PushTextWrapPos(buttons ? 0 : 360);
         ImGui.TextUnformatted(Suggestions.PrepText(nm, names));
         ImGui.TextUnformatted("Condition : " + ConditionText(s, now));
-        var drops = new[] { nm.Shard }.Concat(nm.Items).Select(i => GameTexts.WithoutUnidentified(names.Item(i)));
-        ImGui.TextUnformatted("Lâche : " + string.Join(", ", drops));
+        var drops = new[] { nm.Shard }.Where(s => s != 0).Concat(nm.Items).Select(i => GameTexts.WithoutUnidentified(names.Item(i)));
+        ImGui.TextUnformatted("Lâche : " + (drops.Any() ? string.Join(", ", drops) : "rien de notable"));
         ImGui.TextUnformatted("État : " + (Badge(s, now) is { } badge ? badge.Text
             : s.RespawnNotBefore != null ? "réapparu (2 h passées)" : "inconnu (pas vu tué dans cette instance)"));
         ImGui.PopTextWrapPos();

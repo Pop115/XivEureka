@@ -28,12 +28,15 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   pour chaque éclat utile, sa source la plus rapide maintenant. Puis un bloc par éclat utile, le
   plus utile d'abord : les actions qu'il fait avancer, toutes ses sources, la plus rapide d'abord
   (élémentaires sous leur météo, NM avec leur état en direct, coffres des FATE lapin, coffres de
-  mutation, mobs au hasard ; bouton « Carte » qui montre l'endroit), et les mnemes qu'il peut donner
-  à l'analyse avec ce qui manque pour quelles actions. Classement : temps estimé avant le premier
-  éclat = attente (météo, respawn, FATE) + effort selon la source (élémentaire 3 min, adapté 8,
+  mutation, mobs au hasard ; bouton « Carte » qui montre l'endroit, bouton « Drapeau » qui pose le
+  drapeau du jeu sur l'endroit le plus proche de toi), et les mnemes qu'il peut donner à l'analyse
+  avec ce qui manque pour quelles actions. Classement : temps estimé avant le premier mneme **utile**
+  = attente (météo, jour/nuit, respawn, FATE) + effort selon la source (élémentaire 3 min, adapté 8,
   FATE de NM en cours 5, NM à préparer 20, FATE lapin 10 en cours / 45 à attendre, +15 argent,
-  +30 or, mob 4 niveaux au-dessus +10…), des ordres de grandeur pour classer. Calcul dans `Hunt` et
-  `HuntOptions`.
+  +30 or, mob 4 niveaux au-dessus +10…) divisé par la chance qu'un éclat donne un mneme qui manque
+  encore (mnemes utiles / mnemes de l'éclat, à chances égales supposées ; relevée pour un coffre
+  qui en donne plusieurs ; pour un NM, chaque essai de plus = un autre NM du train, 30 min). Des
+  ordres de grandeur pour classer. Calcul dans `Hunt` et `HuntOptions`.
 - **Carte** (`/xiveureka carte`) : la carte du jeu de la zone d'Eurêka, redessinée par le plugin.
   Repères et noms de zone du jeu, toi (flèche), ton groupe, le drapeau, et en plus les 17 NM de la
   zone avec leur état (FATE en cours, respawn ≥ N min s'il a été vu finir, météo ou nuit à venir),
@@ -53,7 +56,9 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
 - **Chat** (cris, zone, groupe, alliance, CL, LS, CWLS ; à Eurêka seulement) : un message qui
   annonce un pop (« pop », « spawn », ou le nom d'une FATE en cours) avec un lien de carte, des
   coordonnées (« X: 12.3 Y: 14.5 », « (12.3, 14.5) ») ou le nom d'une FATE en cours → même alerte,
-  drapeau sur la position. Un lien ffxiv-eureka.com/xxxx est retenu comme dernier tracker vu.
+  drapeau sur la position. Un lien ffxiv-eureka.com/xxxx est retenu comme dernier tracker vu. Un
+  pop annoncé par toi-même ne déclenche pas d'alerte (relation « joueur » du message, ou ton nom
+  comme expéditeur sur les LS).
 - **Réglages** : bouton de configuration dans `/xlplugins` (chaque alerte se coupe).
 - Le stock est relu deux fois par seconde tant que la **fenêtre des éclats Logos** est ouverte, et
   gardé par personnage dans la configuration du plugin (utilisable loin du manipulateur).
@@ -82,17 +87,23 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   dans la langue du client.
 - **Carte** : texture `ui/map/<id>/<id>_m.tex` de la ligne Map en cours, repères de la feuille
   MapMarker (X/Y en pixels de la texture 2048), formule monde ↔ carte de `MapGeometry`.
-- **NM** : `XivEureka/Data/nm.json` (Pyros pour l'instant) : niveau, élément, conditions et
+- **NM** : `XivEureka/Data/nm.json` (Pyros et Hydatos) : niveau, élément, conditions et
   respawn de ffxiv-eureka.com (les météos y sont des numéros de la feuille Weather), coordonnées
   des FATE et logogrammes du wiki, lieux de prépa **approximatifs** (carte communautaire).
-  Anémos, Pagos, Hydatos : à ajouter quand on y va.
-- **Autres sources d'éclats** : `XivEureka/Data/farms.json` (Pyros) : élémentaires (niveau,
+  Hydatos : les 11 NM du tracker (Obscur : Khalamari, Stegodon, Frostmane ; les autres ne lâchent
+  pas d'éclat), Daphné placé d'après la carte (le wiki se contredit). Ovni n'est pas suivi par le
+  site : laissé de côté. Anémos, Pagos : à ajouter si besoin.
+- **Autres sources d'éclats** : `XivEureka/Data/farms.json` (Pyros et Hydatos) : élémentaires (niveau,
   météo, adapté ou non, éclat), mobs de prépa niv. 52+ (Fondamental au hasard), Val gigantopithèque
   (coffres de mutation → Tactique), FATE lapin 1407 et 1408 (bronze : Conceptuel/Fondamental, argent :
   Curatif, or : Offensif/Protecteur). Drops : consolegameswiki et Eurekan Academy, recoupés avec le
   bestiaire communautaire ; lieux **approximatifs** lus sur la carte communautaire (même relevé que
   les prépas). Le Conceptuel ne tombe que des élémentaires de ton niveau ou plus, les adaptés ne
-  lâchent leur éclat qu'une fois adaptés.
+  lâchent leur éclat qu'une fois adaptés. Hydatos : élémentaires d'orage et de fonte (Conceptuel),
+  de blizzard et de mort (Fondamental), île aux élémentaires Nv 65, blizzard adapté Nv 64
+  (Offensif), mobs de prépa Nv 62+ (Obscur au hasard), coffres humides (Tactique : zébu par neige,
+  vouivre et gargouille la nuit, peiste le jour), FATE lapin 1425 (bronze : Inimical/Protecteur/
+  Curatif, argent : Mitigatif, or : Offensif).
 - **Éclats ↔ mnemes** : numéros d'objet vérifiés sur la feuille Item du jeu le 2026-10-17 ; avant,
   5 éclats (Curatif, Offensif, Protecteur, Mitigatif, Inimical) portaient les mnemes d'un autre, et
   « Quoi taper » envoyait vers les mauvais NM. Test qui fige le bon lien.

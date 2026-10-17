@@ -1,5 +1,5 @@
 {
- "source": "NMs: ffxiv-eureka.com (\"site\" id, level, element, spawn conditions, respawn; captured 2026-10-14) and consolegameswiki (FATE coordinates, logograms, rare items). Prep places: approximate, read off the community Pyros map (Noranda La'luna, v20.2019.3.9). Ids: game sheets BNpcName, Fate, Item. Weathers: English names of the EurekaWeather slices.",
+ "source": "NMs: ffxiv-eureka.com (\"site\" id, level, element, spawn conditions, respawn; captured 2026-10-14) and consolegameswiki (FATE coordinates, logograms, rare items). Prep places: approximate, read off the community maps (Noranda La'luna: Pyros v20.2019.3.9, Hydatos v21.2019.3.22). Hydatos (2026-10-17): FATE coordinates and logograms from consolegameswiki (Obscure from Khalamari, Stegodon, Frostmane, as on Eurekan Academy), except Daphne (wiki y 19 contradicts its prep: map position); shard 0 = no logogram. Ovni (FATE 1424, random under Umbral Turbulence) is not tracked by the site: left out. Ids: game sheets BNpcName, Fate, Item. Weathers: English names of the EurekaWeather slices.",
  "zones": [
   {
    "territory": 795,
@@ -39,6 +39,34 @@
       "prep": { "npc": 7848, "level": 55, "places": [[16.8, 33.4], [17.4, 35.8]] } },
     { "npc": 7731, "site": 54, "fate": 1404, "level": 50, "element": "fire", "x": 35.5, "y": 6.1, "shard": 24009, "items": [23913, 24123], "weather": "Heat Waves",
       "prep": { "npc": 7846, "level": 55, "places": [[33.6, 8.3], [38.6, 16.9]] } }
+   ]
+  },
+  {
+   "territory": 827,
+   "respawnMinutes": 120,
+   "nm": [
+    { "npc": 8063, "site": 55, "fate": 1412, "level": 50, "element": "water", "x": 10.8, "y": 25.6, "shard": 24809, "items": [],
+      "prep": { "npc": 8024, "level": 55, "places": [[10.9, 23.9]] } },
+    { "npc": 8069, "site": 56, "fate": 1413, "level": 51, "element": "earth", "x": 10.4, "y": 17.2, "shard": 24809, "items": [],
+      "prep": { "npc": 8028, "level": 56, "places": [[10.0, 18.1], [11.0, 14.6]] } },
+    { "npc": 8070, "site": 57, "fate": 1414, "level": 52, "element": "ice", "x": 8.1, "y": 21.8, "shard": 0, "items": [24817],
+      "prep": { "npc": 8031, "level": 57, "places": [[6.4, 20.8], [7.5, 16.4]] } },
+    { "npc": 8073, "site": 58, "fate": 1415, "level": 53, "element": "wind", "x": 7.1, "y": 14.5, "shard": 0, "items": [],
+      "prep": { "npc": 8032, "level": 58, "places": [[5.7, 14.1]] } },
+    { "npc": 8072, "site": 59, "fate": 1416, "level": 54, "element": "fire", "x": 8.2, "y": 26.1, "shard": 24809, "items": [],
+      "prep": { "npc": 8037, "level": 59, "places": [[5.8, 26.7]] } },
+    { "npc": 7967, "site": 60, "fate": 1417, "level": 55, "element": "water", "x": 25.0, "y": 15.4, "shard": 0, "items": [],
+      "prep": { "npc": 8038, "level": 60, "places": [[24.9, 14.9], [24.6, 17.7]] } },
+    { "npc": 7966, "site": 61, "fate": 1418, "level": 56, "element": "lightning", "x": 29.1, "y": 23.0, "shard": 0, "items": [24818, 24870],
+      "prep": { "npc": 8058, "level": 61, "night": true, "places": [[26.6, 22.1], [28.4, 15.5]] } },
+    { "npc": 8068, "site": 62, "fate": 1419, "level": 57, "element": "earth", "x": 37.4, "y": 26.4, "shard": 0, "items": [],
+      "prep": { "npc": 8045, "level": 62, "places": [[36.1, 26.9]] } },
+    { "npc": 7965, "site": 63, "fate": 1420, "level": 58, "element": "fire", "x": 32.2, "y": 25.3, "shard": 0, "items": [],
+      "prep": { "npc": 8047, "level": 63, "places": [[33.4, 24.4]] } },
+    { "npc": 7955, "site": 64, "fate": 1421, "level": 59, "element": "water", "x": 36.3, "y": 14.0, "shard": 0, "items": [24819],
+      "prep": { "npc": 8050, "level": 64, "places": [[35.4, 13.5], [36.0, 15.2]] } },
+    { "npc": 8061, "site": 65, "fate": 1423, "level": 60, "element": "fire", "x": 32.8, "y": 19.5, "shard": 0, "items": [24806, 24873],
+      "prep": { "npc": 8054, "level": 65, "places": [[30.6, 19.7]] } }
    ]
   }
  ]

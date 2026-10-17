@@ -34,25 +34,34 @@ public class LogogramCatalogTests
 
 public class FarmCatalogTests
 {
-    private static readonly IReadOnlyList<Farm> Pyros = FarmCatalog.Embedded().Zone(795);
+    private static readonly FarmCatalog Catalog = FarmCatalog.Embedded();
+    private static readonly IReadOnlyList<Farm> Pyros = Catalog.Zone(795);
 
-    [Fact]
-    public void Every_Pyros_logogram_has_a_source()
+    [Theory]
+    [InlineData(795u, new uint[] { 24809 })] // Obscure: Hydatos only
+    [InlineData(827u, new uint[0])]
+    public void Every_logogram_has_a_source_in_the_zone(uint territory, uint[] absent)
     {
-        var shards = LogosCatalog.Embedded().Shards.Select(s => s.Item).Where(i => i != 24809); // Obscure: Hydatos only
-        var nms = NmCatalog.Embedded().Zone(795)!.Nms.Select(n => n.Shard);
-        var dropped = Pyros.SelectMany(f => f.Drops).Select(d => d.Shard).Concat(nms).ToHashSet();
+        var shards = LogosCatalog.Embedded().Shards.Select(s => s.Item).Except(absent);
+        var nms = NmCatalog.Embedded().Zone(territory)!.Nms.Select(n => n.Shard);
+        var dropped = Catalog.Zone(territory).SelectMany(f => f.Drops).Select(d => d.Shard).Concat(nms).ToHashSet();
         Assert.All(shards, s => Assert.Contains(s, dropped));
     }
 
-    [Fact]
-    public void Weathers_exist_and_places_are_on_the_map()
+    [Theory]
+    [InlineData(795u)]
+    [InlineData(827u)]
+    public void Weathers_exist_and_places_are_on_the_map(uint territory)
     {
-        var weathers = EurekaWeather.Zone(795)!.Slices.Select(s => s.Weather).ToHashSet();
-        Assert.All(Pyros.SelectMany(f => f.Weathers), w => Assert.Contains(w, weathers));
-        Assert.All(Pyros, f => Assert.NotEmpty(f.Places));
-        Assert.All(Pyros.SelectMany(f => f.Places), p => Assert.InRange(p.X, 5, 42));
-        Assert.All(Pyros.SelectMany(f => f.Places), p => Assert.InRange(p.Y, 5, 42));
+        var farms = Catalog.Zone(territory);
+        var weathers = EurekaWeather.Zone(territory)!.Slices.Select(s => s.Weather).ToHashSet();
+        Assert.All(farms.SelectMany(f => f.Weathers), w => Assert.Contains(w, weathers));
+        Assert.All(farms, f => Assert.NotEmpty(f.Places));
+        Assert.All(farms.SelectMany(f => f.Places), p => Assert.InRange(p.X, 3, 42));
+        Assert.All(farms.SelectMany(f => f.Places), p => Assert.InRange(p.Y, 5, 42));
+        // A weather or a time of day, never both (HuntOptions keeps one window).
+        Assert.All(farms.Where(f => f.Time != null), f => Assert.Empty(f.Weathers));
+        Assert.All(farms.Select(f => f.Time).OfType<string>(), t => Assert.Contains(t, new[] { "day", "night" }));
     }
 
     [Fact]
@@ -63,6 +72,32 @@ public class FarmCatalogTests
         Assert.Equal(24008u, thunder41.Drops.Single().Shard);
         Assert.All(Pyros.Where(f => f.Adapted), f => Assert.DoesNotContain(f.Drops, d => d.Shard == 24007));
         Assert.Equal([1407, 1408], Pyros.Where(f => f.Kind == FarmKind.Bunny).Select(f => (int)f.Fate));
+        Assert.Equal([1425], Catalog.Zone(827).Where(f => f.Kind == FarmKind.Bunny).Select(f => (int)f.Fate));
+    }
+}
+
+public class HydatosNmTests
+{
+    private static readonly ZoneNms Hydatos = NmCatalog.Embedded().Zone(827)!;
+
+    [Fact]
+    public void The_11_Hydatos_NMs_of_the_tracker()
+    {
+        Assert.Equal(11, Hydatos.Nms.Count);
+        Assert.Equal(Enumerable.Range(55, 11), Hydatos.Nms.Select(n => n.Site).Order());
+        // FATEs 1412 to 1421, then 1423 (1422 is the Baldesion Arsenal support FATE, 1424 Ovni).
+        Assert.Equal(Enumerable.Range(1412, 10).Append(1423).Select(i => (ushort)i), Hydatos.Nms.Select(n => n.Fate).Order());
+        Assert.Equal(Enumerable.Range(50, 11), Hydatos.Nms.Select(n => n.Level).Order());
+        Assert.All(Hydatos.Nms, n => Assert.NotEmpty(n.Prep.Places));
+    }
+
+    [Fact]
+    public void Obscure_from_Khalamari_Stegodon_and_Frostmane_and_Goldemar_needs_the_night()
+    {
+        Assert.Equal([8063u, 8069u, 8072u], Hydatos.Nms.Where(n => n.Shard == 24809).Select(n => n.Npc).Order());
+        Assert.All(Hydatos.Nms, n => Assert.Contains(n.Shard, new uint[] { 0, 24809 }));
+        Assert.True(Hydatos.Nms.Single(n => n.Npc == 7966).Prep.Condition.Night);
+        Assert.All(Hydatos.Nms.Where(n => n.Npc != 7966), n => Assert.True(n.Condition.None && n.Prep.Condition.None));
     }
 }
 
@@ -227,5 +262,24 @@ public class HuntChanceTests
         var status = new NmStatus(nm, fate, null, null, null);
         var option = HuntOptions.For(Shard(1, 2, new HuntSource(Pyros, nm)), new FarmCatalog([]), Context([status])).Single();
         Assert.Equal(HuntOptions.NmRunning + HuntOptions.NmRepeat, option.Eta);
+    }
+}
+
+public class HuntTimeOfDayTests
+{
+    [Fact]
+    public void A_night_mob_waits_for_the_night()
+    {
+        var wyvern = new Farm(FarmKind.Lockbox, 8053, 0, 65, false, [], [new Vector2(30, 17)], [new FarmDrop(24012, false, null, null)], "night");
+        var farms = new FarmCatalog([new ZoneFarms(827, [wyvern])]);
+        var shard = new HuntShard(24012, [], [], []);
+        var start = DateTimeOffset.FromUnixTimeSeconds(1_760_000_000L);
+        foreach (var minutes in Enumerable.Range(0, 70).Select(i => i * 1.0))
+        {
+            var now = start.AddMinutes(minutes);
+            var option = HuntOptions.For(shard, farms, new HuntContext(827, [], new HashSet<ushort>(), 60, now)).Single();
+            Assert.Equal(EurekaWeather.IsNight(now), option.IsOpen(now));
+            Assert.True(EurekaWeather.IsNight(option.Window!.Start.AddSeconds(1)));
+        }
     }
 }

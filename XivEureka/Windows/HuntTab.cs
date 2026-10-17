@@ -237,7 +237,7 @@ public sealed class HuntTab(
         }
         var weather = option.Farm is { Weathers.Count: > 0 } f
             ? string.Join(" ou ", f.Weathers.Select(weatherName))
-            : null;
+            : option.Farm?.Time switch { "night" => "Nuit", "day" => "Jour", _ => null };
         if (option.Window is { } w && !w.IsOpen(now))
             ImGui.TextColored(Amber, $"{weather} dans {Formatting.Duration(w.Start - now)}");
         else if (option.Window is { } open)

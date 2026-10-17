@@ -21,9 +21,11 @@ fortune ↔ actions Logos).
 Fait : sources autres que les NM (`Data/farms.json`, Pyros) et classement par vitesse
 (`HuntOptions`), bloc « Le plus rapide », bouton Carte qui montre l'endroit. Corrigé au passage :
 les numéros d'éclats de `logos.json` (5 sur 9 décalés). À valider en jeu : lieux des élémentaires,
-noms FR, ordres de grandeur des temps. Reste : Hydatos (Obscur, élémentaires de l'île aux sprites,
-coffres humides) quand on y va ; pondérer par la probabilité (1 mneme parmi N) ; drapeau direct
-depuis l'onglet.
+noms FR, ordres de grandeur des temps.
+Fait aussi (2026-10-17) : chance d'un mneme utile dans le classement, bouton Drapeau, Hydatos
+(11 NM dans `nm.json`, 29 sources dans `farms.json`, jour/nuit pour les coffres humides), pas
+d'alerte pour ses propres pops. À valider à Hydatos : lieux, Daphné, noms des élémentaires
+(numéros BNpcName partagés avec Pagos).
 
 ## Onglet « Carte » (2026-10-14, à valider avec Pop)
 

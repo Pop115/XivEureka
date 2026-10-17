@@ -108,6 +108,8 @@ public static class HuntOptions
                 .FirstOrDefault();
             if (window == null) return null; // weather not coming within a week: not worth listing
         }
+        // A farm needs a weather or a time of day, never both (checked by a test on the data).
+        if (farm.Time is { } time) window = TimeOfDayWindow(time, context.Now);
 
         var effort = farm.Kind switch
         {
@@ -122,6 +124,7 @@ public static class HuntOptions
             notes.Add($"coffre {Chest(drop.Chest)}" + (drop.Count != null ? $" ({drop.Count})" : ""));
             if (context.BunnyFates.Contains(farm.Fate)) notes.Add("FATE lapin en cours");
         }
+        if (farm.Note != null) notes.Add(farm.Note);
         if (farm.Adapted) notes.Add("seulement une fois adapté (ne pas l'étourdir avant)");
         if (farm.Kind == FarmKind.Mob) notes.Add("au hasard, plus souvent en chaîne de 25-30");
         if (farm.Kind == FarmKind.Lockbox) notes.Add("dans les coffres de mutation (tout mob muté ou adapté peut en lâcher)");
@@ -163,6 +166,23 @@ public static class HuntOptions
         if (huntShard.UsefulChance is > 0 and < 1)
             eta += TimeSpan.FromMinutes(NmRepeat.TotalMinutes * ((1 / huntShard.UsefulChance) - 1));
         return new HuntOption(shard, source.Territory, null, null, source, status, eta, window, []);
+    }
+
+    /// <summary>The open or next Eorzea day (6:00-19:00) or night window.</summary>
+    private static TimeWindow? TimeOfDayWindow(string time, DateTimeOffset now) =>
+        time switch
+        {
+            "night" => NmStatuses.NextWindow(EurekaWeather.Zones[0], new SpawnCondition(null, true), now),
+            "day" => DayWindow(now),
+            _ => null,
+        };
+
+    private static TimeWindow DayWindow(DateTimeOffset now)
+    {
+        var (nightNext, at) = EurekaWeather.NextDayNightSwitch(now);
+        if (nightNext) return new TimeWindow(now, at); // day until dusk
+        var (_, dusk) = EurekaWeather.NextDayNightSwitch(at);
+        return new TimeWindow(at, dusk);
     }
 
     private static string Chest(string? chest) => chest switch

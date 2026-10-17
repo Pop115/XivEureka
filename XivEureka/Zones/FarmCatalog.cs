@@ -29,10 +29,11 @@ public sealed record FarmDrop(uint Shard, bool IfAtOrAboveYou, string? Chest, st
 /// <summary>
 /// One farm: <see cref="Npc"/> (BNpcName row; 0 for a bunny FATE) or <see cref="Fate"/> (bunny FATE),
 /// its level, whether it drops only once adapted, the weathers it needs (any of them; none: always
-/// there), where (map coordinates) and what it drops.
+/// there), the Eorzea time it needs (<see cref="Time"/>: "day", "night" or null), where (map
+/// coordinates), what it drops and a user-facing note (French for now).
 /// </summary>
 public sealed record Farm(FarmKind Kind, uint Npc, ushort Fate, int Level, bool Adapted, IReadOnlyList<string> Weathers,
-    IReadOnlyList<Vector2> Places, IReadOnlyList<FarmDrop> Drops);
+    IReadOnlyList<Vector2> Places, IReadOnlyList<FarmDrop> Drops, string? Time = null, string? Note = null);
 
 public sealed record ZoneFarms(uint Territory, IReadOnlyList<Farm> Farms);
 
@@ -50,7 +51,7 @@ public sealed class FarmCatalog(IReadOnlyList<ZoneFarms> zones)
         return new FarmCatalog(raw.Zones.Select(z => new ZoneFarms(z.Territory, z.Farms.Select(f => new Farm(
             Enum.Parse<FarmKind>(f.Kind, ignoreCase: true), f.Npc, f.Fate, f.Level, f.Adapted, f.Weathers ?? [],
             f.Places.Select(p => new Vector2(p[0], p[1])).ToList(),
-            f.Drops.Select(d => new FarmDrop(d.Shard, d.IfAtOrAboveYou, d.Chest, d.Count)).ToList())).ToList())).ToList());
+            f.Drops.Select(d => new FarmDrop(d.Shard, d.IfAtOrAboveYou, d.Chest, d.Count)).ToList(), f.Time, f.Note)).ToList())).ToList());
     }
 
     public static FarmCatalog Embedded()
@@ -63,6 +64,6 @@ public sealed class FarmCatalog(IReadOnlyList<ZoneFarms> zones)
     private sealed record RawFile(List<RawZone> Zones);
     private sealed record RawZone(uint Territory, List<RawFarm> Farms);
     private sealed record RawFarm(string Kind, uint Npc, ushort Fate, int Level, bool Adapted, List<string>? Weathers,
-        List<float[]> Places, List<RawDrop> Drops);
+        List<float[]> Places, List<RawDrop> Drops, string? Time, string? Note);
     private sealed record RawDrop(uint Shard, bool IfAtOrAboveYou, string? Chest, string? Count);
 }
