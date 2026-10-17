@@ -214,6 +214,8 @@ public static class HuntOptions
         if (farm.Note != null) notes.Add(farm.Note);
         if (farm.Adapted)
             notes.Add(Loc.T("seulement s'il s'adapte (au hasard ; ne pas l'étourdir avant)", "only once it adapts (random; do not stun it before)"));
+        if (farm.Mutated)
+            notes.Add(Loc.T("seulement une fois muté (au hasard, dans la condition indiquée)", "only once mutated (random, under the condition shown)"));
         if (farm.Kind == FarmKind.Mob)
             notes.Add(Loc.T("au hasard, plus souvent en chaîne de 25-30", "at random, more often at a 25-30 chain"));
         if (farm.Kind == FarmKind.Lockbox)

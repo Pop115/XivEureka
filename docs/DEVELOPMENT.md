@@ -75,8 +75,11 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   drapeau sur la position. Un lien ffxiv-eureka.com/xxxx est retenu comme dernier tracker vu. Un
   pop annoncé par toi-même ne déclenche pas d'alerte (relation « joueur » du message, ou ton nom
   comme expéditeur sur les LS).
-- **Progression** : histoire et reliques. `Data/relics.json` : les 16 étapes d'arme et les 8
-  d'armure, chacune un bloc de numéros d'objet consécutifs (armes : 16 = 15 jobs + bouclier de
+- **Progression** : histoire et reliques. `Data/relics.json` : les 16 étapes d'arme et les 3
+  d'armure élémentaire (achetée avec des cristaux Pyros une fois 50 actions Logos apprises ;
+  l'amélioration de l'armure d'artefact n'est pas suivie). Seuls les emplacements commencés ont une
+  ligne, les autres sont résumés (arme : quête de job ; armure : pièces à acheter et leur coût).
+  Avant : chacune un bloc de numéros d'objet consécutifs (armes : 16 = 15 jobs + bouclier de
   paladin ; armure d'artefact : 75 = 15 jobs × 5 pièces ; armure élémentaire : 35 = 7 rôles × 5),
   premier et dernier objet vérifiés sur XIVAPI ; le job et l'emplacement de chaque objet sont lus
   dans les feuilles du jeu en anglais (`ClassJobCategory`, `EquipSlotCategory`). Coûts du wiki (les
@@ -129,7 +132,9 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   lâchent leur éclat qu'une fois adaptés. Hydatos : élémentaires d'orage et de fonte (Conceptuel),
   de blizzard et de mort (Fondamental), île aux élémentaires Nv 65, blizzard adapté Nv 64
   (Offensif), mobs de prépa Nv 62+ (Obscur au hasard), coffres humides (Tactique : zébu par neige,
-  vouivre et gargouille la nuit, peiste le jour), FATE lapin 1425 (bronze : Inimical/Protecteur/
+  vouivre et gargouille la nuit, peiste le jour, et tous les mobs mutants ou adaptatifs, Nv 50 à
+  63, chacun avec la condition de sa mutation lue sur les couleurs du bestiaire : rouge le jour,
+  bleu la nuit, jaune sous telle météo), FATE lapin 1425 (bronze : Inimical/Protecteur/
   Curatif, argent : Mitigatif, or : Offensif).
 - **Éclats ↔ mnemes** : numéros d'objet vérifiés sur la feuille Item du jeu le 2026-10-17 ; avant,
   5 éclats (Curatif, Offensif, Protecteur, Mitigatif, Inimical) portaient les mnemes d'un autre, et

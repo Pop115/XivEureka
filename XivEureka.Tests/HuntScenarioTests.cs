@@ -245,4 +245,20 @@ public class HuntScenarioTests(ITestOutputHelper output)
         Assert.Equal((7471u, 51), (first.Farm!.Npc, first.Farm.Level));
         Assert.InRange(Minutes(first), 11, 13);
     }
+
+    // ---------- Tactical: mutating mobs ----------
+
+    [Fact]
+    public void Tactical_in_Hydatos_at_50_comes_from_mutating_mobs_within_reach()
+    {
+        // Any mutated or adapted mob can drop a moisture-warped lockbox. At 50, the lv 64-65 ones are
+        // out of reach, but the lv 50-55 mutants are not: each under its own condition (night, a weather).
+        var options = Rank("Tactical, duo lv 50, Hydatos", Shard(24012, 1), Context(Hydatos, Under(Hydatos, "Fair Skies"), 50));
+        var reachable = options.Where(o => o.Eta != null).ToList();
+        Assert.NotEmpty(reachable);
+        Assert.All(reachable, o => Assert.True(o.Farm!.Mutated || o.Farm.Adapted));
+        Assert.All(reachable, o => Assert.InRange(o.Farm!.Level, 50, 55));
+        Assert.Contains(reachable, o => o.Farm!.Npc == 8014 && o.IsOpen(Under(Hydatos, "Fair Skies"))); // Val Chigoe: Fair Skies
+        Assert.Contains(reachable[0].Notes, n => n.Contains("muté") || n.Contains("adapte"));
+    }
 }

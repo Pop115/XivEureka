@@ -72,7 +72,7 @@ public sealed class ProgressTab(
         if (job == null) return;
         if (ImGui.CollapsingHeader(Loc.T("Arme relique", "Relic weapon") + "##weapon", ImGuiTreeNodeFlags.DefaultOpen))
             DrawLine(catalog.Weapon, job, owned, state, allJobs: jobs);
-        if (ImGui.CollapsingHeader(Loc.T("Armure relique", "Relic armor") + "##armor", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader(Loc.T("Armure élémentaire", "Elemental armor") + "##armor", ImGuiTreeNodeFlags.DefaultOpen))
             DrawLine(catalog.Armor, job, owned, state, allJobs: null);
         if (ImGui.CollapsingHeader(Loc.T("Matériaux dans les sacs", "Materials in the bags") + "##materials")) DrawMaterials();
     }
@@ -158,7 +158,12 @@ public sealed class ProgressTab(
         }
         var learned = state.LearnedReadAt != null ? state.Learned.Count : (int?)null;
 
-        foreach (var slot in slots)
+        // Only the slots already started get a line; the others are summed up in one line.
+        var started = slots.Where(s => s.Stage != null).ToList();
+        var notStarted = slots.Where(s => s.Stage == null).ToList();
+        if (notStarted.Count > 0) NotStarted(stages, notStarted, learned, armor: allJobs == null);
+
+        foreach (var slot in started)
         {
             using var id = ImRaii.PushId((int)slot.Slot);
             ItemLine(slot.Owned, Loc.T("aucune vue", "none seen"));
@@ -189,7 +194,7 @@ public sealed class ProgressTab(
             ImGui.Unindent(32);
         }
 
-        var remaining = RelicProgress.RemainingToEnd(stages, slots);
+        var remaining = RelicProgress.RemainingToEnd(stages, started);
         if (remaining.Count > 0)
         {
             ImGui.TextColored(Grey, Loc.T("Reste jusqu'à la dernière étape :", "Left to the last stage:"));
@@ -201,15 +206,18 @@ public sealed class ProgressTab(
 
         if (allJobs == null) return;
         ImGui.Spacing();
+        if (allJobs.All(other => RelicProgress.For(stages, other, owned, reader.Info).All(p => p.Stage == null))) return;
         using var table = ImRaii.Table("##all-jobs", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit);
         if (!table) return;
         ImGui.TableSetupColumn(Loc.T("job", "job"));
         ImGui.TableSetupColumn(Loc.T("arme", "weapon"), ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableSetupColumn(Loc.T("niv. d'objet", "item level"));
         ImGui.TableHeadersRow();
+        // Jobs with a relic started only: the others would be empty lines.
         foreach (var other in allJobs)
         {
             var main = RelicProgress.For(stages, other, owned, reader.Info).FirstOrDefault(p => p.Slot == RelicSlot.MainHand);
+            if (main?.Stage == null) continue;
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
             ImGui.TextColored(other == job ? Yellow : Grey, reader.JobName(other));
@@ -219,6 +227,41 @@ public sealed class ProgressTab(
             ImGui.TextUnformatted(main?.Stage is { } st ? stages[st].ItemLevel.ToString(System.Globalization.CultureInfo.InvariantCulture) : "");
         }
     }
+
+    /// <summary>
+    /// One line for the slots not started: a weapon comes from the level 70 job quest; the elemental
+    /// armor is bought piece by piece (cost of the first stage, and the Logos actions it needs).
+    /// </summary>
+    private void NotStarted(IReadOnlyList<RelicStage> stages, IReadOnlyList<SlotProgress> slots, int? learned, bool armor)
+    {
+        if (!armor)
+        {
+            ImGui.TextColored(Grey, Loc.T("Pas commencée : l'arme antique vient de la quête de job niveau 70 (ou du Récupérateur de la Calamité).",
+                "Not started: the antiquated weapon comes from the level 70 job quest (or the Calamity Salvager)."));
+            return;
+        }
+        var first = stages[0];
+        var pieces = string.Join(", ", slots.Select(s => SlotName(s.Slot)));
+        var total = slots.SelectMany(s => first.CostFor(s.Slot)).GroupBy(c => c.Item).Select(g => new RelicCost(g.Key, g.Sum(c => c.Count)));
+        ImGui.TextColored(Grey, Loc.T($"À acheter ({EurekaWeather.Zone(first.Zone)?.Name}) : {pieces}", $"To buy ({EurekaWeather.Zone(first.Zone)?.Name}): {pieces}"));
+        ImGui.Indent(32);
+        foreach (var cost in total) CostLine(cost);
+        if (first.Logos > 0)
+            ImGui.TextColored(learned >= first.Logos ? Green : Red, Loc.T($"Actions Logos apprises : {learned?.ToString() ?? "?"}/{first.Logos}",
+                $"Logos actions learned: {learned?.ToString() ?? "?"}/{first.Logos}"));
+        ImGui.Unindent(32);
+    }
+
+    private static string SlotName(RelicSlot slot) => slot switch
+    {
+        RelicSlot.MainHand => Loc.T("arme", "weapon"),
+        RelicSlot.OffHand => Loc.T("bouclier", "shield"),
+        RelicSlot.Head => Loc.T("tête", "head"),
+        RelicSlot.Body => Loc.T("torse", "body"),
+        RelicSlot.Hands => Loc.T("mains", "hands"),
+        RelicSlot.Legs => Loc.T("jambes", "legs"),
+        _ => Loc.T("pieds", "feet"),
+    };
 
     private static string Where(RelicStage stage) =>
         stage.Zone == 0 ? "" : $"({EurekaWeather.Zone(stage.Zone)?.Name}, {Loc.T("niv. d'objet", "item level")} {stage.ItemLevel})";

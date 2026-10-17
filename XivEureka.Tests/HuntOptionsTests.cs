@@ -73,6 +73,11 @@ public class FarmCatalogTests
         Assert.All(Pyros.Where(f => f.Adapted), f => Assert.DoesNotContain(f.Drops, d => d.Shard == 24007));
         Assert.Equal([1407, 1408], Pyros.Where(f => f.Kind == FarmKind.Bunny).Select(f => (int)f.Fate));
         Assert.Equal([1425], Catalog.Zone(827).Where(f => f.Kind == FarmKind.Bunny).Select(f => (int)f.Fate));
+        // Every Hydatos lockbox farm is a mutating or adapting mob; Val Nanka mutates at night.
+        Assert.All(Catalog.Zone(827).Where(f => f.Kind == FarmKind.Lockbox), f => Assert.True(f.Mutated || f.Adapted));
+        var nanka = Catalog.Zone(827).Single(f => f.Npc == 8009);
+        Assert.True(nanka.Mutated);
+        Assert.Equal("night", nanka.Time);
     }
 }
 

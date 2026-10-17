@@ -8,13 +8,15 @@ public class RelicCatalogTests
     private static readonly RelicCatalog Catalog = RelicCatalog.Embedded();
 
     [Fact]
-    public void Sixteen_weapon_stages_and_eight_armor_stages_as_on_the_wiki()
+    public void Sixteen_weapon_stages_and_the_three_elemental_armor_stages()
     {
         Assert.Equal(16, Catalog.Weapon.Count);
-        Assert.Equal(8, Catalog.Armor.Count);
         Assert.Equal("physeos", Catalog.Weapon[^1].Key);
         Assert.All(Catalog.Weapon, s => Assert.Equal(16, s.Count));
-        Assert.Equal([75, 75, 75, 75, 75, 35, 35, 35], Catalog.Armor.Select(s => s.Count));
+        // Only the elemental armor (bought once 50 Logos actions are learned), not the artifact armor upgrades.
+        Assert.Equal(["elemental", "elemental1", "elemental2"], Catalog.Armor.Select(s => s.Key));
+        Assert.All(Catalog.Armor, s => Assert.Equal(35, s.Count));
+        Assert.Equal([50, 56, 56], Catalog.Armor.Select(s => s.Logos));
     }
 
     [Fact]
@@ -121,22 +123,21 @@ public class RelicProgressTests
     }
 
     [Fact]
-    public void Armor_goes_piece_by_piece_and_chest_and_legs_cost_more_at_the_end()
+    public void Elemental_armor_goes_piece_by_piece_and_chest_and_legs_cost_more_at_the_end()
     {
-        // A paladin: Anemos helm (stage 4) and Elemental +1 armor of Fending (stage 6).
-        var anemosHelm = Catalog.Armor[4].First;            // PLD is the first job: its head is the first item
-        var elementalBody = Catalog.Armor[6].First + 1;     // Fending (PLD, WAR, DRK) is the first role: body is the second
-        var slots = RelicProgress.For(Catalog.Armor, "PLD", new HashSet<uint> { anemosHelm, elementalBody }, Info);
+        // A paladin: nothing on the head yet, Elemental +1 armor of Fending on the body.
+        var elementalBody = Catalog.Armor[1].First + 1;     // Fending (PLD, WAR, DRK) is the first role: body is the second
+        var slots = RelicProgress.For(Catalog.Armor, "PLD", new HashSet<uint> { elementalBody }, Info);
         Assert.Equal(Pieces, slots.Select(s => s.Slot));
         var head = slots.Single(s => s.Slot == RelicSlot.Head);
-        Assert.Equal(4, head.Stage);
+        Assert.Null(head.Stage);
         Assert.Equal([new RelicCost(24124, 40)], head.NextCost);
         Assert.Equal(50, head.NextLogos);
         var body = slots.Single(s => s.Slot == RelicSlot.Body);
-        Assert.Equal(6, body.Stage);
+        Assert.Equal(1, body.Stage);
         Assert.Equal([new RelicCost(24808, 35)], body.NextCost);
         // A warrior shares the role sets: the paladin's Elemental body is theirs too.
-        Assert.Equal(6, RelicProgress.For(Catalog.Armor, "WAR", new HashSet<uint> { elementalBody }, Info)
+        Assert.Equal(1, RelicProgress.For(Catalog.Armor, "WAR", new HashSet<uint> { elementalBody }, Info)
             .Single(s => s.Slot == RelicSlot.Body).Stage);
     }
 

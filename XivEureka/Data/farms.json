@@ -1,5 +1,5 @@
 {
- "source": "Logogram sources other than NMs. Drops: consolegameswiki (Logograms, Eureka Pyros: bunny chest contents) and Eurekan Academy wiki (Logograms drop table, farming tips), cross-checked with the community Pyros bestiary sheet (sprite levels, weathers, adaptations). Places: approximate, read off the community maps (Noranda La'luna: Pyros v20.2019.3.9, Hydatos v21.2019.3.22), same reading as the prep places of nm.json. Hydatos (2026-10-17): sprite drops from Eurekan Academy and the bestiary sheet (Thunderstorm/Snowmelt: Conceptual; Snowstorm/Death: Fundamental; adapted Snowstorm 64: Offensive), bunny chests from consolegameswiki (bronze: Inimical/Protective/Curative 1-3, silver: Mitigative, gold: Offensive), moisture-warped lockbox mobs from Eurekan Academy. 'time': the Eorzea day or night the mob needs. Ids: game sheets BNpcName, Fate, Item (checked 2026-10-17). Weathers: English names of the EurekaWeather slices. 'adapted': drops only once the mob has adapted (grown big) during the fight. 'ifAtOrAboveYou': drops only from mobs at or above your elemental level. Chances and counts (2026-10-17): bunny coffers per FATE = tier share x logogram share, from the community drop record (docs.google.com/spreadsheets/d/1VfncSL5gf9E7ehgND5nZgguUyUAmZiAMbQllLKcoxTQ: Pyros 13,685 coffers: bronze 56% (Conceptual/Fundamental 50/50), silver 36% (Curative), gold 8% (Offensive 47%, Protective 52%); Hydatos 13,494: bronze 50% (Protective/Inimical/Curative a third each), silver 40% (Mitigative), gold 10% (Offensive)). Adapted sprites: 5 Inimical at a time and Pyros lv 54 Thunderstorm 'always adapts' (reddit r/ffxiv 9vc7yj, 9v0qwz). Elsewhere 'chance' is absent: guessed defaults in HuntOptions. 'minutes': time per try when not the default of the kind.",
+ "source": "Logogram sources other than NMs. Drops: consolegameswiki (Logograms, Eureka Pyros: bunny chest contents) and Eurekan Academy wiki (Logograms drop table, farming tips), cross-checked with the community Pyros bestiary sheet (sprite levels, weathers, adaptations). Places: approximate, read off the community maps (Noranda La'luna: Pyros v20.2019.3.9, Hydatos v21.2019.3.22), same reading as the prep places of nm.json. Hydatos (2026-10-17): sprite drops from Eurekan Academy and the bestiary sheet (Thunderstorm/Snowmelt: Conceptual; Snowstorm/Death: Fundamental; adapted Snowstorm 64: Offensive), bunny chests from consolegameswiki (bronze: Inimical/Protective/Curative 1-3, silver: Mitigative, gold: Offensive), moisture-warped lockbox mobs from Eurekan Academy. 'time': the Eorzea day or night the mob needs. Ids: game sheets BNpcName, Fate, Item (checked 2026-10-17). Weathers: English names of the EurekaWeather slices. 'adapted': drops only once the mob has adapted (grown big) during the fight. 'ifAtOrAboveYou': drops only from mobs at or above your elemental level. Chances and counts (2026-10-17): bunny coffers per FATE = tier share x logogram share, from the community drop record (docs.google.com/spreadsheets/d/1VfncSL5gf9E7ehgND5nZgguUyUAmZiAMbQllLKcoxTQ: Pyros 13,685 coffers: bronze 56% (Conceptual/Fundamental 50/50), silver 36% (Curative), gold 8% (Offensive 47%, Protective 52%); Hydatos 13,494: bronze 50% (Protective/Inimical/Curative a third each), silver 40% (Mitigative), gold 10% (Offensive)). Adapted sprites: 5 Inimical at a time and Pyros lv 54 Thunderstorm 'always adapts' (reddit r/ffxiv 9vc7yj, 9v0qwz). Elsewhere 'chance' is absent: guessed defaults in HuntOptions. 'minutes': time per try when not the default of the kind. Hydatos mutating and adapting mobs (2026-10-17): every one of them can drop a moisture-warped lockbox (Tactical) once mutated or adapted; when they do (day, night, or a weather) is read from the community bestiary's cell colors, places off the community map. 'mutated'/'adapted' on a lockbox farm: the kind of change; the condition is when it happens.",
  "zones": [
   {
    "territory": 795,
@@ -30,7 +30,7 @@
     { "kind": "mob", "npc": 7845, "level": 54, "places": [[9.5, 33.2]], "drops": [{ "shard": 24008 }] },
     { "kind": "mob", "npc": 7848, "level": 55, "places": [[16.8, 33.4], [17.4, 35.8]], "drops": [{ "shard": 24008 }] },
     { "kind": "mob", "npc": 7846, "level": 55, "places": [[33.6, 8.3], [38.6, 16.9]], "drops": [{ "shard": 24008 }] },
-    { "kind": "lockbox", "npc": 7847, "level": 55, "weathers": ["Umbral Wind"], "places": [[37.0, 17.9]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 7847, "level": 55, "mutated": true, "weathers": ["Umbral Wind"], "places": [[37.0, 17.9]], "drops": [{ "shard": 24012 }] },
     { "kind": "bunny", "fate": 1407, "level": 35, "places": [[24.2, 26.3]], "drops": [{ "shard": 24007, "chest": "bronze", "count": "1-2", "chance": 0.278 }, { "shard": 24008, "chest": "bronze", "count": "1-2", "chance": 0.276 }, { "shard": 24009, "chest": "silver", "count": "1-5", "chance": 0.357 }, { "shard": 24010, "chest": "gold", "count": "5-11", "chance": 0.039 }, { "shard": 24011, "chest": "gold", "count": "5-11", "chance": 0.043 }] },
     { "kind": "bunny", "fate": 1408, "level": 46, "places": [[24.9, 10.9]], "drops": [{ "shard": 24007, "chest": "bronze", "count": "1-2", "chance": 0.278 }, { "shard": 24008, "chest": "bronze", "count": "1-2", "chance": 0.276 }, { "shard": 24009, "chest": "silver", "count": "1-5", "chance": 0.357 }, { "shard": 24010, "chest": "gold", "count": "5-11", "chance": 0.039 }, { "shard": 24011, "chest": "gold", "count": "5-11", "chance": 0.043 }] }
    ]
@@ -62,11 +62,40 @@
     { "kind": "mob", "npc": 8047, "level": 63, "places": [[33.4, 24.4]], "drops": [{ "shard": 24809 }] },
     { "kind": "mob", "npc": 8050, "level": 64, "places": [[35.4, 13.5], [36.0, 15.2]], "drops": [{ "shard": 24809 }] },
     { "kind": "mob", "npc": 8054, "level": 65, "places": [[30.6, 19.7]], "drops": [{ "shard": 24809 }] },
-    { "kind": "lockbox", "npc": 8052, "level": 65, "weathers": ["Snow"], "places": [[33.4, 17.6]], "drops": [{ "shard": 24012 }] },
-    { "kind": "lockbox", "npc": 8053, "level": 65, "time": "night", "places": [[30.7, 17.1]], "drops": [{ "shard": 24012 }] },
-    { "kind": "lockbox", "npc": 8051, "level": 64, "time": "night", "places": [[33.1, 14.8]], "drops": [{ "shard": 24012 }] },
-    { "kind": "lockbox", "npc": 8048, "level": 64, "time": "day", "places": [[32.1, 14.2], [34.9, 15.7]], "drops": [{ "shard": 24012 }] },
-    { "kind": "bunny", "fate": 1425, "level": 50, "places": [[13.8, 21.6]], "drops": [{ "shard": 24014, "chest": "bronze", "count": "1-3", "chance": 0.165 }, { "shard": 24011, "chest": "bronze", "count": "1-3", "chance": 0.159 }, { "shard": 24009, "chest": "bronze", "count": "1-3", "chance": 0.166 }, { "shard": 24013, "chest": "silver", "chance": 0.394 }, { "shard": 24010, "chest": "gold", "chance": 0.101 }] }
+    { "kind": "lockbox", "npc": 8052, "level": 65, "mutated": true, "weathers": ["Snow"], "places": [[33.4, 17.6]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8053, "level": 65, "mutated": true, "time": "night", "places": [[30.7, 17.1]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8051, "level": 64, "mutated": true, "time": "night", "places": [[33.1, 14.8]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8048, "level": 64, "mutated": true, "time": "day", "places": [[32.1, 14.2], [34.9, 15.7]], "drops": [{ "shard": 24012 }] },
+    { "kind": "bunny", "fate": 1425, "level": 50, "places": [[13.8, 21.6]], "drops": [{ "shard": 24014, "chest": "bronze", "count": "1-3", "chance": 0.165 }, { "shard": 24011, "chest": "bronze", "count": "1-3", "chance": 0.159 }, { "shard": 24009, "chest": "bronze", "count": "1-3", "chance": 0.166 }, { "shard": 24013, "chest": "silver", "chance": 0.394 }, { "shard": 24010, "chest": "gold", "chance": 0.101 }] },
+    { "kind": "lockbox", "npc": 8008, "level": 50, "adapted": true, "places": [[19.9, 14.0], [17.3, 16.2], [21.6, 18.8]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8009, "level": 50, "mutated": true, "time": "night", "places": [[19.9, 13.6], [21.9, 17.2]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8012, "level": 51, "adapted": true, "places": [[19.3, 18.4], [16.8, 19.4]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8013, "level": 51, "mutated": true, "time": "night", "places": [[16.7, 19.0], [18.9, 21.7], [21.9, 17.6]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8014, "level": 52, "mutated": true, "weathers": ["Fair Skies"], "places": [[15.4, 15.2], [19.6, 25.7]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8055, "level": 52, "adapted": true, "time": "night", "places": [[19.4, 24.7]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8018, "level": 53, "mutated": true, "time": "night", "places": [[14.4, 23.4]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8020, "level": 54, "mutated": true, "weathers": ["Thunderstorms"], "places": [[13.6, 25.6], [23.3, 23.2]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8021, "level": 54, "adapted": true, "places": [[25.7, 25.3]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8023, "level": 55, "mutated": true, "weathers": ["Snow"], "places": [[11.1, 22.8], [12.2, 27.8]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8025, "level": 55, "mutated": true, "weathers": ["Fair Skies"], "places": [[11.3, 21.8], [9.0, 23.6]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8026, "level": 56, "mutated": true, "weathers": ["Fair Skies"], "places": [[14.2, 16.4], [8.3, 18.4]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8027, "level": 56, "mutated": true, "weathers": ["Snow"], "places": [[12.0, 18.5]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8029, "level": 57, "mutated": true, "time": "day", "places": [[8.5, 17.1], [6.1, 19.7]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8030, "level": 57, "adapted": true, "places": [[7.2, 17.6], [6.1, 21.8]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8033, "level": 58, "mutated": true, "time": "night", "places": [[5.1, 13.1]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8034, "level": 58, "mutated": true, "time": "day", "places": [[4.9, 15.0]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8057, "level": 58, "adapted": true, "time": "night", "places": [[4.6, 13.6], [4.7, 16.1]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8035, "level": 59, "mutated": true, "weathers": ["Showers"], "places": [[5.0, 26.3]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8036, "level": 59, "mutated": true, "time": "day", "places": [[5.7, 28.5], [9.6, 28.6]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8058, "level": 59, "adapted": true, "time": "night", "places": [[7.2, 29.2]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8039, "level": 60, "mutated": true, "time": "day", "places": [[22.9, 14.5], [26.7, 18.1]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8040, "level": 60, "mutated": true, "weathers": ["Showers"], "places": [[24.2, 16.4]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8041, "level": 61, "adapted": true, "places": [[30.5, 15.9], [26.3, 21.3]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8042, "level": 61, "mutated": true, "time": "night", "places": [[28.1, 14.4]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8044, "level": 62, "mutated": true, "weathers": ["Fair Skies"], "places": [[29.4, 25.2], [38.2, 28.1]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8059, "level": 62, "adapted": true, "time": "night", "places": [[37.7, 27.8], [31.8, 17.6], [31.5, 21.0]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 5945, "level": 63, "adapted": true, "places": [[37.0, 20.8], [38.2, 23.8]], "drops": [{ "shard": 24012 }] },
+    { "kind": "lockbox", "npc": 8049, "level": 63, "mutated": true, "weathers": ["Thunderstorms"], "places": [[33.4, 20.2], [37.1, 22.9]], "drops": [{ "shard": 24012 }] }
    ]
   }
  ]

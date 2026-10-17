@@ -1,5 +1,5 @@
 {
- "source": "Eurekan relics and story. Stages: consolegameswiki (Eurekan Weapons, Eurekan Armor, the four zone pages), checked 2026-10-17. Item ids: game Item sheet, each stage is one block of consecutive ids (weapons: 16 = 15 jobs + the paladin shield; artifact armor: 75 = 15 jobs x 5 pieces; elemental armor: 35 = 7 roles x 5 pieces), first and last item checked on XIVAPI. Which job and slot each item fits is read from the game sheets at runtime. 'cost': items and counts to reach the stage from the previous one (the previous piece is handed in too); 'bodyLegsCost': for chest and legs when it differs; 'logos': Logos actions learned required. Story: quests of the game Quest sheet (access to each zone), steps by elemental level from the zone pages; the in-zone steps are not ordinary quests (the plugin cannot read them).",
+ "source": "Eurekan relics and story. Stages: consolegameswiki (Eurekan Weapons, Eurekan Armor, the four zone pages), checked 2026-10-17. Item ids: game Item sheet, each stage is one block of consecutive ids (weapons: 16 = 15 jobs + the paladin shield; artifact elemental armor: 35 = 7 roles x 5 pieces; only the elemental armor is followed (bought new with Pyros crystals once 50 Logos actions are learned, not an upgrade of the artifact armor)), first and last item checked on XIVAPI. Which job and slot each item fits is read from the game sheets at runtime. 'cost': items and counts to reach the stage from the previous one (the previous piece is handed in too); 'bodyLegsCost': for chest and legs when it differs; 'logos': Logos actions learned required. Story: quests of the game Quest sheet (access to each zone), steps by elemental level from the zone pages; the in-zone steps are not ordinary quests (the plugin cannot read them).",
  "materials": [21801, 21803, 21802, 23309, 22976, 22975, 24124, 24123, 24122, 24807, 24806, 24808],
  "weapon": [
   { "key": "antiquated", "first": 17817, "count": 16, "itemLevel": 290, "zone": 0, "cost": [] },
@@ -20,11 +20,6 @@
   { "key": "physeos", "first": 24707, "count": 16, "itemLevel": 405, "zone": 827, "cost": [[24808, 100]] }
  ],
  "armor": [
-  { "key": "antiquated", "first": 17742, "count": 75, "itemLevel": 290, "zone": 0, "cost": [] },
-  { "key": "base", "first": 22006, "count": 75, "itemLevel": 335, "zone": 732, "cost": [[21801, 50]] },
-  { "key": "base1", "first": 22081, "count": 75, "itemLevel": 340, "zone": 732, "cost": [[21801, 150]] },
-  { "key": "base2", "first": 22156, "count": 75, "itemLevel": 345, "zone": 732, "cost": [[21801, 400]] },
-  { "key": "anemos", "first": 22231, "count": 75, "itemLevel": 350, "zone": 732, "cost": [[21803, 150]] },
   { "key": "elemental", "first": 24087, "count": 35, "itemLevel": 380, "zone": 795, "cost": [[24124, 40]], "logos": 50 },
   { "key": "elemental1", "first": 24723, "count": 35, "itemLevel": 390, "zone": 827, "cost": [[24807, 30]], "bodyLegsCost": [[24807, 50]], "logos": 56 },
   { "key": "elemental2", "first": 24758, "count": 35, "itemLevel": 390, "zone": 827, "cost": [[24808, 21]], "bodyLegsCost": [[24808, 35]], "logos": 56 }

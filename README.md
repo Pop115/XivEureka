@@ -55,8 +55,8 @@ state (FATE running, respawning, weather or night to come), the chosen NM's prep
 in chat. Eorzea time, day/night and the coming weathers on top; "Where to go now" on the side.
 
 **Progress.** The Eureka story zone by zone (access quests read from the game; the in-zone steps,
-which the game does not expose, are ticked by hand) and your relic weapon and armor for any job:
-the stage reached (relics seen in your bags, armoury and saddlebags, remembered when put away), the
+which the game does not expose, are ticked by hand), your relic weapon and your elemental armor
+for any job (only what you have started gets a line): the stage reached (relics seen in your bags, armoury and saddlebags, remembered when put away), the
 next stage with its cost against what you own (crystals, feathers, Logos actions learned), and
 what is left to the end.
 
