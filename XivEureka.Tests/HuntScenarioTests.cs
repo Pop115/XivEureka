@@ -59,6 +59,10 @@ public class HuntScenarioTests(ITestOutputHelper output)
     private static HuntContext Context(uint territory, DateTimeOffset now, int level, IReadOnlyList<NmStatus>? statuses = null,
         params ushort[] bunnies) => new(territory, statuses ?? Statuses(territory, now), bunnies.ToHashSet(), level, now, Duo);
 
+    /// <summary>The same, leveling up counting for half (the default setting).</summary>
+    private static HuntContext Leveling(HuntContext context) =>
+        context with { XpWeight = HuntXp.Weight(0.5, context.Territory, context.Level) };
+
     /// <summary>The ranking, printed, then returned.</summary>
     private IReadOnlyList<HuntOption> Rank(string title, HuntShard shard, HuntContext context)
     {
@@ -274,5 +278,40 @@ public class HuntScenarioTests(ITestOutputHelper output)
         Assert.All(reachable, o => Assert.InRange(o.Farm!.Level, 35, 55));
         Assert.Contains(reachable, o => o.Farm!.Npc == 7847);
         Assert.NotEqual(7847u, reachable[0].Farm!.Npc);
+    }
+
+    // ---------- Leveling up as well ----------
+
+    [Fact]
+    public void Leveling_in_Hydatos_favors_sources_at_your_level_over_bunny_coffers()
+    {
+        // At 50 in Hydatos (max 60) experience weighs half. Mobs around your level level you up at
+        // the reference rhythm or better: their time counts half. Bunny FATEs give little: almost none off.
+        var now = Under(Hydatos, "Showers");
+        var conceptual = Rank("Conceptual, duo lv 50, Hydatos, Showers, leveling", Shard(Conceptual, 2), Leveling(Context(Hydatos, now, 50)));
+        var sprite = conceptual[0];
+        Assert.Equal(FarmKind.Sprite, sprite.Farm!.Kind);
+        Assert.Equal(1, sprite.XpShare);
+        Assert.Equal(sprite.Eta!.Value.TotalMinutes / 2, sprite.Counted!.Value.TotalMinutes, 3);
+
+        var offensive = Rank("Offensive, duo lv 50, Hydatos, leveling", Shard(Offensive, 1), Leveling(Context(Hydatos, now, 50)));
+        var bunny = offensive.First(o => o.Farm is { Kind: FarmKind.Bunny, Fate: 1425 });
+        Assert.True(bunny.XpShare < 0.3);
+        Assert.True(bunny.Counted > bunny.Eta * 0.9);
+    }
+
+    [Fact]
+    public void An_NM_at_your_level_levels_you_up_and_one_far_below_does_not()
+    {
+        var now = Under(Hydatos, "Fair Skies");
+        var obscure = Rank("Obscure, duo lv 50, Hydatos, leveling", Shard(Obscure, 1), Leveling(Context(Hydatos, now, 50)));
+        var khalamari = obscure.Single(o => o.Nm?.Nm.Npc == 8063);
+        Assert.True(khalamari.XpShare >= 0.75); // "XP ++": 30 prep kills of a lv 55 mob plus the NM bonus, over its 88 min
+        Assert.Equal(Difficulty.Hard, khalamari.Difficulty);
+
+        // A lv 35 Pyros NM for a lv 50 player gives almost nothing (and Pyros is maxed at 50 anyway).
+        var pyros = Rank("Curative, duo lv 50, Pyros, leveling", Shard(Curative, 1), Leveling(Context(Pyros, Under(Pyros, "Fair Skies"), 50)));
+        Assert.All(pyros.Where(o => o.Eta != null), o => Assert.Equal(o.Eta, o.Counted));
+        Assert.True(pyros.Single(o => o.Nm?.Nm.Npc == 7759).XpShare < 0.3);
     }
 }

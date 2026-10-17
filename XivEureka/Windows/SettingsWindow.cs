@@ -56,6 +56,17 @@ public sealed class SettingsWindow : Window
             ImGui.SetTooltip(Loc.T("Combien vous êtes à farmer les éclats, sans compter sur un groupe public.\nLe groupe réel compte s'il est plus grand.",
                 "How many of you farm the logograms, without counting on a public group.\nThe actual party counts when it is bigger."));
 
+        var xp = c.XpImportance;
+        ImGui.SetNextItemWidth(160);
+        if (ImGui.SliderInt(Loc.T("Importance de l'XP", "Weight of experience") + "##xp", ref xp, 0, 100, "%d %%"))
+        {
+            c.XpImportance = xp;
+            save();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(Loc.T("Une source qui fait aussi monter de niveau compte pour moins de temps dans le classement.\nÀ 50 % : une heure qui rapporte autant d'XP qu'un farm de mobs à +3 niveaux compte pour une demi-heure.\nRien au niveau max de la zone.",
+                "A source that also levels you up counts for less time in the ranking.\nAt 50%: an hour giving as much experience as grinding mobs 3 levels above counts as half an hour.\nNothing at the zone's max level."));
+
         ImGui.Spacing();
         ImGui.TextDisabled(Loc.T("En zone d'Eurêka", "In Eureka"));
         Checkbox(Loc.T("Annoncer les nouvelles FATE (sauf les FATE lapin)", "Announce new FATEs (except bunny FATEs)"), () => c.AlertFates, v => c.AlertFates = v);

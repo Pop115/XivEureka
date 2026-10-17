@@ -48,7 +48,9 @@ missing mnemes, the logograms that give them, and every way to get those logogra
 under their weather, NMs with their live state, bunny FATE coffers, mutation lockboxes, random
 drops. Each source gets an estimated time to your first *useful* mneme (waiting for the weather or
 the respawn, then tries × time per try, with measured bunny coffer odds and mneme odds), for a
-small party farming on its own. "Fastest" sums it up; **Map** and **Flag** buttons take you there.
+small party farming on its own, with how hard each one is. If you also want to level up, sources
+that give experience count for less time (until the zone's max level; adjustable). "Fastest" sums
+it up; **Map** and **Flag** buttons take you there.
 
 **Map.** The zone's game map redrawn by the plugin: you, your party, the flag, the NMs with their
 state (FATE running, respawning, weather or night to come), the chosen NM's prep area, pops called

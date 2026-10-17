@@ -354,3 +354,42 @@ public class HuntPartyTests
         Assert.Equal(3 + 20, HuntOptions.NmFight(Skoll, Context(45, 2)).TotalMinutes, 3);
     }
 }
+
+public class HuntXpTests
+{
+    [Fact]
+    public void Mobs_above_you_give_more_and_mobs_well_below_almost_nothing()
+    {
+        Assert.Equal(1, HuntXp.LevelFactor(50, 50));
+        Assert.Equal(1.45, HuntXp.LevelFactor(53, 50), 6);
+        Assert.Equal(2, HuntXp.LevelFactor(60, 50));
+        Assert.Equal(0.1, HuntXp.LevelFactor(47, 50));
+    }
+
+    [Fact]
+    public void Experience_counts_until_the_zone_max_level()
+    {
+        Assert.Equal(0.5, HuntXp.Weight(0.5, 827, 50));
+        Assert.Equal(0, HuntXp.Weight(0.5, 827, 60));
+        Assert.Equal(0, HuntXp.Weight(0.5, 795, 50));   // Pyros caps at 50
+        Assert.Equal(60, HuntXp.MaxLevel(827));
+    }
+
+    [Fact]
+    public void The_counted_time_drops_by_the_weight_of_the_experience_it_gives()
+    {
+        Assert.Equal(30, HuntXp.Counted(TimeSpan.FromMinutes(60), 1, 0.5)!.Value.TotalMinutes, 6);
+        Assert.Equal(60, HuntXp.Counted(TimeSpan.FromMinutes(60), 1, 0)!.Value.TotalMinutes, 6);
+        Assert.Null(HuntXp.Counted(null, 1, 0.5));
+    }
+
+    [Fact]
+    public void Difficulty_from_the_level_gap_the_change_and_NMs()
+    {
+        Assert.Equal(Difficulty.Easy, HuntXp.Of(50, 50, changes: false, nm: false));
+        Assert.Equal(Difficulty.Medium, HuntXp.Of(50, 50, changes: true, nm: false));
+        Assert.Equal(Difficulty.Hard, HuntXp.Of(54, 50, changes: false, nm: false));
+        Assert.Equal(Difficulty.Hard, HuntXp.Of(50, 50, changes: false, nm: true));
+        Assert.Equal(Difficulty.Easy, HuntXp.Of(40, 50, changes: false, nm: true));
+    }
+}

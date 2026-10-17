@@ -113,7 +113,9 @@ public sealed class MapTab
         if (!inEureka) state = MapState.Empty;
         Compute(zone, state);
         var party = Math.Max(configuration.FarmPartySize, state.Party.Count + 1);
-        return new HuntContext(zone.Territory, statuses, state.BunnyFates, sources.ElementalLevel(), DateTimeOffset.UtcNow, party);
+        var level = sources.ElementalLevel();
+        return new HuntContext(zone.Territory, statuses, state.BunnyFates, level, DateTimeOffset.UtcNow, party,
+            HuntXp.Weight(configuration.XpImportance / 100.0, zone.Territory, level));
     }
 
     /// <summary>Chooses the NM and centers the map on it at the next draw.</summary>

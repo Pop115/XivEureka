@@ -41,6 +41,7 @@ public sealed class HuntTab(
     private static readonly Vector4 Green = new(0.35f, 0.83f, 0.6f, 1f);
     private static readonly Vector4 Amber = new(0.95f, 0.65f, 0.2f, 1f);
     private static readonly Vector4 Grey = new(0.6f, 0.6f, 0.65f, 1f);
+    private static readonly Vector4 Red = new(0.95f, 0.45f, 0.4f, 1f);
 
     public void Draw()
     {
@@ -124,13 +125,16 @@ public sealed class HuntTab(
                     ImGui.TableNextColumn();
                     When(option, context);
                     ImGui.TableNextColumn();
-                    Effort(option);
+                    Effort(option, context.XpWeight);
                     ImGui.TableNextColumn();
                     MapButton(option);
                 }
             }
         }
         ImGui.TextColored(Grey, Loc.T("Temps estimé jusqu'au premier mneme utile : attente (météo, jour/nuit, respawn, FATE) + essais × temps par essai.", "Estimated time to the first useful mneme: wait (weather, day/night, respawn, FATE) + tries × time per try."));
+        if (context.XpWeight > 0)
+            ImGui.TextColored(Grey, Loc.T($"Classé aussi par l'XP (niveau max de la zone : {HuntXp.MaxLevel(context.Territory)}) : une source qui fait monter de niveau compte pour moins de temps.",
+                $"Also ranked by experience (zone max level: {HuntXp.MaxLevel(context.Territory)}): a source that levels you up counts for less time."));
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(Loc.T("Chance par essai = chance que l'éclat tombe (tier du coffre, adaptation…) × chance qu'un des éclats donne un mneme utile.\n" +
                 "Mesuré pour les coffres lapin (relevé communautaire de plus de 13 000 coffres par zone) et les mnemes (700 000 analyses).\n" +
@@ -201,7 +205,7 @@ public sealed class HuntTab(
         ImGui.SameLine();
         When(option, context);
         ImGui.SameLine();
-        Effort(option);
+        Effort(option, context.XpWeight);
         if (option.Notes.Count > 0)
         {
             ImGui.SameLine();
@@ -215,7 +219,7 @@ public sealed class HuntTab(
     /// "≈ 35 min · ~7 kills (14 %)", "≈ 1 h 40 · ~4 FATE lapin (28 %)": total estimated time, then
     /// tries and chance per try; the count dropped at once in the tooltip.
     /// </summary>
-    private static void Effort(HuntOption option)
+    private static void Effort(HuntOption option, double xpWeight)
     {
         if (option.Eta is not { } eta) return;
         var what = option.Farm?.Kind switch
@@ -226,7 +230,24 @@ public sealed class HuntTab(
         };
         var tries = option.Tries < 1.5 ? Loc.T("1 essai", "1 try") : $"~{option.Tries:0} {what}";
         ImGui.TextColored(Grey, $"≈ {Formatting.Duration(eta)} · {tries} ({option.TryChance:P0})");
-        if (!ImGui.IsItemHovered()) return;
+        var hovered = ImGui.IsItemHovered();
+        ImGui.SameLine();
+        var (difficulty, color) = option.Difficulty switch
+        {
+            Difficulty.Easy => (Loc.T("facile", "easy"), Green),
+            Difficulty.Medium => (Loc.T("moyen", "medium"), Amber),
+            _ => (Loc.T("dur", "hard"), Red),
+        };
+        ImGui.TextColored(color, difficulty);
+        hovered |= ImGui.IsItemHovered();
+        if (xpWeight > 0)
+        {
+            ImGui.SameLine();
+            ImGui.TextColored(option.XpShare >= 0.75 ? Green : option.XpShare >= 0.3 ? Amber : Grey,
+                option.XpShare >= 0.75 ? "XP ++" : option.XpShare >= 0.3 ? "XP +" : "XP –");
+            hovered |= ImGui.IsItemHovered();
+        }
+        if (!hovered) return;
         var count = option.Drop?.Count is { } c ? Loc.T($"{c} éclat(s) à la fois", $"{c} logogram(s) at once") : Loc.T("1 éclat à la fois", "1 logogram at once");
         var lines = new List<string>
         {
@@ -237,6 +258,15 @@ public sealed class HuntTab(
         lines.Add(Loc.T($"1er essai {Formatting.Duration(option.FirstTry)}", $"1st try {Formatting.Duration(option.FirstTry)}"));
         if (option.Tries > 1) lines.Add(Loc.T($"+ {option.Tries - 1:0.#} × {Formatting.Duration(option.TryTime)} pour les suivants", $"+ {option.Tries - 1:0.#} × {Formatting.Duration(option.TryTime)} for the next ones"));
         lines.Add(Loc.T($"≈ {Formatting.Duration(eta)} en tout", $"≈ {Formatting.Duration(eta)} in all"));
+        lines.Add(Loc.T($"difficulté : {difficulty} (écart de niveau, mob qui mute ou s'adapte, NM)",
+            $"difficulty: {difficulty} (level gap, mob that mutates or adapts, NM)"));
+        if (xpWeight > 0 && option.Counted is { } counted)
+        {
+            lines.Add(Loc.T($"XP : {option.XpShare:P0} du rythme d'un farm de mobs à +3 niveaux",
+                $"XP: {option.XpShare:P0} of the rhythm of grinding mobs 3 levels above"));
+            lines.Add(Loc.T($"compté dans le classement : ≈ {Formatting.Duration(counted)} (l'XP compte pour {xpWeight:P0})",
+                $"counted in the ranking: ≈ {Formatting.Duration(counted)} (experience weighs {xpWeight:P0})"));
+        }
         ImGui.SetTooltip(string.Join("\n", lines));
     }
 

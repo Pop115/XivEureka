@@ -45,6 +45,16 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   adapté ; **estimées** ailleurs (élémentaire 30 %, adapté 40 %, l'orage Nv 54 de Pyros 80 %, mob 5 %,
   coffre de mutation 3 %). Pour un NM, chaque essai de plus = un autre NM du train (30 min). Colonne
   « combien » : temps total, nombre d'essais et chance par essai. Calcul dans `Hunt` et `HuntOptions`.
+  **XP et difficulté** (`HuntXp`) : jusqu'au niveau max de la zone (Anemos 20, Pagos 35, Pyros 50,
+  Hydatos 60), une source qui fait monter de niveau compte pour moins de temps : temps compté = temps
+  × (1 − poids × part d'XP), poids = réglage « Importance de l'XP » (50 % par défaut), part d'XP =
+  XP/min de la source rapportée à un duo qui farme des mobs à +3 niveaux (plafonnée à 100 %). XP par
+  kill : +15 % par niveau au-dessus (jusqu'à ×2), presque rien 3 niveaux en dessous ; élémentaire
+  ×1,5, mob qui mute ou s'adapte ×1,75 en moyenne (×2,5 quand il change) ; NM : 25 kills de bonus,
+  plus ses 30 kills de prépa ; FATE lapin : 5 kills. Facteurs estimés d'après les guides (pas de
+  chiffres publiés). Difficulté : dur à 4 niveaux au-dessus ou pour un NM à ton niveau, moyen
+  au-dessus ou pour un mob qui change. Coffres de mutation : part de Tactique mesurée (Pyros 56 %,
+  Hydatos 39 %), le reste estimé (1/3 de mobs qui changent, 20 % de coffres).
   **Scénarios** (`HuntScenarioTests`, duo Nv 50 sur les vraies données ; chacun affiche son classement
   avec `dotnet test --logger "console;verbosity=detailed"`) : Conceptuel sous une météo d'élémentaire
   (≈ 12 min) ou sans (on attend la suivante) ; coffres de bronze (plus de 3 h même FATE lapin en

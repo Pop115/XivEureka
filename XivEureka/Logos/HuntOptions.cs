@@ -8,10 +8,11 @@ namespace XivEureka.Logos;
 
 /// <summary>
 /// What the ranking needs from the moment: zone shown, its NM statuses, running bunny FATEs, level,
-/// and how many players farm together (<see cref="PartySize"/>: no public group counted on).
+/// how many players farm together (<see cref="PartySize"/>: no public group counted on), and how
+/// much leveling up counts (<see cref="XpWeight"/>, 0 to 1; 0 at the zone's max level, see <see cref="HuntXp"/>).
 /// </summary>
 public sealed record HuntContext(uint Territory, IReadOnlyList<NmStatus> Statuses, IReadOnlySet<ushort> BunnyFates,
-    int? Level, DateTimeOffset Now, int PartySize = 1);
+    int? Level, DateTimeOffset Now, int PartySize = 1, double XpWeight = 0);
 
 /// <summary>
 /// One way to get a shard: a farm (sprite, mob, lockbox, bunny) or an NM, with a rough time to the
@@ -25,6 +26,17 @@ public sealed record HuntOption(uint Shard, uint Territory, Farm? Farm, FarmDrop
     TimeSpan? Eta, TimeWindow? Window, IReadOnlyList<string> Notes, double TryChance = 1, double Tries = 1,
     TimeSpan TryTime = default, TimeSpan Wait = default, TimeSpan FirstTry = default)
 {
+    /// <summary>Experience per minute while on it (<see cref="HuntXp"/> units).</summary>
+    public double XpRate { get; init; }
+
+    /// <summary>Share of the reference leveling rhythm, 0 to 1.</summary>
+    public double XpShare => HuntXp.Share(XpRate);
+
+    public Difficulty Difficulty { get; init; } = Difficulty.Medium;
+
+    /// <summary>What the ranking counts: <see cref="Eta"/> less the part that also levels you up.</summary>
+    public TimeSpan? Counted { get; init; }
+
     public IReadOnlyList<Vector2> Places => Farm?.Places ?? (Nm != null ? [Nm.Nm.Position] : []);
 
     /// <summary>Doable right now: no window to wait for, or the window is open.</summary>
@@ -124,7 +136,8 @@ public static class HuntOptions
                     if (FromFarm(shard, zone.Territory, farm, drop, context) is { } option)
                         options.Add(option);
         options.AddRange(shard.Sources.Select(s => FromNm(shard, s, context)));
-        return options.OrderBy(o => o.Eta ?? TimeSpan.MaxValue).ThenBy(o => o.Farm?.Kind ?? FarmKind.Bunny + 1).ToList();
+        return options.Select(o => o with { Counted = HuntXp.Counted(o.Eta, o.XpShare, context.XpWeight) })
+            .OrderBy(o => o.Counted ?? TimeSpan.MaxValue).ThenBy(o => o.Farm?.Kind ?? FarmKind.Bunny + 1).ToList();
     }
 
     /// <summary>For each useful shard, its fastest known way, the fastest first (then the most useful shard).</summary>
@@ -132,7 +145,7 @@ public static class HuntOptions
         plan.Shards
             .Select((shard, rank) => (Best: For(shard, farms, context).FirstOrDefault(o => o.Eta != null), rank))
             .Where(x => x.Best != null)
-            .OrderBy(x => x.Best!.Eta).ThenBy(x => x.rank)
+            .OrderBy(x => x.Best!.Counted).ThenBy(x => x.rank)
             .Select(x => x.Best!)
             .ToList();
 
@@ -226,7 +239,11 @@ public static class HuntOptions
         var wait = window != null && window.Start > context.Now ? window.Start - context.Now : TimeSpan.Zero;
         TimeSpan? eta = territory != context.Territory ? null : Total(wait, firstTry, tries, tryTime);
         return new HuntOption(shard.Shard, territory, farm, drop, null, null, eta, window, notes, tryChance, tries, tryTime,
-            wait, firstTry);
+            wait, firstTry)
+        {
+            XpRate = HuntXp.ForFarm(farm, tryTime, context.Level),
+            Difficulty = HuntXp.Of(farm.Level, context.Level, farm.Mutated || farm.Adapted, nm: false),
+        };
     }
 
     private static HuntOption FromNm(HuntShard huntShard, HuntSource source, HuntContext context)
@@ -235,7 +252,11 @@ public static class HuntOptions
         var status = source.Territory == context.Territory
             ? context.Statuses.FirstOrDefault(s => s.Nm.Npc == source.Nm.Npc)
             : null;
-        if (status == null) return new HuntOption(shard, source.Territory, null, null, source, null, null, null, []);
+        if (status == null)
+            return new HuntOption(shard, source.Territory, null, null, source, null, null, null, [])
+            {
+                Difficulty = HuntXp.Of(source.Nm.Level, context.Level, changes: false, nm: true),
+            };
 
         var now = context.Now;
         var wait = TimeSpan.Zero;
@@ -268,7 +289,11 @@ public static class HuntOptions
                 $"prep too strong for {context.PartySize} (mob lv {source.Nm.Prep.Level})"));
         TimeSpan? eta = outOfReach ? null : Total(wait, firstTry, tries, repeat);
         return new HuntOption(shard, source.Territory, null, null, source, status, eta, window,
-            notes, huntShard.UsefulChance, tries, repeat, wait, firstTry);
+            notes, huntShard.UsefulChance, tries, repeat, wait, firstTry)
+        {
+            XpRate = HuntXp.ForNm(source.Nm, firstTry, status.Fate != null, context.Level),
+            Difficulty = HuntXp.Of(source.Nm.Level, context.Level, changes: false, nm: true),
+        };
     }
 
     /// <summary>The open or next Eorzea day (6:00-19:00) or night window.</summary>

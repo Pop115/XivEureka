@@ -72,6 +72,9 @@ public sealed class Configuration : IPluginConfiguration
     /// </summary>
     public int FarmPartySize { get; set; } = 2;
 
+    /// <summary>How much leveling up counts in "Quoi taper" (percent; none at the zone's max level).</summary>
+    public int XpImportance { get; set; } = 50;
+
     /// <summary>Plugin text language: the game client's (French or English), or forced.</summary>
     public TextLanguage Language { get; set; } = TextLanguage.Auto;
 
