@@ -32,15 +32,27 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   drapeau du jeu sur l'endroit le plus proche de toi), et les mnemes qu'il peut donner à l'analyse
   avec ce qui manque pour quelles actions. Classement : temps estimé avant le premier mneme **utile**
   = attente (météo, jour/nuit, respawn, FATE) + essais × temps par essai. Temps par essai : kill
-  d'élémentaire 2 min, adapté 4, mob 3, mob muté 4, ×2 si 4 niveaux au-dessus de toi ; FATE lapin
-  15 min en cours (finir la FATE, suivre le lapin, déterrer le coffre) ou 25 à attendre (il revient
-  7-8 min après le dernier coffre) ; NM 5 min en cours, 20 à préparer. Essais = 1 / (chance que
+  d'élémentaire 2 min, adapté 4, mob 3, mob muté 4, ×2 si 4 niveaux au-dessus de toi ; FATE lapin :
+  cycle de 28 min (le lapin revient 7-8 min après le dernier coffre, trajet 5, FATE 5, chasse au
+  trésor 10), 15 min pour la première si elle est déjà en cours ; NM : 5 min si sa FATE est en cours,
+  sinon ~30 kills du mob de prépa (30 min à plusieurs) + le tirage du jeu parmi les NM préparés
+  (toutes les ~11 min, 15 en moyenne) + le combat = 50 min, 20 s'il est déjà préparé (tracker).
+  Temps = attente + premier essai + (essais − 1) × essai suivant, détaillé dans l'infobulle.
+  Essais = 1 / (chance que
   l'éclat tombe × chance qu'un des éclats tombés donne un mneme qui manque encore). Chances
   **mesurées** pour les coffres lapin (tier × éclat dans le tier) et les mnemes (à chances égales,
   700 000 analyses) ; quantités : bronze 1-2/1-3, argent 1-5, or 5-11, 5 Inimical par élémentaire
   adapté ; **estimées** ailleurs (élémentaire 30 %, adapté 40 %, l'orage Nv 54 de Pyros 80 %, mob 5 %,
   coffre de mutation 3 %). Pour un NM, chaque essai de plus = un autre NM du train (30 min). Colonne
   « combien » : temps total, nombre d'essais et chance par essai. Calcul dans `Hunt` et `HuntOptions`.
+  **Scénarios** (`HuntScenarioTests`, sur les vraies données, chacun affiche son classement avec
+  `dotnet test --logger "console;verbosity=detailed"`) : Conceptuel au Nv 45 sous Vagues de chaleur
+  (élémentaire de braise Nv 53, ≈ 47 min ; coffres de bronze : plus de 3 h même FATE lapin en
+  cours) ; sans météo d'élémentaire (on attend la Neige) ; Curatif sans rien en cours (NM à préparer
+  ≈ 80 min, coffres d'argent ≈ 90 min) ou FATE de Leucosia en cours (≈ 35 min) ; NM préparé ou en
+  respawn ; Inimical sous Orage (orage adapté Nv 54, ≈ 10 min) ; Offensif à Pyros (coffres d'or
+  seulement, ≈ 12 h) ; Protecteur (un NM, 50 min) ; Obscur à Hydatos (3 NM avant les mobs) ;
+  Offensif à Hydatos sous la Neige (blizzard adapté Nv 64 avant les coffres d'or).
 - **Carte** (`/xiveureka carte`) : la carte du jeu de la zone d'Eurêka, redessinée par le plugin.
   Repères et noms de zone du jeu, toi (flèche), ton groupe, le drapeau, et en plus les 17 NM de la
   zone avec leur état (FATE en cours, respawn ≥ N min s'il a été vu finir, météo ou nuit à venir),

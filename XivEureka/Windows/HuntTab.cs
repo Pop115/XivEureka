@@ -223,8 +223,16 @@ public sealed class HuntTab(
         ImGui.TextColored(Grey, $"≈ {Formatting.Duration(eta)} · {tries} ({option.TryChance:P0})");
         if (!ImGui.IsItemHovered()) return;
         var count = option.Drop?.Count is { } c ? $"{c} éclat(s) à la fois" : "1 éclat à la fois";
-        var per = option.TryTime > TimeSpan.Zero ? $"{Formatting.Duration(option.TryTime)} par essai" : "";
-        ImGui.SetTooltip($"{count} · {per}\n{option.TryChance:P0} de chances par essai d'avoir un mneme utile");
+        var lines = new List<string>
+        {
+            $"{count} · {option.TryChance:P0} de chances par essai d'avoir un mneme utile",
+            $"= {option.Tries:0.#} essai(s) en moyenne",
+        };
+        if (option.Wait > TimeSpan.Zero) lines.Add($"attente {Formatting.Duration(option.Wait)} (météo, jour/nuit, respawn)");
+        lines.Add($"1er essai {Formatting.Duration(option.FirstTry)}");
+        if (option.Tries > 1) lines.Add($"+ {option.Tries - 1:0.#} × {Formatting.Duration(option.TryTime)} pour les suivants");
+        lines.Add($"≈ {Formatting.Duration(eta)} en tout");
+        ImGui.SetTooltip(string.Join("\n", lines));
     }
 
     /// <summary>"Sprite d'orage Nv 41", "FATE lapin « … »", "Coffre de mutation : …", "NM (Nv 45, Pyros)".</summary>
