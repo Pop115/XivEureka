@@ -59,7 +59,7 @@ jobs:
         run: |
           $m = Get-Content XivEureka/bin/Release/XivEureka/XivEureka.json -Raw | ConvertFrom-Json
           $zip = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:GITHUB_REF_NAME/latest.zip"
-          $m | Add-Member RepoUrl "https://github.com/$env:GITHUB_REPOSITORY"
+          $m | Add-Member RepoUrl "https://github.com/$env:GITHUB_REPOSITORY" -Force
           $m | Add-Member DownloadLinkInstall $zip
           $m | Add-Member DownloadLinkUpdate $zip
           $m | Add-Member DownloadLinkTesting $zip

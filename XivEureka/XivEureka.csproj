@@ -4,9 +4,10 @@
     <Version>0.4.1.0</Version>
     <Author>Pop115</Author>
     <Name>Xiv Eurêka</Name>
-    <Punchline>Eureka companion: Logos shards and actions, NM map, live tracker.</Punchline>
-    <Description>Reads the Logos mnemes from the game and shows the craftable Logos actions; Eureka map with NMs, prep areas and suggestions; follows the ffxiv-eureka.com tracker of the instance.</Description>
-    <Tags>eureka;logos</Tags>
+    <Punchline>Eureka companion: Logos actions, what to hit for missing logograms, NM map, live tracker.</Punchline>
+    <Description>Reads your Logos mnemes and learned actions from the game and shows what you can craft; ranks every way to get the logograms you are missing (elementals, NMs, bunny coffers) by estimated time; redraws the Eureka map with NMs, prep areas, pops and the coming weather; follows the ffxiv-eureka.com tracker of your instance. In-game texts are in French for now.</Description>
+    <Tags>eureka;logos;logograms;pyros;hydatos;nm;tracker;map</Tags>
+    <RepoUrl>https://github.com/Pop115/XivEureka</RepoUrl>
     <IconUrl>https://raw.githubusercontent.com/Pop115/XivEureka/main/XivEureka/images/icon.png</IconUrl>
     <Nullable>enable</Nullable>
   </PropertyGroup>
