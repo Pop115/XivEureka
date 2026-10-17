@@ -261,4 +261,18 @@ public class HuntScenarioTests(ITestOutputHelper output)
         Assert.Contains(reachable, o => o.Farm!.Npc == 8014 && o.IsOpen(Under(Hydatos, "Fair Skies"))); // Val Chigoe: Fair Skies
         Assert.Contains(reachable[0].Notes, n => n.Contains("muté") || n.Contains("adapte"));
     }
+
+    [Fact]
+    public void Tactical_in_Pyros_at_50_mutants_instead_of_only_the_Val_gigantopithecus()
+    {
+        // Before, only the lv 55 Val Gigantopithecus (Umbral Wind). Now every Pyros mutant or adapting
+        // mob within reach counts, each under its own condition.
+        var options = Rank("Tactical, duo lv 50, Pyros", Shard(24012, 1), Context(Pyros, Under(Pyros, "Fair Skies"), 50));
+        var reachable = options.Where(o => o.Eta != null).ToList();
+        Assert.True(reachable.Count > 10);
+        Assert.All(reachable, o => Assert.True(o.Farm!.Mutated || o.Farm.Adapted));
+        Assert.All(reachable, o => Assert.InRange(o.Farm!.Level, 35, 55));
+        Assert.Contains(reachable, o => o.Farm!.Npc == 7847);
+        Assert.NotEqual(7847u, reachable[0].Farm!.Npc);
+    }
 }

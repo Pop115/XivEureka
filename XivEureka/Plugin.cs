@@ -90,12 +90,12 @@ public sealed class Plugin : IDalamudPlugin
             nm =>
             {
                 mapTab.ShowNm(nm);
-                mainWindow.Open(MainWindow.Tab.Map);
+                OpenTab(MainWindow.Tab.Map);
             },
             (label, places) =>
             {
                 mapTab.ShowFarm(label, places);
-                mainWindow.Open(MainWindow.Tab.Map);
+                OpenTab(MainWindow.Tab.Map);
             },
             mapTab.FlagAt);
         var relics = Progress.RelicCatalog.Embedded();
@@ -122,6 +122,9 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainWindow;
         PluginInterface.UiBuilder.OpenConfigUi += settingsWindow.Toggle;
     }
+
+    /// <summary>Opens the window on a tab (for the tabs' buttons, built before the window).</summary>
+    private void OpenTab(MainWindow.Tab tab) => mainWindow.Open(tab);
 
     public void Dispose()
     {

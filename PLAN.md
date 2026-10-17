@@ -7,15 +7,24 @@ reste pour les alertes.
 Penser **Bozja** dès la conception (mêmes besoins : fragments ↔ éclats, CE ↔ FATE, actions de
 fortune ↔ actions Logos).
 
-## État (2026-10-12)
-- 0 fait : recherche dans le Google Doc « XivEureka – recherche étape 0 (2026-10-12) »
-  (protocole du tracker, données NM/logogrammes, ClientStructs, KamiToolKit, Bozja).
-- 1 en partie : barre d'infos serveur cliquable, toasts + chat avec lien de carte. Reste : bouton
-  natif sur le manipulateur / la carte (KamiToolKit `AddonController`), style « jeu » de la fenêtre.
-- 3 + 4 faits (pas encore testés en jeu) : `Zones/ZoneCompanion.cs` (FATE, chat, barre),
-  `Zones/EurekaWeather.cs` (météo et heure d'Eorzéa locales), `Zones/ChatParser.cs`, `Zones/InGameMap.cs`.
-- Suivant : 2 (conseils de farm : données `acquired-by` et NM du site, niveau élémentaire via
-  `PlayerState.GetContentValue(2)`, conditions météo/nuit des NM avec `EurekaWeather.Next`).
+## État (2026-10-17, v0.8.0)
+Fait et publié (dépôt public, release par tag, icône, README anglais + section française, licence
+AGPL-3.0, textes en anglais ou en français selon le client) :
+- Actions Logos (stock, apprises, mélangeur), « Quoi taper » (sources classées par temps estimé,
+  pour un petit groupe sans train), Carte (NM, prépa, météo, pops, tracker), Progression (histoire,
+  arme relique, armure élémentaire), alertes FATE et chat, barre d'infos serveur, tracker
+  ffxiv-eureka.com (suivi, bouton de création, plus de création automatique).
+- Données : Pyros et Hydatos (NM, élémentaires, lapins, coffres de mutation avec les mobs mutants
+  et adaptatifs des deux zones et la condition de leur mutation).
+
+Reste, avec Pop en jeu :
+- Vérifications en jeu (liste dans `docs/DEVELOPMENT.md`, « À valider ») : lieux relevés sur les
+  cartes communautaires, temps estimés, onglet Progression (étape lue pour l'arme et l'armure).
+- Captures « Quoi taper » et Carte pour le README (hors combat, capture automatique de 2 min).
+- Soumission au dépôt officiel Dalamud (D17) : à préparer, envoi seulement avec l'accord de Pop.
+
+Idées pas commencées : bouton natif sur le manipulateur (KamiToolKit), Anemos et Pagos (pas
+d'actions Logos), Bozja (étape 6).
 
 ## Étape 2 « Quoi taper » (2026-10-17)
 Fait : sources autres que les NM (`Data/farms.json`, Pyros) et classement par vitesse

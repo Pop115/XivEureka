@@ -295,7 +295,7 @@ public sealed class TrackerSession : IDisposable
                 Status = Loc.T($"tracker {id} introuvable (expiré ?)", $"tracker {id} not found (expired?)");
                 break;
             case "phx_reply" when m.Payload.TryGetProperty("status", out var s) && s.GetString() == "error":
-                log.Warning("Tracker {Id}: the site refused a message ({Payload})", followedId, m.Payload.ToString());
+                log.Warning("Tracker {Id}: the site refused a message ({Payload})", followedId ?? "?", m.Payload.ToString());
                 break;
         }
     }

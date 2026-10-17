@@ -131,7 +131,7 @@ public class LogosRandomTests
             foreach (var need in shard.Mnemes.SelectMany(m => m.NeededBy.Select(n => (m, n))))
             {
                 Assert.InRange(need.n.Missing, 1, 3);
-                Assert.True(need.n.Action.Recipes.Any(r => r.Count(x => x == need.m.Mneme) >= stock.GetValueOrDefault(need.m.Mneme) + need.n.Missing));
+                Assert.Contains(need.n.Action.Recipes, r => r.Count(x => x == need.m.Mneme) >= stock.GetValueOrDefault(need.m.Mneme) + need.n.Missing);
                 Assert.DoesNotContain(need.n.Action.Action, learned);
             }
         }

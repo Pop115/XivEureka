@@ -125,7 +125,7 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   site : laissé de côté. Anémos, Pagos : à ajouter si besoin.
 - **Autres sources d'éclats** : `XivEureka/Data/farms.json` (Pyros et Hydatos) : élémentaires (niveau,
   météo, adapté ou non, éclat), mobs de prépa niv. 52+ (Fondamental au hasard), Val gigantopithèque
-  (coffres de mutation → Tactique), FATE lapin 1407 et 1408 (bronze : Conceptuel/Fondamental, argent :
+  (coffres de mutation → Tactique, avec tous les mobs mutants et adaptatifs de Pyros, Nv 35 à 55, et la condition de leur mutation), FATE lapin 1407 et 1408 (bronze : Conceptuel/Fondamental, argent :
   Curatif, or : Offensif/Protecteur). Drops : consolegameswiki et Eurekan Academy, recoupés avec le
   bestiaire communautaire ; lieux **approximatifs** lus sur la carte communautaire (même relevé que
   les prépas). Le Conceptuel ne tombe que des élémentaires de ton niveau ou plus, les adaptés ne
@@ -181,7 +181,9 @@ Le journal Dalamud dit « Relevé écrit : … ».
 - [x] Annoncer les nouvelles FATE avec drapeau.
 - [x] Onglet Carte (étapes C1 à C4 du plan).
 - [ ] À valider en jeu : drapeau (coordonnées monde), noms de météo FR, textes des pops réels,
-  sens de la flèche (orientation), lieux de prépa, signalement des morts sur le tracker créé.
+  sens de la flèche (orientation), lieux de prépa, signalement des morts sur le tracker créé,
+  lieux des élémentaires et des mutants (cartes communautaires), étape d'arme et d'armure lue dans
+  l'onglet Progression, textes anglais.
 - [x] Vu en jeu le 2026-10-15 : onglet Carte, tracker créé et suivi, niveau élémentaire.
 - [x] Tracker en direct : voir « Tracker » ci-dessous.
 
