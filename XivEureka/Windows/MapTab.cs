@@ -119,6 +119,21 @@ public sealed class MapTab
         pendingCenter = nm.Position;
     }
 
+    /// <summary>
+    /// Sets the game flag on the place nearest to the player (the first one when not in that zone),
+    /// on the zone's main map.
+    /// </summary>
+    public void FlagAt(uint territory, IReadOnlyList<Vector2> places)
+    {
+        if (places.Count == 0 || maps.MainMap(territory) is not { } map) return;
+        var g = map.Geometry;
+        var state = stateReader.Read();
+        var place = state.Territory == territory && state.Me is { } me
+            ? places.MinBy(p => Vector2.DistanceSquared(p, g.Coordinates(g.Pixel(me))))
+            : places[0];
+        sources.SetFlag(map.Territory, map.Map, g.World(g.PixelFromCoordinates(place)));
+    }
+
     /// <summary>Highlights a farm's places (sprites, mobs, bunny FATE) and centers the map on the first one.</summary>
     public void ShowFarm(string label, IReadOnlyList<Vector2> places)
     {

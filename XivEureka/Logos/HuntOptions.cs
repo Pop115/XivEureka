@@ -30,7 +30,10 @@ public sealed record HuntOption(uint Shard, uint Territory, Farm? Farm, FarmDrop
 /// once the source is there), meant to order, not to promise: a sprite under its weather dies in a
 /// minute or two and drops often; an adapted one must adapt first; a running NM FATE is a few
 /// minutes, an NM to prep about twenty; a bunny FATE must pop, then the right chest tier be found;
-/// lockboxes and random mob drops are rare.
+/// lockboxes and random mob drops are rare. The effort is then divided by the chance that what drops
+/// gives a useful mneme (<see cref="HuntShard.UsefulChance"/>, raised for drops of several logograms):
+/// a shard with 1 useful mneme out of 7 takes about 7 of them. An NM drops one per kill, so its
+/// extra tries are other NMs of the train (<see cref="NmRepeat"/> each).
 /// </summary>
 public static class HuntOptions
 {
@@ -43,6 +46,7 @@ public static class HuntOptions
     public static readonly TimeSpan NmToPrep = TimeSpan.FromMinutes(20);
     public static readonly TimeSpan BunnyRunning = TimeSpan.FromMinutes(10);
     public static readonly TimeSpan BunnyToWait = TimeSpan.FromMinutes(45);
+    public static readonly TimeSpan NmRepeat = TimeSpan.FromMinutes(30);
 
     /// <summary>Levels above the player from which a mob counts as hard (slower).</summary>
     public const int HardAbove = 3;
@@ -54,9 +58,9 @@ public static class HuntOptions
         foreach (var zone in farms.Zones)
             foreach (var farm in zone.Farms)
                 foreach (var drop in farm.Drops.Where(d => d.Shard == shard.Shard))
-                    if (FromFarm(shard.Shard, zone.Territory, farm, drop, context) is { } option)
+                    if (FromFarm(shard, zone.Territory, farm, drop, context) is { } option)
                         options.Add(option);
-        options.AddRange(shard.Sources.Select(s => FromNm(shard.Shard, s, context)));
+        options.AddRange(shard.Sources.Select(s => FromNm(shard, s, context)));
         return options.OrderBy(o => o.Eta ?? TimeSpan.MaxValue).ThenBy(o => o.Farm?.Kind ?? FarmKind.Bunny + 1).ToList();
     }
 
@@ -69,8 +73,24 @@ public static class HuntOptions
             .Select(x => x.Best!)
             .ToList();
 
-    private static HuntOption? FromFarm(uint shard, uint territory, Farm farm, FarmDrop drop, HuntContext context)
+    /// <summary>Chance that a drop of <paramref name="count"/> logograms holds at least one useful mneme.</summary>
+    public static double DropChance(double usefulChance, double count = 1) => 1 - Math.Pow(1 - usefulChance, count);
+
+    /// <summary>Average of a "1-2" count; 1 when missing or unreadable.</summary>
+    public static double AverageCount(string? count)
     {
+        var parts = (count ?? "").Split('-');
+        return parts.Length == 2 && int.TryParse(parts[0], out var low) && int.TryParse(parts[1], out var high)
+            ? (low + high) / 2.0
+            : int.TryParse(count, out var single) ? single : 1;
+    }
+
+    private static TimeSpan Scaled(TimeSpan effort, double chance) =>
+        chance <= 0 ? TimeSpan.MaxValue / 4 : TimeSpan.FromMinutes(effort.TotalMinutes / chance);
+
+    private static HuntOption? FromFarm(HuntShard shard, uint territory, Farm farm, FarmDrop drop, HuntContext context)
+    {
+        if (shard.UsefulChance <= 0) return null;
         var notes = new List<string>();
         if (drop.IfAtOrAboveYou)
         {
@@ -111,13 +131,15 @@ public static class HuntOptions
             notes.Add($"Nv {farm.Level} : costaud seul");
         }
 
+        effort = Scaled(effort, DropChance(shard.UsefulChance, AverageCount(drop.Count)));
         TimeSpan? eta = territory != context.Territory ? null
             : effort + (window != null && window.Start > context.Now ? window.Start - context.Now : TimeSpan.Zero);
-        return new HuntOption(shard, territory, farm, drop, null, null, eta, window, notes);
+        return new HuntOption(shard.Shard, territory, farm, drop, null, null, eta, window, notes);
     }
 
-    private static HuntOption FromNm(uint shard, HuntSource source, HuntContext context)
+    private static HuntOption FromNm(HuntShard huntShard, HuntSource source, HuntContext context)
     {
+        var shard = huntShard.Shard;
         var status = source.Territory == context.Territory
             ? context.Statuses.FirstOrDefault(s => s.Nm.Npc == source.Nm.Npc)
             : null;
@@ -138,6 +160,8 @@ public static class HuntOptions
             }
             eta = NmToPrep + wait;
         }
+        if (huntShard.UsefulChance is > 0 and < 1)
+            eta += TimeSpan.FromMinutes(NmRepeat.TotalMinutes * ((1 / huntShard.UsefulChance) - 1));
         return new HuntOption(shard, source.Territory, null, null, source, status, eta, window, []);
     }
 

@@ -38,6 +38,7 @@ public sealed class ZoneCompanion : IDisposable
 
     private readonly Configuration configuration;
     private readonly IClientState clientState;
+    private readonly IObjectTable objects;
     private readonly IFramework framework;
     private readonly IFateTable fateTable;
     private readonly IChatGui chat;
@@ -50,11 +51,12 @@ public sealed class ZoneCompanion : IDisposable
     private readonly HashSet<ushort> reportedSuccesses = [];
     private DateTime nextPass = DateTime.MinValue;
 
-    public ZoneCompanion(Configuration configuration, IClientState clientState, IFramework framework, IFateTable fateTable,
-        IChatGui chat, IToastGui toasts, IPluginLog log, Action save)
+    public ZoneCompanion(Configuration configuration, IClientState clientState, IObjectTable objects, IFramework framework,
+        IFateTable fateTable, IChatGui chat, IToastGui toasts, IPluginLog log, Action save)
     {
         this.configuration = configuration;
         this.clientState = clientState;
+        this.objects = objects;
         this.framework = framework;
         this.fateTable = fateTable;
         this.chat = chat;
@@ -130,7 +132,7 @@ public sealed class ZoneCompanion : IDisposable
         if (CurrentZone == null || !configuration.ListenToChat || !ListenedChannels.Contains(message.LogKind)) return;
         try
         {
-            Parse(message.Message);
+            Parse(message.Message, FromMe(message));
         }
         catch (Exception e)
         {
@@ -139,7 +141,18 @@ public sealed class ZoneCompanion : IDisposable
         }
     }
 
-    private void Parse(SeString text)
+    /// <summary>
+    /// The message is the player's own: the game says so (relation kind), or, on channels where it
+    /// does not (linkshells), the sender's name is the player's (it can carry a world suffix).
+    /// </summary>
+    private bool FromMe(IHandleableChatMessage message)
+    {
+        if (message.SourceKind == XivChatRelationKind.LocalPlayer) return true;
+        var me = objects.LocalPlayer?.Name.TextValue;
+        return !string.IsNullOrEmpty(me) && message.Sender.TextValue.Contains(me, StringComparison.Ordinal);
+    }
+
+    private void Parse(SeString text, bool fromMe)
     {
         var info = ChatParser.Parse(text.TextValue, fates.Running.Select(f => f.Name));
 
@@ -151,7 +164,8 @@ public sealed class ZoneCompanion : IDisposable
             chat.Print($"Tracker repéré dans le chat : https://ffxiv-eureka.com/{info.Tracker}", ChatTitle);
         }
 
-        if (!info.Pop) return;
+        // A pop called by the player: they know already, no alert (the tracker link above still counts).
+        if (!info.Pop || fromMe) return;
         var territory = clientState.TerritoryType;
         var map = clientState.MapId;
         Vector3? position = text.Payloads.OfType<MapLinkPayload>().FirstOrDefault() is { } link

@@ -174,3 +174,58 @@ public class HuntOptionsTests
         Assert.Equal(HuntOptions.Sprite + HuntOptions.TooStrong, option.Eta);
     }
 }
+
+public class HuntChanceTests
+{
+    private const uint Pyros = 795;
+    private static readonly LogosAction Action = new(1, 1, "T", null, []);
+    private static readonly DateTimeOffset Now = DateTimeOffset.FromUnixTimeSeconds(1_760_000_000L);
+
+    /// <summary>A shard with <paramref name="useful"/> useful mnemes out of <paramref name="total"/>.</summary>
+    private static HuntShard Shard(int useful, int total, params HuntSource[] nms) =>
+        new(24007, Enumerable.Range(0, total)
+            .Select(i => new HuntMneme((uint)(30000 + i), 0, i < useful ? [new HuntNeed(Action, 1)] : []))
+            .ToList(), [Action], nms);
+
+    private static HuntContext Context(IReadOnlyList<NmStatus>? statuses = null) =>
+        new(Pyros, statuses ?? [], new HashSet<ushort>(), 45, Now);
+
+    [Fact]
+    public void Useful_chance_counts_the_mnemes_still_missing()
+    {
+        Assert.Equal(2.0 / 7, Shard(2, 7).UsefulChance, 6);
+        Assert.Equal(1, Shard(2, 2).UsefulChance);
+    }
+
+    [Theory]
+    [InlineData("1-2", 1.5)]
+    [InlineData("5-11", 8)]
+    [InlineData("3", 3)]
+    [InlineData(null, 1)]
+    public void Average_count(string? count, double expected) => Assert.Equal(expected, HuntOptions.AverageCount(count));
+
+    [Fact]
+    public void Several_logograms_raise_the_chance() =>
+        Assert.Equal(0.75, HuntOptions.DropChance(0.5, 2), 6);
+
+    [Fact]
+    public void A_sprite_takes_as_many_kills_as_logograms_needed()
+    {
+        // No weather: the effort alone, divided by the chance (1 useful out of 4 → 4 times).
+        var sprite = new Farm(FarmKind.Sprite, 7773, 0, 45, false, [], [new Vector2(20, 20)], [new FarmDrop(24007, false, null, null)]);
+        var farms = new FarmCatalog([new ZoneFarms(Pyros, [sprite])]);
+        Assert.Equal(HuntOptions.Sprite * 4, HuntOptions.For(Shard(1, 4), farms, Context()).Single().Eta);
+        Assert.Equal(HuntOptions.Sprite, HuntOptions.For(Shard(4, 4), farms, Context()).Single().Eta);
+    }
+
+    [Fact]
+    public void An_NM_needs_other_NMs_of_the_train_for_the_extra_tries()
+    {
+        var nm = new EurekaNm(7759, 0, 1388, 35, "water", new Vector2(26, 26), 24007, [], new SpawnCondition(null, false),
+            new PrepMob(1, 40, new SpawnCondition(null, false), [new Vector2(27, 27)]));
+        var fate = new MapFate(1388, "Leucosia", Vector3.Zero, 10, 20, TimeSpan.FromMinutes(10), 0, false);
+        var status = new NmStatus(nm, fate, null, null, null);
+        var option = HuntOptions.For(Shard(1, 2, new HuntSource(Pyros, nm)), new FarmCatalog([]), Context([status])).Single();
+        Assert.Equal(HuntOptions.NmRunning + HuntOptions.NmRepeat, option.Eta);
+    }
+}

@@ -65,7 +65,7 @@ public sealed class Plugin : IDalamudPlugin
         configuration = LoadConfiguration();
         catalog = LogosCatalog.Embedded();
         logosTracker = new LogosTracker(catalog);
-        companion = new ZoneCompanion(configuration, ClientState, Framework, FateTable, ChatGui, ToastGui, Log, Save);
+        companion = new ZoneCompanion(configuration, ClientState, ObjectTable, Framework, FateTable, ChatGui, ToastGui, Log, Save);
         var nmCatalog = NmCatalog.Embedded();
         tracker = new TrackerSession(configuration, ClientState, ObjectTable, Framework, ChatGui, Log, nmCatalog, Save);
         companion.TrackerShouted += tracker.OnTrackerShouted;
@@ -93,7 +93,8 @@ public sealed class Plugin : IDalamudPlugin
             {
                 mapTab.ShowFarm(label, places);
                 mainWindow.Open(MainWindow.Tab.Map);
-            });
+            },
+            mapTab.FlagAt);
         mainWindow = new MainWindow(logosTab, huntTab, mapTab);
         windows.AddWindow(mainWindow);
         settingsWindow = new SettingsWindow(configuration, Save);

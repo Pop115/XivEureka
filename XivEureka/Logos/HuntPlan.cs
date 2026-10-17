@@ -18,7 +18,14 @@ public sealed record HuntSource(uint Territory, EurekaNm Nm);
 /// actions it moves forward, and the NMs that drop it.
 /// </summary>
 public sealed record HuntShard(uint Shard, IReadOnlyList<HuntMneme> Mnemes, IReadOnlyList<LogosAction> Actions,
-    IReadOnlyList<HuntSource> Sources);
+    IReadOnlyList<HuntSource> Sources)
+{
+    /// <summary>
+    /// Chance that one appraisal gives a mneme still missing somewhere: useful mnemes / mnemes of
+    /// the shard, assuming they come out evenly (the game does not say). 1 without mneme list.
+    /// </summary>
+    public double UsefulChance => Mnemes.Count == 0 ? 1 : (double)Mnemes.Count(m => m.NeededBy.Count > 0) / Mnemes.Count;
+}
 
 /// <summary>The whole chain for a character: what to craft now, and what to hunt for the rest.</summary>
 public sealed record HuntPlan(int NotLearned, IReadOnlyList<LogosAction> CraftableNow, IReadOnlyList<HuntShard> Shards);

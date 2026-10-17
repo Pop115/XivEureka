@@ -31,7 +31,8 @@ public sealed class HuntTab(
     Func<HuntContext> contextNow,
     Func<string, string> weatherName,
     Action<EurekaNm> showNm,
-    Action<string, IReadOnlyList<Vector2>> showFarm)
+    Action<string, IReadOnlyList<Vector2>> showFarm,
+    Action<uint, IReadOnlyList<Vector2>> setFlag)
 {
     /// <summary>Sources shown per shard before "N autre(s)".</summary>
     private const int ShownSources = 4;
@@ -104,7 +105,7 @@ public sealed class HuntTab(
                 ImGui.TableSetupColumn("éclat");
                 ImGui.TableSetupColumn("source", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableSetupColumn("quand");
-                ImGui.TableSetupColumn("carte");
+                ImGui.TableSetupColumn("boutons");
                 foreach (var (option, i) in fastest.Select((o, i) => (o, i)))
                 {
                     using var id = ImRaii.PushId(i);
@@ -115,7 +116,7 @@ public sealed class HuntTab(
                     Icon(text.Icon, new Vector2(20));
                     ImGui.SameLine();
                     ImGui.TextUnformatted(GameTexts.WithoutUnidentified(text.Name));
-                    if (ImGui.IsItemHovered()) ImGui.SetTooltip($"Sert à {shard.Actions.Count} action(s)");
+                    if (ImGui.IsItemHovered()) ImGui.SetTooltip($"Sert à {shard.Actions.Count} action(s) · ≈ {shard.UsefulChance:P0} de chances d'un mneme utile");
                     ImGui.TableNextColumn();
                     ImGui.TextUnformatted(Label(option));
                     if (option.Notes.Count > 0 && ImGui.IsItemHovered()) ImGui.SetTooltip(string.Join("\n", option.Notes));
@@ -126,7 +127,7 @@ public sealed class HuntTab(
                 }
             }
         }
-        ImGui.TextColored(Grey, "Temps estimés à la louche, pour classer : attente (météo, respawn, FATE) + effort selon la source.");
+        ImGui.TextColored(Grey, "Temps estimés à la louche, pour classer : attente (météo, respawn, FATE) + effort selon la source, divisé par la chance d'un mneme utile.");
         ImGui.Spacing();
         ImGui.Separator();
     }
@@ -140,7 +141,12 @@ public sealed class HuntTab(
         ImGui.BeginGroup();
         ImGui.TextColored(Yellow, GameTexts.WithoutUnidentified(text.Name));
         ImGui.SameLine();
-        ImGui.TextColored(Grey, $"sert à {shard.Actions.Count} action(s) · donne 1 mneme parmi {shard.Mnemes.Count} à l'analyse");
+        var useful = shard.Mnemes.Count(m => m.NeededBy.Count > 0);
+        ImGui.TextColored(Grey, $"sert à {shard.Actions.Count} action(s) · à l'analyse, 1 mneme parmi {shard.Mnemes.Count} : {useful} utile(s), ≈ {shard.UsefulChance:P0} de chances");
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("En supposant que les mnemes sortent à chances égales (le jeu ne le dit pas).\n" +
+                "Les temps estimés en tiennent compte : il faut en moyenne " +
+                $"{1 / shard.UsefulChance:0.#} éclat(s) pour un mneme utile.");
         ActionIcons(shard.Actions);
         ImGui.EndGroup();
 
@@ -240,12 +246,18 @@ public sealed class HuntTab(
             ImGui.TextColored(Green, "maintenant");
     }
 
+    /// <summary>"Carte": shows it on the plugin map; "Drapeau": game flag on the nearest place.</summary>
     private void MapButton(HuntOption option)
     {
         if (option.Places.Count == 0) return;
-        if (!ImGui.SmallButton("Carte")) return;
-        if (option.Nm is { } nm) showNm(nm.Nm);
-        else showFarm(Label(option), option.Places);
+        if (ImGui.SmallButton("Carte"))
+        {
+            if (option.Nm is { } nm) showNm(nm.Nm);
+            else showFarm(Label(option), option.Places);
+        }
+        ImGui.SameLine();
+        if (ImGui.SmallButton("Drapeau")) setFlag(option.Territory, option.Places);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Pose le drapeau de la carte du jeu (sur l'endroit le plus proche de toi)");
     }
 
     private void ActionIcons(IReadOnlyList<LogosAction> actions)
