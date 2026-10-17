@@ -7,11 +7,14 @@
     <Punchline>Eureka companion: Logos shards and actions, NM map, live tracker.</Punchline>
     <Description>Reads the Logos mnemes from the game and shows the craftable Logos actions; Eureka map with NMs, prep areas and suggestions; follows the ffxiv-eureka.com tracker of the instance.</Description>
     <Tags>eureka;logos</Tags>
+    <IconUrl>https://raw.githubusercontent.com/Pop115/XivEureka/main/XivEureka/images/icon.png</IconUrl>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Data\logos.json" LogicalName="XivEureka.Data.logos.json" />
     <EmbeddedResource Include="Data\nm.json" LogicalName="XivEureka.Data.nm.json" />
     <EmbeddedResource Include="Data\farms.json" LogicalName="XivEureka.Data.farms.json" />
+    <!-- Dalamud shows images/icon.png next to the DLL for dev plugins; IconUrl serves the installer. -->
+    <None Include="images\icon.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
