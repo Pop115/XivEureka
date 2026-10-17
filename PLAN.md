@@ -17,6 +17,14 @@ fortune ↔ actions Logos).
 - Suivant : 2 (conseils de farm : données `acquired-by` et NM du site, niveau élémentaire via
   `PlayerState.GetContentValue(2)`, conditions météo/nuit des NM avec `EurekaWeather.Next`).
 
+## Étape 2 « Quoi taper » (2026-10-17)
+Fait : sources autres que les NM (`Data/farms.json`, Pyros) et classement par vitesse
+(`HuntOptions`), bloc « Le plus rapide », bouton Carte qui montre l'endroit. Corrigé au passage :
+les numéros d'éclats de `logos.json` (5 sur 9 décalés). À valider en jeu : lieux des élémentaires,
+noms FR, ordres de grandeur des temps. Reste : Hydatos (Obscur, élémentaires de l'île aux sprites,
+coffres humides) quand on y va ; pondérer par la probabilité (1 mneme parmi N) ; drapeau direct
+depuis l'onglet.
+
 ## Onglet « Carte » (2026-10-14, à valider avec Pop)
 
 La fenêtre du plugin devient « Xiv Eurêka » avec deux onglets : **Actions Logos** | **Carte**.

@@ -12,5 +12,6 @@
   <ItemGroup>
     <EmbeddedResource Include="Data\logos.json" LogicalName="XivEureka.Data.logos.json" />
     <EmbeddedResource Include="Data\nm.json" LogicalName="XivEureka.Data.nm.json" />
+    <EmbeddedResource Include="Data\farms.json" LogicalName="XivEureka.Data.farms.json" />
   </ItemGroup>
 </Project>

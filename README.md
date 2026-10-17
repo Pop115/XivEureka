@@ -23,11 +23,17 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   pas encore apprise et fabricable tout de suite. Les actions apprises sont lues dans le journal des
   actions Logos (ouvert en parlant à Drake) ; clic droit sur une action pour corriger entre-temps.
   La fenêtre s'ouvre toute seule avec le manipulateur Logos.
-- **Quoi taper** : la chaîne actions pas apprises → mnemes manquants → éclats Logos → NM qui les
-  lâchent. En haut, les actions fabricables tout de suite (aller au mélangeur). Puis un bloc par
-  éclat utile, le plus utile d'abord : les actions qu'il fait avancer, les NM qui le lâchent (état
-  en direct pour la zone de la carte, faisables d'abord, bouton « Carte »), et les mnemes qu'il
-  peut donner à l'analyse avec ce qui manque pour quelles actions. Calcul dans `Hunt`.
+- **Quoi taper** : la chaîne actions pas apprises → mnemes manquants → éclats Logos → quoi taper.
+  En haut, les actions fabricables tout de suite (aller au mélangeur), puis **« Le plus rapide »** :
+  pour chaque éclat utile, sa source la plus rapide maintenant. Puis un bloc par éclat utile, le
+  plus utile d'abord : les actions qu'il fait avancer, toutes ses sources, la plus rapide d'abord
+  (élémentaires sous leur météo, NM avec leur état en direct, coffres des FATE lapin, coffres de
+  mutation, mobs au hasard ; bouton « Carte » qui montre l'endroit), et les mnemes qu'il peut donner
+  à l'analyse avec ce qui manque pour quelles actions. Classement : temps estimé avant le premier
+  éclat = attente (météo, respawn, FATE) + effort selon la source (élémentaire 3 min, adapté 8,
+  FATE de NM en cours 5, NM à préparer 20, FATE lapin 10 en cours / 45 à attendre, +15 argent,
+  +30 or, mob 4 niveaux au-dessus +10…), des ordres de grandeur pour classer. Calcul dans `Hunt` et
+  `HuntOptions`.
 - **Carte** (`/xiveureka carte`) : la carte du jeu de la zone d'Eurêka, redessinée par le plugin.
   Repères et noms de zone du jeu, toi (flèche), ton groupe, le drapeau, et en plus les 17 NM de la
   zone avec leur état (FATE en cours, respawn ≥ N min s'il a été vu finir, météo ou nuit à venir),
@@ -80,6 +86,16 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   respawn de ffxiv-eureka.com (les météos y sont des numéros de la feuille Weather), coordonnées
   des FATE et logogrammes du wiki, lieux de prépa **approximatifs** (carte communautaire).
   Anémos, Pagos, Hydatos : à ajouter quand on y va.
+- **Autres sources d'éclats** : `XivEureka/Data/farms.json` (Pyros) : élémentaires (niveau,
+  météo, adapté ou non, éclat), mobs de prépa niv. 52+ (Fondamental au hasard), Val gigantopithèque
+  (coffres de mutation → Tactique), FATE lapin 1407 et 1408 (bronze : Conceptuel/Fondamental, argent :
+  Curatif, or : Offensif/Protecteur). Drops : consolegameswiki et Eurekan Academy, recoupés avec le
+  bestiaire communautaire ; lieux **approximatifs** lus sur la carte communautaire (même relevé que
+  les prépas). Le Conceptuel ne tombe que des élémentaires de ton niveau ou plus, les adaptés ne
+  lâchent leur éclat qu'une fois adaptés.
+- **Éclats ↔ mnemes** : numéros d'objet vérifiés sur la feuille Item du jeu le 2026-10-17 ; avant,
+  5 éclats (Curatif, Offensif, Protecteur, Mitigatif, Inimical) portaient les mnemes d'un autre, et
+  « Quoi taper » envoyait vers les mauvais NM. Test qui fige le bon lien.
 - **Niveau élémentaire** : `PlayerState.GetContentValue(2)` (vu juste en jeu le 2026-10-15 : 45).
 
 ## Conventions

@@ -1,5 +1,5 @@
 {
- "source": "Recipes: ffxiv-eureka.com/logograms (captured 2026-10-11). Names, icons and descriptions: game data.",
+ "source": "Recipes: ffxiv-eureka.com/logograms (captured 2026-10-11). Logogram → mnemes: consolegameswiki Logograms page, item ids checked against the game Item sheet (2026-10-17). Names, icons and descriptions: game data.",
  "shards": [
   {
    "item": 24007,
@@ -24,21 +24,21 @@
    ]
   },
   {
-   "item": 24009,
+   "item": 24010,
    "mnemes": [
     24020,
     24032
    ]
   },
   {
-   "item": 24010,
+   "item": 24011,
    "mnemes": [
     24018,
     24021
    ]
   },
   {
-   "item": 24011,
+   "item": 24009,
    "mnemes": [
     24019,
     24034
@@ -52,14 +52,14 @@
    ]
   },
   {
-   "item": 24013,
+   "item": 24014,
    "mnemes": [
     24026,
     24027
    ]
   },
   {
-   "item": 24014,
+   "item": 24013,
    "mnemes": [
     24023,
     24035

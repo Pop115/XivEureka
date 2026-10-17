@@ -17,12 +17,14 @@ public sealed record ChatPop(string Title, Vector3 Position, DateTime When);
 
 /// <summary>
 /// What the plugin map shows of the game at a given instant: the current map, the player (position
-/// and rotation), the party, the game flag, the running FATEs and the chat pops.
+/// and rotation), the party, the game flag, the running FATEs and the chat pops. The bunny FATEs are
+/// kept apart (<see cref="BunnyFates"/>, ids only): not drawn, but their chests drop logograms.
 /// </summary>
 public sealed record MapState(uint Map, uint Territory, Vector3? Me, float Rotation,
-    IReadOnlyList<Vector3> Party, Vector3? Flag, IReadOnlyList<MapFate> Fates, IReadOnlyList<ChatPop> Pops)
+    IReadOnlyList<Vector3> Party, Vector3? Flag, IReadOnlyList<MapFate> Fates, IReadOnlyList<ChatPop> Pops,
+    IReadOnlySet<ushort> BunnyFates)
 {
-    public static readonly MapState Empty = new(0, 0, null, 0, [], null, [], []);
+    public static readonly MapState Empty = new(0, 0, null, 0, [], null, [], [], new HashSet<ushort>());
 }
 
 /// <summary>Reads the <see cref="MapState"/> from Dalamud services and the game map agent.</summary>
@@ -41,14 +43,15 @@ public sealed class MapStateReader(IClientState clientState, IObjectTable object
             .Select(m => m.Position)
             .ToList();
 
-        var running = fates
-            .Where(f => f.State is FateState.Preparing or FateState.Running)
+        var active = fates.Where(f => f.State is FateState.Preparing or FateState.Running).ToList();
+        var bunnies = active.Where(f => FateTracker.IsBunnyFate(f.GameData.Value.Rule)).Select(f => f.FateId).ToHashSet();
+        var running = active
             .Where(f => !FateTracker.IsBunnyFate(f.GameData.Value.Rule))
             .Select(f => new MapFate(f.FateId, f.Name.TextValue, f.Position, f.Radius, f.Progress,
                 TimeSpan.FromSeconds(Math.Max(0, f.TimeRemaining)), f.MapIconId, f.State == FateState.Preparing))
             .ToList();
 
-        return new MapState(map, territory, me?.Position, me?.Rotation ?? 0, members, Flag(map), running, pops());
+        return new MapState(map, territory, me?.Position, me?.Rotation ?? 0, members, Flag(map), running, pops(), bunnies);
     }
 
     /// <summary>The flag set on the game map, if it is on this map (world X and Z).</summary>

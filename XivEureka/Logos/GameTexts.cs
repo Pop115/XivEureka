@@ -18,6 +18,7 @@ public sealed class GameTexts(IDataManager data)
     private readonly Dictionary<uint, GameText> items = [];
     private readonly Dictionary<uint, GameText> actions = [];
     private readonly Dictionary<uint, string> npcs = [];
+    private readonly Dictionary<uint, string> fates = [];
 
     public GameText Item(uint id)
     {
@@ -43,6 +44,14 @@ public sealed class GameTexts(IDataManager data)
         var raw = data.GetExcelSheet<BNpcName>().GetRowOrDefault(id)?.Singular.ExtractText();
         return npcs[id] = string.IsNullOrEmpty(raw) ? $"Monstre {id}"
             : char.ToUpper(raw[0], CultureInfo.CurrentCulture) + raw[1..];
+    }
+
+    /// <summary>Name of a FATE (Fate sheet).</summary>
+    public string Fate(uint id)
+    {
+        if (fates.TryGetValue(id, out var name)) return name;
+        var raw = data.GetExcelSheet<Fate>().GetRowOrDefault(id)?.Name.ExtractText();
+        return fates[id] = string.IsNullOrEmpty(raw) ? $"FATE {id}" : raw;
     }
 
     /// <summary>Drops the French client's " non identifié" suffix from an unidentified shard's name.</summary>

@@ -52,6 +52,7 @@ public sealed class MapTab
     private static readonly uint NmFill = Color(0.11f, 0.11f, 0.13f);
     private static readonly uint RespawnFill = Color(0.36f, 0.35f, 0.39f);
     private static readonly uint PrepPurple = Color(0.42f, 0.17f, 0.55f);
+    private static readonly uint FarmTeal = Color(0.05f, 0.45f, 0.5f);
 
     private static readonly Dictionary<string, (uint Color, string Name)> Elements = new()
     {
@@ -78,6 +79,7 @@ public sealed class MapTab
     private bool followMe = true;
     private uint? chosenNm;
     private Vector2? pendingCenter;
+    private (string Label, IReadOnlyList<Vector2> Places)? shownFarm;
 
     private DateTime nextCompute = DateTime.MinValue;
     private IReadOnlyList<NmStatus> statuses = [];
@@ -96,14 +98,18 @@ public sealed class MapTab
         this.save = save;
     }
 
-    /// <summary>NM statuses of the zone shown (current Eureka zone, else the last one), for the hunt tab.</summary>
-    public (uint Territory, IReadOnlyList<NmStatus> Statuses) StatusesNow()
+    /// <summary>
+    /// For the hunt tab: the zone shown (current Eureka zone, else the last one), its NM statuses, the
+    /// running bunny FATEs and the elemental level.
+    /// </summary>
+    public HuntContext HuntContextNow()
     {
         var state = stateReader.Read();
         var inEureka = EurekaWeather.Zone(state.Territory) != null;
         var zone = EurekaWeather.Zone(inEureka ? state.Territory : configuration.LastZone) ?? EurekaWeather.Zones[2];
-        Compute(zone, inEureka ? state : MapState.Empty);
-        return (zone.Territory, statuses);
+        if (!inEureka) state = MapState.Empty;
+        Compute(zone, state);
+        return new HuntContext(zone.Territory, statuses, state.BunnyFates, sources.ElementalLevel(), DateTimeOffset.UtcNow);
     }
 
     /// <summary>Chooses the NM and centers the map on it at the next draw.</summary>
@@ -111,6 +117,14 @@ public sealed class MapTab
     {
         chosenNm = nm.Npc;
         pendingCenter = nm.Position;
+    }
+
+    /// <summary>Highlights a farm's places (sprites, mobs, bunny FATE) and centers the map on the first one.</summary>
+    public void ShowFarm(string label, IReadOnlyList<Vector2> places)
+    {
+        if (places.Count == 0) return;
+        shownFarm = (label, places);
+        pendingCenter = places[0];
     }
 
     public void Draw()
@@ -336,6 +350,17 @@ public sealed class MapTab
                 OutlinedText(draw, rect.Min, text, PrepPurple, Parchment);
             }
 
+        if (shownFarm is { } farm)
+            foreach (var place in farm.Places)
+            {
+                var s = Screen(g.PixelFromCoordinates(place));
+                var radius = PrepRadius * 50 * g.Scale / 100f * zoom;
+                draw.AddCircleFilled(s, radius, (FarmTeal & 0x00FFFFFF) | 0x38000000);
+                draw.AddCircle(s, radius, FarmTeal, 0, 2);
+                var rect = labels.PlaceAround(s, radius, ImGui.CalcTextSize(farm.Label));
+                OutlinedText(draw, rect.Min, farm.Label, FarmTeal, Parchment);
+            }
+
         if (layers.Fates)
             foreach (var f in state.Fates.Where(f => statuses.All(s => s.Nm.Fate != f.Id)))
             {
@@ -505,6 +530,20 @@ public sealed class MapTab
                 sources.SetFlag(map.Territory, map.Map, map.Geometry.World(map.Geometry.PixelFromCoordinates(s.Coordinates)));
             ImGui.EndGroup();
             ImGui.Spacing();
+        }
+
+        if (shownFarm is { } farm)
+        {
+            ImGui.Separator();
+            ImGui.TextColored(Yellow, "Farm montré");
+            ImGui.SameLine();
+            ImGui.TextUnformatted(farm.Label);
+            if (ImGui.SmallButton("Centrer##farm")) CenterOnCoordinates(map, farm.Places[0]);
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Drapeau##farm"))
+                sources.SetFlag(map.Territory, map.Map, map.Geometry.World(map.Geometry.PixelFromCoordinates(farm.Places[0])));
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Effacer##farm")) shownFarm = null;
         }
 
         if (statuses.FirstOrDefault(s => s.Nm.Npc == chosenNm) is { } chosen)

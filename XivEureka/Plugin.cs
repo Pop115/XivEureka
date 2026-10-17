@@ -82,10 +82,16 @@ public sealed class Plugin : IDalamudPlugin
             new MapSources(EndedFates, tracker.PreppedByFate, ElementalLevel, UsefulShards, tracker,
                 (territory, map, position) => InGameMap.SetFlag(territory, map, position, open: false)),
             Save);
-        var huntTab = new HuntTab(catalog, nmCatalog, texts, TextureProvider, CurrentCharacter, mapTab.StatusesNow,
-            w => weatherNames[w], nm =>
+        var huntTab = new HuntTab(catalog, nmCatalog, FarmCatalog.Embedded(), texts, TextureProvider, CurrentCharacter,
+            mapTab.HuntContextNow, w => weatherNames[w],
+            nm =>
             {
                 mapTab.ShowNm(nm);
+                mainWindow.Open(MainWindow.Tab.Map);
+            },
+            (label, places) =>
+            {
+                mapTab.ShowFarm(label, places);
                 mainWindow.Open(MainWindow.Tab.Map);
             });
         mainWindow = new MainWindow(logosTab, huntTab, mapTab);

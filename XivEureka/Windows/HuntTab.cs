@@ -13,24 +13,32 @@ using XivEureka.Zones;
 namespace XivEureka.Windows;
 
 /// <summary>
-/// "Quoi taper" tab: the chain from the Logos actions not learned yet to the NMs to hit. On top, the
-/// actions craftable right now (go to the manipulator). Then one block per useful shard, most
-/// useful first: the actions it moves forward, the NMs that drop it (with their state when in the
-/// zone shown on the map, doable ones first) and the mnemes it can turn into, with what each one
-/// is missing for. Computed by <see cref="Hunt"/>. User-facing texts are French for now.
+/// "Quoi taper" tab: the chain from the Logos actions not learned yet to what to hit. On top, the
+/// actions craftable right now (go to the manipulator), then "Le plus rapide": for each useful
+/// shard, its fastest source now (sprites under their weather first). Then one block per useful
+/// shard, most useful first: the actions it moves forward, all its sources fastest first (sprites,
+/// NMs with their live state, bunny chests, lockboxes, random mobs) and the mnemes it can turn into,
+/// with what each one is missing for. Computed by <see cref="Hunt"/> and <see cref="HuntOptions"/>.
+/// User-facing texts are French for now.
 /// </summary>
 public sealed class HuntTab(
     LogosCatalog catalog,
     NmCatalog nmCatalog,
+    FarmCatalog farms,
     GameTexts texts,
     ITextureProvider icons,
     Func<CharacterState?> currentCharacter,
-    Func<(uint Territory, IReadOnlyList<NmStatus> Statuses)> statusesNow,
+    Func<HuntContext> contextNow,
     Func<string, string> weatherName,
-    Action<EurekaNm> showOnMap)
+    Action<EurekaNm> showNm,
+    Action<string, IReadOnlyList<Vector2>> showFarm)
 {
+    /// <summary>Sources shown per shard before "N autre(s)".</summary>
+    private const int ShownSources = 4;
+
     private static readonly Vector4 Yellow = new(1f, 0.85f, 0.25f, 1f);
     private static readonly Vector4 Green = new(0.35f, 0.83f, 0.6f, 1f);
+    private static readonly Vector4 Amber = new(0.95f, 0.65f, 0.2f, 1f);
     private static readonly Vector4 Grey = new(0.6f, 0.6f, 0.65f, 1f);
 
     public void Draw()
@@ -52,8 +60,7 @@ public sealed class HuntTab(
             ImGui.TextColored(Yellow, "Actions apprises jamais lues : ouvre le journal chez Drake (sinon tout compte comme à apprendre).");
 
         var plan = Hunt.Compute(catalog, nmCatalog.Zones, state.Stock, state.Learned);
-        var (territory, statuses) = statusesNow();
-        var now = DateTimeOffset.UtcNow;
+        var context = contextNow();
         ImGui.SameLine();
         ImGui.TextColored(Grey, $"{plan.NotLearned} action(s) pas encore apprise(s) · mnemes du {state.StockReadAt:dd/MM HH:mm}");
 
@@ -74,10 +81,57 @@ public sealed class HuntTab(
         ImGui.Separator();
         using var list = ImRaii.Child("##hunt", Vector2.Zero, false);
         if (!list) return;
-        foreach (var shard in plan.Shards) DrawShard(shard, territory, statuses, now);
+        DrawFastest(plan, context);
+        foreach (var shard in plan.Shards) DrawShard(shard, context);
     }
 
-    private void DrawShard(HuntShard shard, uint territory, IReadOnlyList<NmStatus> statuses, DateTimeOffset now)
+    /// <summary>One line per useful shard, by its fastest source: what to do first.</summary>
+    private void DrawFastest(HuntPlan plan, HuntContext context)
+    {
+        var zone = EurekaWeather.Zone(context.Territory)?.Name ?? "?";
+        ImGui.TextColored(Yellow, "LE PLUS RAPIDE");
+        ImGui.SameLine();
+        ImGui.TextColored(Grey, context.Level is { } level ? $"à {zone}, niveau {level}" : $"à {zone} (niveau inconnu)");
+        var fastest = HuntOptions.Fastest(plan, farms, context);
+        if (fastest.Count == 0)
+        {
+            ImGui.TextColored(Grey, "Aucune source connue dans cette zone pour les éclats qui te manquent.");
+        }
+        using (var table = ImRaii.Table("##fastest", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit))
+        {
+            if (table)
+            {
+                ImGui.TableSetupColumn("éclat");
+                ImGui.TableSetupColumn("source", ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableSetupColumn("quand");
+                ImGui.TableSetupColumn("carte");
+                foreach (var (option, i) in fastest.Select((o, i) => (o, i)))
+                {
+                    using var id = ImRaii.PushId(i);
+                    var shard = plan.Shards.First(s => s.Shard == option.Shard);
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    var text = texts.Item(option.Shard);
+                    Icon(text.Icon, new Vector2(20));
+                    ImGui.SameLine();
+                    ImGui.TextUnformatted(GameTexts.WithoutUnidentified(text.Name));
+                    if (ImGui.IsItemHovered()) ImGui.SetTooltip($"Sert à {shard.Actions.Count} action(s)");
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(Label(option));
+                    if (option.Notes.Count > 0 && ImGui.IsItemHovered()) ImGui.SetTooltip(string.Join("\n", option.Notes));
+                    ImGui.TableNextColumn();
+                    When(option, context);
+                    ImGui.TableNextColumn();
+                    MapButton(option);
+                }
+            }
+        }
+        ImGui.TextColored(Grey, "Temps estimés à la louche, pour classer : attente (météo, respawn, FATE) + effort selon la source.");
+        ImGui.Spacing();
+        ImGui.Separator();
+    }
+
+    private void DrawShard(HuntShard shard, HuntContext context)
     {
         using var id = ImRaii.PushId((int)shard.Shard);
         var text = texts.Item(shard.Shard);
@@ -91,24 +145,15 @@ public sealed class HuntTab(
         ImGui.EndGroup();
 
         ImGui.Indent(40);
-        if (shard.Sources.Count == 0)
-            ImGui.TextColored(Grey, "Aucun NM connu ne le lâche (zone pas encore dans les données du plugin).");
-        foreach (var source in Ordered(shard.Sources, territory, statuses, now))
+        var options = HuntOptions.For(shard, farms, context);
+        if (options.Count == 0)
+            ImGui.TextColored(Grey, "Aucune source connue (zone pas encore dans les données du plugin, ou pas à ton niveau).");
+        for (var i = 0; i < Math.Min(ShownSources, options.Count); i++) DrawOption(options[i], i, context);
+        if (options.Count > ShownSources)
         {
-            using var nmId = ImRaii.PushId((int)source.Nm.Npc);
-            var status = source.Territory == territory ? statuses.FirstOrDefault(s => s.Nm.Npc == source.Nm.Npc) : null;
-            var zone = EurekaWeather.Zone(source.Territory)?.Name ?? $"zone {source.Territory}";
-            ImGui.TextUnformatted($"{texts.Npc(source.Nm.Npc)} (Nv {source.Nm.Level}, {zone})");
-            ImGui.SameLine();
-            if (status != null)
-                ImGui.TextColored(status.IsDoable(now) ? Green : Grey, status.Describe(now, weatherName));
-            else
-                ImGui.TextColored(Grey, "état inconnu (autre zone)");
-            if (source.Territory == territory)
-            {
-                ImGui.SameLine();
-                if (ImGui.SmallButton("Carte")) showOnMap(source.Nm);
-            }
+            using var more = ImRaii.TreeNode($"{options.Count - ShownSources} autre(s) source(s)##more");
+            if (more)
+                for (var i = ShownSources; i < options.Count; i++) DrawOption(options[i], i, context);
         }
 
         foreach (var mneme in shard.Mnemes)
@@ -132,12 +177,76 @@ public sealed class HuntTab(
         ImGui.Separator();
     }
 
-    /// <summary>Doable now first, then NMs of the zone shown, then by level.</summary>
-    private static IEnumerable<HuntSource> Ordered(IReadOnlyList<HuntSource> sources, uint territory,
-        IReadOnlyList<NmStatus> statuses, DateTimeOffset now) =>
-        sources.OrderByDescending(s => s.Territory == territory && statuses.FirstOrDefault(x => x.Nm.Npc == s.Nm.Npc) is { } st && st.IsDoable(now))
-            .ThenByDescending(s => s.Territory == territory)
-            .ThenBy(s => s.Nm.Level);
+    private void DrawOption(HuntOption option, int index, HuntContext context)
+    {
+        using var id = ImRaii.PushId(index);
+        ImGui.TextUnformatted(Label(option));
+        ImGui.SameLine();
+        When(option, context);
+        if (option.Notes.Count > 0)
+        {
+            ImGui.SameLine();
+            ImGui.TextColored(Grey, "· " + string.Join(" · ", option.Notes));
+        }
+        ImGui.SameLine();
+        MapButton(option);
+    }
+
+    /// <summary>"Sprite d'orage Nv 41", "FATE lapin « … »", "Coffre de mutation : …", "NM (Nv 45, Pyros)".</summary>
+    private string Label(HuntOption option)
+    {
+        if (option.Nm is { } nm)
+        {
+            var zone = EurekaWeather.Zone(nm.Territory)?.Name ?? $"zone {nm.Territory}";
+            return $"NM {texts.Npc(nm.Nm.Npc)} (Nv {nm.Nm.Level}, {zone})";
+        }
+        var farm = option.Farm!;
+        return farm.Kind switch
+        {
+            FarmKind.Bunny => $"FATE lapin « {texts.Fate(farm.Fate)} »",
+            FarmKind.Lockbox => $"Coffre de mutation : {texts.Npc(farm.Npc)} Nv {farm.Level}",
+            _ => $"{texts.Npc(farm.Npc)} Nv {farm.Level}" + (farm.Adapted ? " adapté" : ""),
+        };
+    }
+
+    /// <summary>When the source is there: green now, amber to come (with the weather), grey unknown.</summary>
+    private void When(HuntOption option, HuntContext context)
+    {
+        var now = context.Now;
+        if (option.Farm is { Kind: FarmKind.Bunny } bunny && option.Eta != null)
+        {
+            if (context.BunnyFates.Contains(bunny.Fate)) ImGui.TextColored(Green, "FATE en cours");
+            else ImGui.TextColored(Amber, "attendre la FATE");
+            return;
+        }
+        if (option.Status is { } status)
+        {
+            ImGui.TextColored(status.IsDoable(now) ? Green : Amber, status.Describe(now, weatherName));
+            return;
+        }
+        if (option.Eta == null)
+        {
+            ImGui.TextColored(Grey, option.Nm != null ? "état inconnu (autre zone)" : "autre zone");
+            return;
+        }
+        var weather = option.Farm is { Weathers.Count: > 0 } f
+            ? string.Join(" ou ", f.Weathers.Select(weatherName))
+            : null;
+        if (option.Window is { } w && !w.IsOpen(now))
+            ImGui.TextColored(Amber, $"{weather} dans {Formatting.Duration(w.Start - now)}");
+        else if (option.Window is { } open)
+            ImGui.TextColored(Green, $"{weather} en cours (encore {Formatting.Duration(open.End - now)})");
+        else
+            ImGui.TextColored(Green, "maintenant");
+    }
+
+    private void MapButton(HuntOption option)
+    {
+        if (option.Places.Count == 0) return;
+        if (!ImGui.SmallButton("Carte")) return;
+        if (option.Nm is { } nm) showNm(nm.Nm);
+        else showFarm(Label(option), option.Places);
+    }
 
     private void ActionIcons(IReadOnlyList<LogosAction> actions)
     {
