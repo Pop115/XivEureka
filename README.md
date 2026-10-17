@@ -54,6 +54,12 @@ small party farming on its own. "Fastest" sums it up; **Map** and **Flag** butto
 state (FATE running, respawning, weather or night to come), the chosen NM's prep area, pops called
 in chat. Eorzea time, day/night and the coming weathers on top; "Where to go now" on the side.
 
+**Progress.** The Eureka story zone by zone (access quests read from the game; the in-zone steps,
+which the game does not expose, are ticked by hand) and your relic weapon and armor for any job:
+the stage reached (relics seen in your bags, armoury and saddlebags, remembered when put away), the
+next stage with its cost against what you own (crystals, feathers, Logos actions learned), and
+what is left to the end.
+
 **Alerts and tracker.** New NM FATEs and pops called in chat (shout, yell, party, LS, CWLS) raise a
 game toast and set the map flag. A ffxiv-eureka.com tracker link seen in chat is followed live;
 a button creates one for your instance (never automatically) and NMs you kill are reported on it.
@@ -91,8 +97,9 @@ Building, tests and data notes (in French): [docs/DEVELOPMENT.md](docs/DEVELOPME
 ## En français
 
 Un compagnon pour Eurêka dans le jeu : tes actions Logos lues dans le jeu, quoi taper pour les
-éclats qui te manquent (avec un temps estimé par source), une carte des NM en direct et le tracker
-ffxiv-eureka.com. **En français sur un client français, en anglais sinon** (un réglage permet de
+éclats qui te manquent (avec un temps estimé par source), une carte des NM en direct, le tracker
+ffxiv-eureka.com, et ta progression (histoire, arme et armure reliques avec le coût de l'étape
+suivante). **En français sur un client français, en anglais sinon** (un réglage permet de
 choisir). Licence AGPL-3.0.
 
 **Installer** : `/xlsettings` → onglet **Experimental** → **Custom Plugin Repositories**, coller

@@ -1,0 +1,52 @@
+{
+ "source": "Eurekan relics and story. Stages: consolegameswiki (Eurekan Weapons, Eurekan Armor, the four zone pages), checked 2026-10-17. Item ids: game Item sheet, each stage is one block of consecutive ids (weapons: 16 = 15 jobs + the paladin shield; artifact armor: 75 = 15 jobs x 5 pieces; elemental armor: 35 = 7 roles x 5 pieces), first and last item checked on XIVAPI. Which job and slot each item fits is read from the game sheets at runtime. 'cost': items and counts to reach the stage from the previous one (the previous piece is handed in too); 'bodyLegsCost': for chest and legs when it differs; 'logos': Logos actions learned required. Story: quests of the game Quest sheet (access to each zone), steps by elemental level from the zone pages; the in-zone steps are not ordinary quests (the plugin cannot read them).",
+ "materials": [21801, 21803, 21802, 23309, 22976, 22975, 24124, 24123, 24122, 24807, 24806, 24808],
+ "weapon": [
+  { "key": "antiquated", "first": 17817, "count": 16, "itemLevel": 290, "zone": 0, "cost": [] },
+  { "key": "base", "first": 21942, "count": 16, "itemLevel": 335, "zone": 732, "cost": [[21801, 100]] },
+  { "key": "base1", "first": 21958, "count": 16, "itemLevel": 340, "zone": 732, "cost": [[21801, 400]] },
+  { "key": "base2", "first": 21974, "count": 16, "itemLevel": 345, "zone": 732, "cost": [[21801, 800]] },
+  { "key": "anemos", "first": 21990, "count": 16, "itemLevel": 355, "zone": 732, "cost": [[21802, 3]] },
+  { "key": "pagos", "first": 22925, "count": 16, "itemLevel": 360, "zone": 763, "cost": [[23309, 5]] },
+  { "key": "pagos1", "first": 22941, "count": 16, "itemLevel": 365, "zone": 763, "cost": [[23309, 10], [22976, 500]] },
+  { "key": "elemental", "first": 22957, "count": 16, "itemLevel": 370, "zone": 763, "cost": [[23309, 16], [22975, 5]] },
+  { "key": "elemental1", "first": 24039, "count": 16, "itemLevel": 375, "zone": 795, "cost": [[24124, 150]], "logos": 10 },
+  { "key": "elemental2", "first": 24055, "count": 16, "itemLevel": 380, "zone": 795, "cost": [[24124, 200]], "logos": 20 },
+  { "key": "pyros", "first": 24071, "count": 16, "itemLevel": 385, "zone": 795, "cost": [[24124, 300], [24123, 5]], "logos": 30 },
+  { "key": "hydatos", "first": 24643, "count": 16, "itemLevel": 390, "zone": 827, "cost": [[24807, 50]] },
+  { "key": "hydatos1", "first": 24659, "count": 16, "itemLevel": 395, "zone": 827, "cost": [[24807, 100]] },
+  { "key": "eurekaBase", "first": 24675, "count": 16, "itemLevel": 400, "zone": 827, "cost": [[24807, 100]] },
+  { "key": "eureka", "first": 24691, "count": 16, "itemLevel": 405, "zone": 827, "cost": [[24807, 100], [24806, 5]] },
+  { "key": "physeos", "first": 24707, "count": 16, "itemLevel": 405, "zone": 827, "cost": [[24808, 100]] }
+ ],
+ "armor": [
+  { "key": "antiquated", "first": 17742, "count": 75, "itemLevel": 290, "zone": 0, "cost": [] },
+  { "key": "base", "first": 22006, "count": 75, "itemLevel": 335, "zone": 732, "cost": [[21801, 50]] },
+  { "key": "base1", "first": 22081, "count": 75, "itemLevel": 340, "zone": 732, "cost": [[21801, 150]] },
+  { "key": "base2", "first": 22156, "count": 75, "itemLevel": 345, "zone": 732, "cost": [[21801, 400]] },
+  { "key": "anemos", "first": 22231, "count": 75, "itemLevel": 350, "zone": 732, "cost": [[21803, 150]] },
+  { "key": "elemental", "first": 24087, "count": 35, "itemLevel": 380, "zone": 795, "cost": [[24124, 40]], "logos": 50 },
+  { "key": "elemental1", "first": 24723, "count": 35, "itemLevel": 390, "zone": 827, "cost": [[24807, 30]], "bodyLegsCost": [[24807, 50]], "logos": 56 },
+  { "key": "elemental2", "first": 24758, "count": 35, "itemLevel": 390, "zone": 827, "cost": [[24808, 21]], "bodyLegsCost": [[24808, 35]], "logos": 56 }
+ ],
+ "story": [
+  { "zone": 732, "accessQuest": 68614, "steps": [
+    { "level": 1, "fr": "cristaux protéens, Gerolt", "en": "protean crystals, Gerolt" },
+    { "level": 3 }, { "level": 5 }, { "level": 13 },
+    { "level": 17, "fr": "ouvre Pagos", "en": "opens Pagos" } ] },
+  { "zone": 763, "accessQuest": 68478, "steps": [
+    { "level": 20 }, { "level": 21 }, { "level": 23 },
+    { "level": 25, "fr": "armes Pagos, bouilloire (lumière)", "en": "Pagos weapons, kettle (light)" },
+    { "level": 29 },
+    { "level": 35, "fr": "ouvre Pyros", "en": "opens Pyros" } ] },
+  { "zone": 795, "accessQuest": 68148, "steps": [
+    { "level": 35, "fr": "manipulateur Logos, armes élémentaires +1", "en": "Logos manipulator, elemental weapons +1" },
+    { "level": 38, "fr": "2e emplacement Logos", "en": "2nd Logos slot" },
+    { "level": 40 }, { "level": 45 },
+    { "level": 50, "fr": "ouvre Hydatos", "en": "opens Hydatos" } ] },
+  { "zone": 827, "accessQuest": 68149, "steps": [
+    { "level": 50, "fr": "armes Hydatos", "en": "Hydatos weapons" },
+    { "level": 51 }, { "level": 54 }, { "level": 57 },
+    { "level": 60, "fr": "ouvre l'Arsenal de Baldesion", "en": "opens the Baldesion Arsenal" } ] }
+ ]
+}

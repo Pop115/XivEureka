@@ -41,6 +41,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] internal static IPartyList PartyList { get; private set; } = null!;
     [PluginService] internal static IDtrBar DtrBar { get; private set; } = null!;
+    [PluginService] internal static IGameInventory GameInventory { get; private set; } = null!;
 
     private const string Command = "/xiveureka";
     private const string ManipulatorWindow = ManipulatorReader.Window;
@@ -97,7 +98,10 @@ public sealed class Plugin : IDalamudPlugin
                 mainWindow.Open(MainWindow.Tab.Map);
             },
             mapTab.FlagAt);
-        mainWindow = new MainWindow(logosTab, huntTab, mapTab);
+        var relics = Progress.RelicCatalog.Embedded();
+        var progressTab = new ProgressTab(relics, new Progress.ProgressReader(GameInventory, DataManager, ClientState, relics), texts,
+            TextureProvider, CurrentCharacter, ElementalLevel, Save);
+        mainWindow = new MainWindow(logosTab, huntTab, mapTab, progressTab);
         windows.AddWindow(mainWindow);
         settingsWindow = new SettingsWindow(configuration, Save, () => Loc.Apply(configuration.Language, DataManager.Language));
         windows.AddWindow(settingsWindow);

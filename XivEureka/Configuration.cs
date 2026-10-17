@@ -24,6 +24,15 @@ public sealed class CharacterState
 
     /// <summary>When <see cref="Learned"/> was read from the notebook; null if it never was.</summary>
     public DateTime? LearnedReadAt { get; set; }
+
+    /// <summary>
+    /// Relic items (Eurekan weapons and armor) seen in the character's containers, kept so that one
+    /// put away (retainer, glamour dresser) still counts. The highest stage seen is what counts.
+    /// </summary>
+    public HashSet<uint> RelicItems { get; set; } = [];
+
+    /// <summary>In-zone story steps ticked by the player ("territory:level"): the game does not expose them.</summary>
+    public HashSet<string> StorySteps { get; set; } = [];
 }
 
 /// <summary>The followed tracker: its id, the zone it was followed in, and since when (UTC).</summary>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
-    <Version>0.5.0.0</Version>
+    <Version>0.6.0.0</Version>
     <Author>Pop115</Author>
     <Name>Xiv Eurêka</Name>
     <Punchline>Eureka companion: Logos actions, what to hit for missing logograms, NM map, live tracker.</Punchline>
@@ -15,6 +15,7 @@
     <EmbeddedResource Include="Data\logos.json" LogicalName="XivEureka.Data.logos.json" />
     <EmbeddedResource Include="Data\nm.json" LogicalName="XivEureka.Data.nm.json" />
     <EmbeddedResource Include="Data\farms.json" LogicalName="XivEureka.Data.farms.json" />
+    <EmbeddedResource Include="Data\relics.json" LogicalName="XivEureka.Data.relics.json" />
     <!-- Dalamud shows images/icon.png next to the DLL for dev plugins; IconUrl serves the installer. -->
     <None Include="images\icon.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

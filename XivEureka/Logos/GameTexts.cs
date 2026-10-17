@@ -19,6 +19,7 @@ public sealed class GameTexts(IDataManager data)
     private readonly Dictionary<uint, GameText> actions = [];
     private readonly Dictionary<uint, string> npcs = [];
     private readonly Dictionary<uint, string> fates = [];
+    private readonly Dictionary<uint, string> quests = [];
 
     public GameText Item(uint id)
     {
@@ -44,6 +45,14 @@ public sealed class GameTexts(IDataManager data)
         var raw = data.GetExcelSheet<BNpcName>().GetRowOrDefault(id)?.Singular.ExtractText();
         return npcs[id] = string.IsNullOrEmpty(raw) ? Loc.T($"Monstre {id}", $"Monster {id}")
             : char.ToUpper(raw[0], CultureInfo.CurrentCulture) + raw[1..];
+    }
+
+    /// <summary>Name of a quest (Quest sheet).</summary>
+    public string Quest(uint id)
+    {
+        if (quests.TryGetValue(id, out var name)) return name;
+        var raw = data.GetExcelSheet<Quest>().GetRowOrDefault(id)?.Name.ExtractText();
+        return quests[id] = string.IsNullOrEmpty(raw) ? Loc.T($"quête {id}", $"quest {id}") : raw;
     }
 
     /// <summary>Name of a FATE (Fate sheet).</summary>

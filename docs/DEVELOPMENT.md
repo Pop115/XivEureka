@@ -75,6 +75,17 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   drapeau sur la position. Un lien ffxiv-eureka.com/xxxx est retenu comme dernier tracker vu. Un
   pop annoncé par toi-même ne déclenche pas d'alerte (relation « joueur » du message, ou ton nom
   comme expéditeur sur les LS).
+- **Progression** : histoire et reliques. `Data/relics.json` : les 16 étapes d'arme et les 8
+  d'armure, chacune un bloc de numéros d'objet consécutifs (armes : 16 = 15 jobs + bouclier de
+  paladin ; armure d'artefact : 75 = 15 jobs × 5 pièces ; armure élémentaire : 35 = 7 rôles × 5),
+  premier et dernier objet vérifiés sur XIVAPI ; le job et l'emplacement de chaque objet sont lus
+  dans les feuilles du jeu en anglais (`ClassJobCategory`, `EquipSlotCategory`). Coûts du wiki (les
+  totaux par palier sont testés). Reliques vues dans sacs, équipement, arsenal et sacoches
+  (`IGameInventory`), gardées par personnage (servants et coffre à tenues pas lus). Histoire : les 4
+  quêtes d'accès (68614 Eurêka, 68478 Pagos, 68148 Pyros, 68149 Hydatos) lues par
+  `QuestManager.IsQuestComplete` ; une zone est finie quand la suivante est ouverte ; les étapes de
+  Krile ne sont pas des quêtes du jeu (absentes de la feuille Quest) : cochées à la main. Logique
+  dans `RelicProgress` et `StoryProgress` (`ProgressTests`).
 - **Réglages** : bouton de configuration dans `/xlplugins` (chaque alerte se coupe).
 - Le stock est relu deux fois par seconde tant que la **fenêtre des éclats Logos** est ouverte, et
   gardé par personnage dans la configuration du plugin (utilisable loin du manipulateur).
