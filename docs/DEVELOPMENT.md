@@ -55,6 +55,14 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   chiffres publiés). Difficulté : dur à 4 niveaux au-dessus ou pour un NM à ton niveau, moyen
   au-dessus ou pour un mob qui change. Coffres de mutation : part de Tactique mesurée (Pyros 56 %,
   Hydatos 39 %), le reste estimé (1/3 de mobs qui changent, 20 % de coffres).
+  **Toutes les sources** (2026-10-17, listes communautaires de Pyros et d'Hydatos) : les mobs ne
+  lâchent d'éclats (ni de coffres) qu'à ton niveau ou au-dessus (règle appliquée à tout sauf lapins
+  et NM) ; chaîne de 30 sur des mobs au-dessus de toi (`kind: chain`, niveau relatif) : Obscur à
+  Hydatos, Fondamental à Pyros ; orage Nv 53 et Zu Nestling Nv 63 adaptés (Hydatos) : Offensif ;
+  orage Nv 46 (adapté ou non), braise Nv 44 adaptée, mort-vivant Nv 53 adapté la nuit (Pyros) :
+  Mitigatif. Les sources d'une autre zone sont comptées (+15 min de changement de zone, état des NM
+  inconnu, pas d'XP si la zone est déjà au max). Un NM seul de sa zone à ta portée : chaque essai de
+  plus attend son respawn (2 h).
   **Scénarios** (`HuntScenarioTests`, duo Nv 50 sur les vraies données ; chacun affiche son classement
   avec `dotnet test --logger "console;verbosity=detailed"`) : Conceptuel sous une météo d'élémentaire
   (≈ 12 min) ou sans (on attend la suivante) ; coffres de bronze (plus de 3 h même FATE lapin en

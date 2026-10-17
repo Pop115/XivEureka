@@ -56,7 +56,8 @@ public class FarmCatalogTests
         var farms = Catalog.Zone(territory);
         var weathers = EurekaWeather.Zone(territory)!.Slices.Select(s => s.Weather).ToHashSet();
         Assert.All(farms.SelectMany(f => f.Weathers), w => Assert.Contains(w, weathers));
-        Assert.All(farms, f => Assert.NotEmpty(f.Places));
+        Assert.All(farms.Where(f => f.Kind != FarmKind.Chain), f => Assert.NotEmpty(f.Places));
+        Assert.All(farms.Where(f => f.Kind == FarmKind.Chain), f => Assert.NotNull(f.RelativeLevel));
         Assert.All(farms.SelectMany(f => f.Places), p => Assert.InRange(p.X, 3, 42));
         Assert.All(farms.SelectMany(f => f.Places), p => Assert.InRange(p.Y, 5, 42));
         // A weather or a time of day, never both (HuntOptions keeps one window).
@@ -296,7 +297,7 @@ public class HuntChanceTests
     }
 
     [Fact]
-    public void An_NM_needs_other_NMs_to_prep_for_the_extra_tries()
+    public void An_NM_alone_waits_its_respawn_for_the_extra_tries()
     {
         var nm = new EurekaNm(7759, 0, 1388, 35, "water", new Vector2(26, 26), 24007, [], new SpawnCondition(null, false),
             new PrepMob(1, 40, new SpawnCondition(null, false), [new Vector2(27, 27)]));
@@ -304,8 +305,10 @@ public class HuntChanceTests
         var status = new NmStatus(nm, fate, null, null, null);
         var context = Context([status]);
         var option = HuntOptions.For(Shard(1, 2, new HuntSource(Pyros, nm)), new FarmCatalog([]), context).Single();
-        // 1 useful mneme out of 2: a second NM on average, to prep as well.
-        Assert.Equal(HuntOptions.NmFight(nm, context) + HuntOptions.NmToPrep(nm, context), option.Eta);
+        // 1 useful mneme out of 2: a second try on average. The only NM dropping it: the same one again,
+        // so not before its 2 h respawn (longer than prepping it).
+        var again = HuntOptions.NmToPrep(nm, context) > HuntOptions.NmRespawn ? HuntOptions.NmToPrep(nm, context) : HuntOptions.NmRespawn;
+        Assert.Equal(HuntOptions.NmFight(nm, context) + again, option.Eta);
     }
 }
 

@@ -62,6 +62,10 @@ public static class HuntOptions
     public static readonly TimeSpan AdaptedKill = TimeSpan.FromMinutes(4); // bigger, and it must adapt first
     public static readonly TimeSpan MobKill = TimeSpan.FromMinutes(3);
     public static readonly TimeSpan LockboxKill = TimeSpan.FromMinutes(4); // a mutated or adapted mob
+    /// <summary>A chain of 30 kills, without letting it drop.</summary>
+    public static readonly TimeSpan ChainKills = MobKill * 30;
+    /// <summary>Going to another Eureka zone (and finding an instance).</summary>
+    public static readonly TimeSpan ZoneChange = TimeSpan.FromMinutes(15);
     /// <summary>Players beyond this add nothing to the kill speed (they get in each other's way).</summary>
     public const int MaxSharing = 4;
 
@@ -84,6 +88,8 @@ public static class HuntOptions
     public static readonly TimeSpan PrepKill = TimeSpan.FromMinutes(2);
     /// <summary>Average wait for the spawn roll to pick a prepped NM.</summary>
     public static readonly TimeSpan NmRoll = TimeSpan.FromMinutes(15);
+    /// <summary>An NM comes back 2 hours after its kill.</summary>
+    public static readonly TimeSpan NmRespawn = TimeSpan.FromMinutes(120);
     /// <summary>Getting to the FATE.</summary>
     public static readonly TimeSpan NmTravel = TimeSpan.FromMinutes(3);
     /// <summary>The NM fight alone, NM at your level (half if 5+ levels below you, twice if above).</summary>
@@ -95,6 +101,7 @@ public static class HuntOptions
     public const double MobChance = 0.05;
     public const double LockboxChance = 0.03; // lockbox drop, then the logogram in it
     public const double BunnyChance = 0.3;
+    public const double ChainChance = 0.5; // the logogram at the end of a 30 chain (guess)
 
     /// <summary>Levels above the player from which a mob counts as hard: each kill takes twice as long.</summary>
     public const int HardAbove = 3;
@@ -171,19 +178,25 @@ public static class HuntOptions
         FarmKind.Sprite => farm.Adapted ? AdaptedChance : SpriteChance,
         FarmKind.Mob => MobChance,
         FarmKind.Lockbox => LockboxChance,
+        FarmKind.Chain => ChainChance,
         _ => BunnyChance,
     };
 
     private static HuntOption? FromFarm(HuntShard shard, uint territory, Farm farm, FarmDrop drop, HuntContext context)
     {
         if (shard.UsefulChance <= 0) return null;
+        if (farm.RelativeLevel is { } above && context.Level is { } own) farm = farm with { Level = own + above };
         if (farm.Kind != FarmKind.Bunny && context.Level is { } reach && farm.Level > reach + MaxAbove) return null;
+        // Eureka mobs drop logograms (and lockboxes) only at or above the player's level: below, the
+        // guides tell to level down or sync to a FATE. Bunny coffers and NM FATEs are not concerned.
+        if (farm.Kind != FarmKind.Bunny && context.Level is { } level && farm.Level < level) return null;
         var notes = new List<string>();
-        if (drop.IfAtOrAboveYou)
-        {
-            if (context.Level is { } level && farm.Level < level) return null; // drops nothing below the player's level
-            if (context.Level == null) notes.Add(Loc.T("seulement si son niveau ≥ le tien", "only if its level ≥ yours"));
-        }
+        if (farm.Kind != FarmKind.Bunny && context.Level == null)
+            notes.Add(Loc.T("seulement si son niveau ≥ le tien", "only if its level ≥ yours"));
+        var otherZone = territory != context.Territory;
+        if (otherZone)
+            notes.Add(Loc.T($"autre zone : {EurekaWeather.Zone(territory)?.Name} (+{ZoneChange.TotalMinutes:0} min)",
+                $"other zone: {EurekaWeather.Zone(territory)?.Name} (+{ZoneChange.TotalMinutes:0} min)"));
 
         TimeWindow? window = null;
         if (farm.Weathers.Count > 0 && EurekaWeather.Zone(territory) is { } zone)
@@ -204,6 +217,7 @@ public static class HuntOptions
             FarmKind.Sprite => farm.Adapted ? AdaptedKill : SpriteKill,
             FarmKind.Mob => MobKill,
             FarmKind.Lockbox => LockboxKill,
+            FarmKind.Chain => ChainKills,
             _ => BunnyCycle,
         };
         if (context.Level is { } you && farm.Kind != FarmKind.Bunny && farm.Level > you + HardAbove)
@@ -231,17 +245,21 @@ public static class HuntOptions
             notes.Add(Loc.T("seulement une fois muté (au hasard, dans la condition indiquée)", "only once mutated (random, under the condition shown)"));
         if (farm.Kind == FarmKind.Mob)
             notes.Add(Loc.T("au hasard, plus souvent en chaîne de 25-30", "at random, more often at a 25-30 chain"));
+        if (farm.Kind == FarmKind.Chain)
+            notes.Add(Loc.T($"30 kills enchaînés sur des mobs Nv {farm.Level} ou plus, sans laisser tomber la chaîne",
+                $"30 kills in a row on lv {farm.Level}+ mobs, without letting the chain drop"));
         if (farm.Kind == FarmKind.Lockbox)
             notes.Add(Loc.T("dans les coffres de mutation (tout mob muté ou adapté peut en lâcher)",
                 "in mutation lockboxes (any mutated or adapted mob can drop one)"));
 
         var firstTry = running ? BunnyRunning : tryTime;
         var wait = window != null && window.Start > context.Now ? window.Start - context.Now : TimeSpan.Zero;
-        TimeSpan? eta = territory != context.Territory ? null : Total(wait, firstTry, tries, tryTime);
+        TimeSpan? eta = Total(wait, firstTry, tries, tryTime) + (otherZone ? ZoneChange : TimeSpan.Zero);
+        var levelsUp = context.Level is not { } current || current < HuntXp.MaxLevel(territory);
         return new HuntOption(shard.Shard, territory, farm, drop, null, null, eta, window, notes, tryChance, tries, tryTime,
             wait, firstTry)
         {
-            XpRate = HuntXp.ForFarm(farm, tryTime, context.Level),
+            XpRate = levelsUp ? HuntXp.ForFarm(farm, tryTime, context.Level) : 0,
             Difficulty = HuntXp.Of(farm.Level, context.Level, farm.Mutated || farm.Adapted, nm: false),
         };
     }
@@ -252,11 +270,7 @@ public static class HuntOptions
         var status = source.Territory == context.Territory
             ? context.Statuses.FirstOrDefault(s => s.Nm.Npc == source.Nm.Npc)
             : null;
-        if (status == null)
-            return new HuntOption(shard, source.Territory, null, null, source, null, null, null, [])
-            {
-                Difficulty = HuntXp.Of(source.Nm.Level, context.Level, changes: false, nm: true),
-            };
+        if (status == null) return FromNmElsewhere(huntShard, source, context);
 
         var now = context.Now;
         var wait = TimeSpan.Zero;
@@ -274,8 +288,12 @@ public static class HuntOptions
             firstTry = status.Prepped ? NmPrepped(source.Nm, context) : NmToPrep(source.Nm, context);
         }
         var tries = huntShard.UsefulChance > 0 ? 1 / huntShard.UsefulChance : 1;
-        // Each extra try is another NM dropping the same logogram, to prep yourself as well.
+        // Each extra try is another NM dropping the same logogram, to prep yourself as well; when this
+        // NM is the only one within reach, the same one again, so not before its respawn.
         var repeat = NmToPrep(source.Nm, context);
+        var others = huntShard.Sources.Count(s => s.Territory == source.Territory && s.Nm.Npc != source.Nm.Npc
+            && (context.Level is not { } reach || s.Nm.Prep.Level <= reach + MaxAbove));
+        if (others == 0 && repeat < NmRespawn) repeat = NmRespawn;
         var notes = new List<string>();
         if (status.Fate == null && !status.Prepped)
             notes.Add(Loc.T($"à préparer : ~{PrepKills} kills du mob de prépa (Nv {source.Nm.Prep.Level}), puis le tirage du jeu (toutes les ~11 min)",
@@ -293,6 +311,37 @@ public static class HuntOptions
         {
             XpRate = HuntXp.ForNm(source.Nm, firstTry, status.Fate != null, context.Level),
             Difficulty = HuntXp.Of(source.Nm.Level, context.Level, changes: false, nm: true),
+        };
+    }
+
+    /// <summary>
+    /// An NM of another zone: its state there is unknown, so it is counted to prep, after its
+    /// condition window and the zone change.
+    /// </summary>
+    private static HuntOption FromNmElsewhere(HuntShard huntShard, HuntSource source, HuntContext context)
+    {
+        var nm = source.Nm;
+        var zone = EurekaWeather.Zone(source.Territory);
+        var window = zone == null ? null
+            : NmStatuses.NextWindow(zone, nm.Condition, context.Now) ?? NmStatuses.NextWindow(zone, nm.Prep.Condition, context.Now);
+        var wait = window != null && window.Start > context.Now ? window.Start - context.Now : TimeSpan.Zero;
+        var firstTry = NmToPrep(nm, context);
+        var tries = huntShard.UsefulChance > 0 ? 1 / huntShard.UsefulChance : 1;
+        var outOfReach = context.Level is { } you && nm.Prep.Level > you + MaxAbove;
+        var notes = new List<string>
+        {
+            Loc.T($"autre zone : {zone?.Name} (+{ZoneChange.TotalMinutes:0} min), état du NM inconnu",
+                $"other zone: {zone?.Name} (+{ZoneChange.TotalMinutes:0} min), NM state unknown"),
+        };
+        if (outOfReach)
+            notes.Add(Loc.T($"prépa trop forte à {context.PartySize} (mob Nv {nm.Prep.Level})", $"prep too strong for {context.PartySize} (mob lv {nm.Prep.Level})"));
+        var levelsUp = context.Level is not { } current || current < HuntXp.MaxLevel(source.Territory);
+        return new HuntOption(huntShard.Shard, source.Territory, null, null, source, null,
+            outOfReach ? null : Total(wait, firstTry, tries, firstTry) + ZoneChange, window, notes, huntShard.UsefulChance, tries, firstTry,
+            wait, firstTry)
+        {
+            XpRate = levelsUp ? HuntXp.ForNm(nm, firstTry, running: false, context.Level) : 0,
+            Difficulty = HuntXp.Of(nm.Level, context.Level, changes: false, nm: true),
         };
     }
 

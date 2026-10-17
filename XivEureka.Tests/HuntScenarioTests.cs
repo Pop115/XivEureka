@@ -205,35 +205,46 @@ public class HuntScenarioTests(ITestOutputHelper output)
         Assert.Equal(53, Minutes(options[0]), 3);
         var skoll = options.First(o => o.Nm?.Nm.Npc == 7739);
         Assert.Equal(88, skoll.FirstTry.TotalMinutes, 3);
-        Assert.True(Minutes(options.First(o => o.Farm is { Kind: FarmKind.Bunny })) > 600);
+        Assert.True(Minutes(options.First(o => o.Farm is { Kind: FarmKind.Bunny } && o.Drop!.Chest == "gold")) > 600);
     }
 
     [Fact]
-    public void Offensive_in_Pyros_only_comes_from_gold_coffers_about_twelve_hours()
+    public void Offensive_from_Pyros_go_to_the_adapted_lv_53_sprite_of_Hydatos_not_the_gold_coffers()
     {
-        // 8 % of bunny coffers are gold, half of them Offensive: 4 % a FATE, ~26 FATEs of 28 min.
+        // In Pyros, Offensive only comes from gold coffers: 8 % of them, half Offensive, ~26 FATEs of
+        // 28 min, about 12 hours. The adapted lv 53 thunderstorm sprite of Hydatos is within reach at
+        // 50: its weather wait and the zone change still make it the fastest by far.
         var options = Rank("Offensive, duo lv 50, Pyros", Shard(Offensive, 1), Context(Pyros, Under(Pyros, "Fair Skies"), 50));
-        var pyros = options.Where(o => o.Eta != null).ToList();
-        Assert.All(pyros, o => Assert.Equal(("gold", FarmKind.Bunny), (o.Drop!.Chest, o.Farm!.Kind)));
-        Assert.InRange(Minutes(pyros[0]), 600, 800);
-        Assert.All(options.Where(o => o.Territory == Hydatos), o => Assert.Null(o.Eta));
+        var first = options[0];
+        Assert.Equal((Hydatos, 7470u, 53), (first.Territory, first.Farm!.Npc, first.Farm.Level));
+        Assert.Contains(first.Notes, n => n.Contains("autre zone"));
+        var pyrosGold = options.Where(o => o.Territory == Pyros).ToList();
+        Assert.All(pyrosGold, o => Assert.Equal(("gold", FarmKind.Bunny), (o.Drop!.Chest, o.Farm!.Kind)));
+        Assert.InRange(Minutes(pyrosGold[0]), 600, 800);
+        Assert.True(Minutes(pyrosGold[0]) > 5 * Minutes(first));
     }
 
     // ---------- Hydatos at level 50: much is out of reach for two ----------
 
     [Fact]
-    public void Hydatos_at_50_mobs_more_than_5_levels_above_are_not_proposed()
+    public void Hydatos_at_50_what_is_within_reach_beats_coffers()
     {
-        // Offensive: the adapted lv 64 Snowstorm sprite would be the fast way, but 14 levels above:
-        // only the gold coffers of "Drink Me" are left (about 9 hours).
+        // Offensive: the adapted lv 64 Snowstorm sprite is out of reach (14 levels above), but the lv 53
+        // thunderstorm sprite gives Offensive once adapted: under Thunderstorms, about an hour and a half,
+        // against about 9 hours of gold coffers.
         var offensive = Rank("Offensive, duo lv 50, Hydatos, Snow", Shard(Offensive, 1), Context(Hydatos, Under(Hydatos, "Snow"), 50));
-        Assert.DoesNotContain(offensive, o => o.Farm is { Kind: FarmKind.Sprite });
-        Assert.Equal((FarmKind.Bunny, (ushort)1425), (offensive[0].Farm!.Kind, offensive[0].Farm!.Fate));
+        Assert.DoesNotContain(offensive, o => o.Farm is { Kind: FarmKind.Sprite, Level: 64 });
+        Assert.Equal((FarmKind.Sprite, 7470u, 53), (offensive[0].Farm!.Kind, offensive[0].Farm!.Npc, offensive[0].Farm!.Level));
+        var gold = offensive.First(o => o.Farm is { Kind: FarmKind.Bunny, Fate: 1425 });
+        Assert.True(Minutes(gold) > 5 * Minutes(offensive[0]));
 
-        // Obscure: only Khalamari is preppable (Xzomit lv 55); Stegodon's and Frostmane's prep
-        // mobs (56, 59) are too strong for two: no time for them. The lv 62+ mobs are not proposed.
+        // Obscure: a chain of 30 on mobs above you, rather than one NM every two hours. Of the NMs,
+        // only Khalamari is preppable (Xzomit lv 55); Stegodon's and Frostmane's prep mobs (56, 59)
+        // are too strong for two. The lv 62+ prep mobs are not proposed.
         var obscure = Rank("Obscure, duo lv 50, Hydatos", Shard(Obscure, 1), Context(Hydatos, Under(Hydatos, "Fair Skies"), 50));
-        Assert.Equal(8063u, obscure[0].Nm!.Nm.Npc);
+        Assert.Equal(FarmKind.Chain, obscure[0].Farm!.Kind);
+        Assert.Equal(52, obscure[0].Farm!.Level);
+        Assert.Contains(obscure, o => o.Nm?.Nm.Npc == 8063 && o.Eta != null);
         Assert.All(obscure.Where(o => o.Nm != null && o.Nm.Nm.Npc != 8063), o =>
         {
             Assert.Null(o.Eta);

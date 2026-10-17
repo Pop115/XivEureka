@@ -18,6 +18,8 @@ public enum FarmKind
     Mob,
     Lockbox,
     Bunny,
+    /// <summary>A chain of 30 kills of mobs above the player, which can end in a logogram.</summary>
+    Chain,
 }
 
 /// <summary>
@@ -35,10 +37,12 @@ public sealed record FarmDrop(uint Shard, bool IfAtOrAboveYou, string? Chest, st
 /// coordinates), what it drops, a user-facing note (French for now), the minutes one try takes
 /// (null: the default of the farm kind), and whether it drops once mutated (<see cref="Mutated"/>;
 /// <see cref="Adapted"/> for an adaptation): the weather or time is then when the change happens.
+/// <see cref="RelativeLevel"/>: a farm on whatever mobs are that many levels above the player (a
+/// chain), its <see cref="Level"/> being only the fallback when the player's level is unknown.
 /// </summary>
 public sealed record Farm(FarmKind Kind, uint Npc, ushort Fate, int Level, bool Adapted, IReadOnlyList<string> Weathers,
     IReadOnlyList<Vector2> Places, IReadOnlyList<FarmDrop> Drops, string? Time = null, string? Note = null,
-    double? Minutes = null, bool Mutated = false);
+    double? Minutes = null, bool Mutated = false, int? RelativeLevel = null);
 
 public sealed record ZoneFarms(uint Territory, IReadOnlyList<Farm> Farms);
 
@@ -57,7 +61,7 @@ public sealed class FarmCatalog(IReadOnlyList<ZoneFarms> zones)
             Enum.Parse<FarmKind>(f.Kind, ignoreCase: true), f.Npc, f.Fate, f.Level, f.Adapted, f.Weathers ?? [],
             f.Places.Select(p => new Vector2(p[0], p[1])).ToList(),
             f.Drops.Select(d => new FarmDrop(d.Shard, d.IfAtOrAboveYou, d.Chest, d.Count, d.Chance)).ToList(), f.Time, f.Note,
-            f.Minutes, f.Mutated)).ToList())).ToList());
+            f.Minutes, f.Mutated, f.RelativeLevel)).ToList())).ToList());
     }
 
     public static FarmCatalog Embedded()
@@ -70,6 +74,6 @@ public sealed class FarmCatalog(IReadOnlyList<ZoneFarms> zones)
     private sealed record RawFile(List<RawZone> Zones);
     private sealed record RawZone(uint Territory, List<RawFarm> Farms);
     private sealed record RawFarm(string Kind, uint Npc, ushort Fate, int Level, bool Adapted, List<string>? Weathers,
-        List<float[]> Places, List<RawDrop> Drops, string? Time, string? Note, double? Minutes, bool Mutated);
+        List<float[]> Places, List<RawDrop> Drops, string? Time, string? Note, double? Minutes, bool Mutated, int? RelativeLevel);
     private sealed record RawDrop(uint Shard, bool IfAtOrAboveYou, string? Chest, string? Count, double? Chance);
 }

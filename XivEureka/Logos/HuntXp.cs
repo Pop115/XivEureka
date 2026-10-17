@@ -48,6 +48,7 @@ public static class HuntXp
         var perTry = farm.Kind switch
         {
             FarmKind.Bunny => BunnyFate,
+            FarmKind.Chain => 30 * 1.5, // 30 kills, the chain bonus on top
             FarmKind.Sprite => farm.Adapted ? SpriteFactor * ChangingFactor : SpriteFactor,
             _ => farm.Mutated || farm.Adapted ? ChangingFactor : 1,
         };

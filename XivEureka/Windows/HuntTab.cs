@@ -226,6 +226,7 @@ public sealed class HuntTab(
         {
             FarmKind.Bunny => Loc.T("FATE lapin", "bunny FATEs"),
             null => "NM",
+            FarmKind.Chain => Loc.T("chaînes", "chains"),
             _ => "kills",
         };
         var tries = option.Tries < 1.5 ? Loc.T("1 essai", "1 try") : $"~{option.Tries:0} {what}";
@@ -282,6 +283,7 @@ public sealed class HuntTab(
         return farm.Kind switch
         {
             FarmKind.Bunny => Loc.T($"FATE lapin « {texts.Fate(farm.Fate)} »", $"Bunny FATE \"{texts.Fate(farm.Fate)}\""),
+            FarmKind.Chain => Loc.T($"Chaîne de 30 (mobs Nv {farm.Level}+)", $"Chain of 30 (lv {farm.Level}+ mobs)"),
             FarmKind.Lockbox => Loc.T($"Coffre de mutation : {texts.Npc(farm.Npc)} Nv {farm.Level}", $"Mutation lockbox: {texts.Npc(farm.Npc)} lv {farm.Level}")
                 + (farm.Mutated ? Loc.T(" muté", " mutated") : farm.Adapted ? Loc.T(" adapté", " adapted") : ""),
             _ => $"{texts.Npc(farm.Npc)} {Loc.T("Nv", "lv")} {farm.Level}" + (farm.Adapted ? Loc.T(" adapté", " adapted") : ""),
