@@ -29,6 +29,18 @@ public sealed class SettingsWindow : Window
         Checkbox("Ouvrir avec le manipulateur Logos", () => c.OpenWithManipulator, v => c.OpenWithManipulator = v);
 
         ImGui.Spacing();
+        ImGui.TextDisabled("Quoi taper");
+        var party = c.FarmPartySize;
+        ImGui.SetNextItemWidth(160);
+        if (ImGui.SliderInt("Joueurs pour farmer##party", ref party, 1, 8))
+        {
+            c.FarmPartySize = party;
+            save();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Combien vous êtes à farmer les éclats, sans compter sur un groupe public.\nLe groupe réel compte s'il est plus grand.");
+
+        ImGui.Spacing();
         ImGui.TextDisabled("En zone d'Eurêka");
         Checkbox("Annoncer les nouvelles FATE (sauf les FATE lapin)", () => c.AlertFates, v => c.AlertFates = v);
         Checkbox("Drapeau sur la carte pour une nouvelle FATE", () => c.FlagOnFate, v => c.FlagOnFate = v);

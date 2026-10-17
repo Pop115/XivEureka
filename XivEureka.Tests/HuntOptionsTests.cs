@@ -200,11 +200,15 @@ public class HuntOptionsTests
             new PrepMob(1, 40, new SpawnCondition(null, false), [new Vector2(27, 27)]));
         var fate = new MapFate(1388, "Leucosia", Vector3.Zero, 10, 20, TimeSpan.FromMinutes(10), 0, false);
         var status = new NmStatus(nm, fate, null, null, null);
-        var options = HuntOptions.For(Shard(24007, new HuntSource(Pyros, nm)), Farms(EmberSprite), Context(now, statuses: [status]));
+        var context = Context(now, statuses: [status]);
+        var options = HuntOptions.For(Shard(24007, new HuntSource(Pyros, nm)), Farms(EmberSprite), context);
+        // Alone at lv 45 against a lv 35 NM: 3 min to get there, half of the 20 min fight.
+        var fight = HuntOptions.NmFight(nm, context);
+        Assert.Equal(13, fight.TotalMinutes, 3);
         // Heat Waves is off: its next window is at least one weather period (23 min) away.
-        Assert.True(options.Single(o => o.Farm != null).Eta > HuntOptions.NmRunning);
+        Assert.True(options.Single(o => o.Farm != null).Eta > fight);
         Assert.NotNull(options[0].Nm);
-        Assert.Equal(HuntOptions.NmRunning, options[0].Eta);
+        Assert.Equal(fight, options[0].Eta);
     }
 
     [Fact]
@@ -231,9 +235,11 @@ public class HuntOptionsTests
     public void A_mob_well_above_you_is_slower()
     {
         var now = When("Heat Waves", true);
-        var strong = EmberSprite with { Level = 53 };
+        var strong = EmberSprite with { Level = 49 };
         var option = HuntOptions.For(Shard(24007), Farms(strong), Context(now, level: 45)).Single();
         Near(SpriteEta * 2, option.Eta);
+        // More than 5 levels above: out of reach, not proposed.
+        Assert.Empty(HuntOptions.For(Shard(24007), Farms(EmberSprite with { Level = 51 }), Context(now, level: 45)));
     }
 }
 
@@ -284,14 +290,16 @@ public class HuntChanceTests
     }
 
     [Fact]
-    public void An_NM_needs_other_NMs_of_the_train_for_the_extra_tries()
+    public void An_NM_needs_other_NMs_to_prep_for_the_extra_tries()
     {
         var nm = new EurekaNm(7759, 0, 1388, 35, "water", new Vector2(26, 26), 24007, [], new SpawnCondition(null, false),
             new PrepMob(1, 40, new SpawnCondition(null, false), [new Vector2(27, 27)]));
         var fate = new MapFate(1388, "Leucosia", Vector3.Zero, 10, 20, TimeSpan.FromMinutes(10), 0, false);
         var status = new NmStatus(nm, fate, null, null, null);
-        var option = HuntOptions.For(Shard(1, 2, new HuntSource(Pyros, nm)), new FarmCatalog([]), Context([status])).Single();
-        Assert.Equal(HuntOptions.NmRunning + HuntOptions.NmRepeat, option.Eta);
+        var context = Context([status]);
+        var option = HuntOptions.For(Shard(1, 2, new HuntSource(Pyros, nm)), new FarmCatalog([]), context).Single();
+        // 1 useful mneme out of 2: a second NM on average, to prep as well.
+        Assert.Equal(HuntOptions.NmFight(nm, context) + HuntOptions.NmToPrep(nm, context), option.Eta);
     }
 }
 
@@ -311,5 +319,32 @@ public class HuntTimeOfDayTests
             Assert.Equal(EurekaWeather.IsNight(now), option.IsOpen(now));
             Assert.True(EurekaWeather.IsNight(option.Window!.Start.AddSeconds(1)));
         }
+    }
+}
+
+public class HuntPartyTests
+{
+    private static readonly EurekaNm Skoll = NmCatalog.Embedded().Zone(795)!.Nms.Single(n => n.Npc == 7739);
+
+    private static HuntContext Context(int level, int party) =>
+        new(795, [], new HashSet<ushort>(), level, DateTimeOffset.FromUnixTimeSeconds(1_760_000_000L), party);
+
+    [Fact]
+    public void Kills_are_shared_by_the_party_up_to_four()
+    {
+        Assert.Equal(HuntOptions.SpriteKill / 2, HuntOptions.Shared(HuntOptions.SpriteKill, Context(50, 2)));
+        Assert.Equal(HuntOptions.SpriteKill / 4, HuntOptions.Shared(HuntOptions.SpriteKill, Context(50, 8)));
+        Assert.Equal(HuntOptions.SpriteKill, HuntOptions.Shared(HuntOptions.SpriteKill, Context(50, 0)));
+    }
+
+    [Fact]
+    public void An_NM_at_your_level_is_a_long_fight_for_two_and_its_prep_mob_too()
+    {
+        // Skoll (lv 50), prep mob lv 55: at lv 50 the prep mob is 5 above (hard: 4 min a kill alone).
+        var duo = Context(50, 2);
+        Assert.Equal(3 + 10, HuntOptions.NmFight(Skoll, duo).TotalMinutes, 3);
+        Assert.Equal(30 * 4 / 2, HuntOptions.NmPrep(Skoll, duo).TotalMinutes, 3);
+        // At lv 45 Skoll is above you: twice the fight.
+        Assert.Equal(3 + 20, HuntOptions.NmFight(Skoll, Context(45, 2)).TotalMinutes, 3);
     }
 }

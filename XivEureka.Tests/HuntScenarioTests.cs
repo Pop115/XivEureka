@@ -53,8 +53,11 @@ public class HuntScenarioTests(ITestOutputHelper output)
         return NmStatuses.Compute(zone, Nms.Zone(territory)!, fates, ended, preps, now);
     }
 
+    /// <summary>Two players farming on their own, as Pop and their partner do.</summary>
+    private const int Duo = 2;
+
     private static HuntContext Context(uint territory, DateTimeOffset now, int level, IReadOnlyList<NmStatus>? statuses = null,
-        params ushort[] bunnies) => new(territory, statuses ?? Statuses(territory, now), bunnies.ToHashSet(), level, now);
+        params ushort[] bunnies) => new(territory, statuses ?? Statuses(territory, now), bunnies.ToHashSet(), level, now, Duo);
 
     /// <summary>The ranking, printed, then returned.</summary>
     private IReadOnlyList<HuntOption> Rank(string title, HuntShard shard, HuntContext context)
@@ -78,32 +81,47 @@ public class HuntScenarioTests(ITestOutputHelper output)
 
     private static double Minutes(HuntOption o) => o.Eta!.Value.TotalMinutes;
 
+    // Pop and their partner: level 50, two players farming on their own (no public group, no train).
+
     // ---------- Conceptual (7 mnemes; 2 still missing: 29 % per logogram) ----------
 
     [Fact]
-    public void Conceptual_under_Heat_Waves_the_level_53_ember_sprite_beats_waiting_for_other_weathers()
+    public void Conceptual_under_a_sprite_weather_a_dozen_sprites_shared_by_two()
     {
-        // Level 45: Conceptual only drops from sprites at or above 45. Under Heat Waves that is the
-        // lv 53 Ember sprite, 8 levels above: hard, so 4 min a kill. 30 % drop x 29 % useful = 9 % a
-        // kill, about 12 kills: about 47 min. Typhoon sprites (lv 45) need Umbral Wind, later.
-        var options = Rank("Conceptual, lv 45, Pyros, Heat Waves", Shard(Conceptual, 2), Context(Pyros, Under(Pyros, "Heat Waves"), 45));
+        // Level 50: Conceptual only from sprites at 50 or more. Under Heat Waves, the lv 53 Ember
+        // sprite (not "hard": 3 levels above). 2 min a kill alone, 1 for two; 30 % drop x 29 %
+        // useful = 9 % a kill: about 12 kills, 12 min.
+        var options = Rank("Conceptual, duo lv 50, Pyros, Heat Waves", Shard(Conceptual, 2), Context(Pyros, Under(Pyros, "Heat Waves"), 50));
         var first = options[0];
         Assert.Equal((FarmKind.Sprite, 7773u, 53), (first.Farm!.Kind, first.Farm.Npc, first.Farm.Level));
-        Assert.Equal(TimeSpan.Zero, first.Wait);
-        Assert.InRange(Minutes(first), 40, 55);
-        Assert.DoesNotContain(options, o => o.Farm is { Kind: FarmKind.Sprite, Level: < 45 } && o.Drop!.IfAtOrAboveYou);
+        Assert.Equal(HuntOptions.SpriteKill / 2, first.TryTime);
+        Assert.InRange(Minutes(first), 11, 13);
+        // Sprites below 50 give no Conceptual any more: none of them is proposed.
+        Assert.DoesNotContain(options, o => o.Farm is { Kind: FarmKind.Sprite, Level: < 50 } && o.Drop!.IfAtOrAboveYou);
+    }
+
+    [Fact]
+    public void Conceptual_with_no_sprite_weather_up_waits_for_the_next_one()
+    {
+        // Fair Skies: no sprite. The next sprite weather is counted as a wait, then the kills.
+        var now = Under(Pyros, "Fair Skies");
+        var first = Rank("Conceptual, duo lv 50, Pyros, Fair Skies", Shard(Conceptual, 2), Context(Pyros, now, 50))[0];
+        Assert.Equal(FarmKind.Sprite, first.Farm!.Kind);
+        Assert.True(first.Wait > TimeSpan.Zero);
+        Assert.False(first.IsOpen(now));
+        Assert.Equal(Minutes(first), (first.Wait + first.FirstTry).TotalMinutes + ((first.Tries - 1) * first.TryTime.TotalMinutes), 3);
     }
 
     [Fact]
     public void Conceptual_from_bunny_coffers_takes_hours_even_with_the_FATE_running()
     {
-        // Bronze coffer: 28 % of bunny FATEs give Conceptual (1-2 of them), so about 9 FATEs; each
-        // full cycle is 28 min (respawn 8, travel 5, FATE 5, treasure hunt 10). A FATE already
-        // running only saves the start of the first cycle.
+        // Bronze coffer: 28 % of bunny FATEs give Conceptual (1-2), so about 9 FATEs of 28 min
+        // (respawn 8, travel 5, FATE 5, treasure hunt 10). Kills are shared, coffers are not: the
+        // party size changes nothing here. A FATE already running only shortens the first one.
         var now = Under(Pyros, "Heat Waves");
-        var waiting = Rank("Conceptual, bunny not running", Shard(Conceptual, 2), Context(Pyros, now, 45))
+        var waiting = Rank("Conceptual, bunny not running", Shard(Conceptual, 2), Context(Pyros, now, 50))
             .First(o => o.Farm is { Kind: FarmKind.Bunny, Fate: 1407 });
-        var running = Rank("Conceptual, bunny 1407 running", Shard(Conceptual, 2), Context(Pyros, now, 45, null, 1407))
+        var running = Rank("Conceptual, bunny 1407 running", Shard(Conceptual, 2), Context(Pyros, now, 50, null, 1407))
             .First(o => o.Farm is { Kind: FarmKind.Bunny, Fate: 1407 });
         Assert.Equal(HuntOptions.BunnyCycle, waiting.FirstTry);
         Assert.Equal(HuntOptions.BunnyRunning, running.FirstTry);
@@ -111,47 +129,35 @@ public class HuntScenarioTests(ITestOutputHelper output)
         Assert.True(Minutes(running) > 180);
     }
 
-    [Fact]
-    public void Conceptual_with_no_sprite_weather_up_waits_for_the_next_one()
-    {
-        // Fair Skies: no sprite at all. The next sprite weather here is Snow (lv 47 Snowstorm
-        // sprite): its wait is counted, then the kills.
-        var options = Rank("Conceptual, lv 45, Pyros, Fair Skies", Shard(Conceptual, 2), Context(Pyros, Under(Pyros, "Fair Skies"), 45));
-        var first = options[0];
-        Assert.Equal(FarmKind.Sprite, first.Farm!.Kind);
-        Assert.True(first.Wait > TimeSpan.Zero);
-        Assert.False(first.IsOpen(Under(Pyros, "Fair Skies")));
-        Assert.Equal(Minutes(first), (first.Wait + first.FirstTry).TotalMinutes + ((first.Tries - 1) * first.TryTime.TotalMinutes), 3);
-    }
-
     // ---------- Curative (2 mnemes; 1 missing: 50 %) ----------
 
     [Fact]
-    public void Curative_with_nothing_up_an_NM_to_prep_costs_about_as_much_as_silver_coffers()
+    public void Curative_with_nothing_up_silver_coffers_beat_prepping_NMs_ourselves()
     {
-        // An NM not prepped: ~30 kills of its prep mob (30 min with others), the game's spawn roll
-        // (~15 min), the fight (5): 50 min, then 50 % useful, so a second NM later (30 min): 80 min.
-        // Silver coffer: 36 % of bunny FATEs, 1-5 Curative: 31 % a FATE, ~3 FATEs of 28 min: 90 min.
+        // An NM to prep for two: 30 prep kills (2 min alone, 1 each for two: 30 min), the game's
+        // spawn roll (15), travel and fight (3 + 5 for a lv 38 NM, far below 50): 53 min, and a
+        // second NM half the time: 106 min. Silver coffer: 31 % a FATE, ~3 FATEs of 28 min: 90 min.
         var now = Under(Pyros, "Fair Skies");
-        var options = Rank("Curative, lv 45, Pyros, nothing up", Shard(Curative, 1), Context(Pyros, now, 45));
-        var nm = options[0];
-        Assert.NotNull(nm.Nm);
-        Assert.Equal(HuntOptions.NmToPrep, nm.FirstTry);
-        Assert.Contains(nm.Notes, n => n.Contains("préparer"));
-        var silver = options.First(o => o.Farm is { Kind: FarmKind.Bunny } && o.Drop!.Chest == "silver");
-        Assert.InRange(Minutes(silver) - Minutes(nm), 0, 20);
+        var options = Rank("Curative, duo lv 50, Pyros, nothing up", Shard(Curative, 1), Context(Pyros, now, 50));
+        Assert.Equal(("silver", FarmKind.Bunny), (options[0].Drop!.Chest, options[0].Farm!.Kind));
+        Assert.InRange(Minutes(options[0]), 85, 95);
+        var graffiacane = options.First(o => o.Nm?.Nm.Npc == 7736);
+        Assert.Equal(53, graffiacane.FirstTry.TotalMinutes, 3);
+        Assert.Equal(106, Minutes(graffiacane), 3);
+        Assert.Contains(graffiacane.Notes, n => n.Contains("préparer"));
     }
 
     [Fact]
     public void Curative_a_running_NM_FATE_goes_first()
     {
-        // Leucosia's FATE (1388) is up: 5 min to get there and kill it.
+        // Leucosia's FATE (1388) is up: 3 min to get there, a lv 35 NM at lv 50 (half the fight,
+        // shared by two: 5 min). Half the time its mneme is the wrong one: one NM to prep after.
         var now = Under(Pyros, "Fair Skies");
         var options = Rank("Curative, Leucosia FATE running", Shard(Curative, 1),
-            Context(Pyros, now, 45, Statuses(Pyros, now, runningFate: 1388)));
+            Context(Pyros, now, 50, Statuses(Pyros, now, runningFate: 1388)));
         Assert.Equal(7759u, options[0].Nm!.Nm.Npc);
-        Assert.Equal(HuntOptions.NmRunning, options[0].FirstTry);
-        Assert.Equal(35, Minutes(options[0]), 3);
+        Assert.Equal(8, options[0].FirstTry.TotalMinutes, 3);
+        Assert.Equal(8 + 53, Minutes(options[0]), 3);
     }
 
     [Fact]
@@ -159,15 +165,14 @@ public class HuntScenarioTests(ITestOutputHelper output)
     {
         var now = Under(Pyros, "Fair Skies");
         var prepped = Rank("Curative, Graffiacane prepped (tracker)", Shard(Curative, 1),
-                Context(Pyros, now, 45, Statuses(Pyros, now, prepped: 1391)))
+                Context(Pyros, now, 50, Statuses(Pyros, now, prepped: 1391)))
             .First(o => o.Nm?.Nm.Npc == 7736);
-        Assert.Equal(HuntOptions.NmPrepped, prepped.FirstTry);
+        Assert.Equal(HuntOptions.NmRoll.TotalMinutes + 8, prepped.FirstTry.TotalMinutes, 3);
 
         var killed = Rank("Curative, Graffiacane killed 30 min ago", Shard(Curative, 1),
-                Context(Pyros, now, 45, Statuses(Pyros, now, killed: (1391, now.UtcDateTime.AddMinutes(-30)))))
+                Context(Pyros, now, 50, Statuses(Pyros, now, killed: (1391, now.UtcDateTime.AddMinutes(-30)))))
             .First(o => o.Nm?.Nm.Npc == 7736);
         Assert.Equal(90, killed.Wait.TotalMinutes, 3); // 120 min respawn, 30 gone
-        Assert.Equal(HuntOptions.NmToPrep, killed.FirstTry);
     }
 
     // ---------- Inimical (2 mnemes; 1 missing: 50 %) ----------
@@ -175,61 +180,69 @@ public class HuntScenarioTests(ITestOutputHelper output)
     [Fact]
     public void Inimical_under_Thunder_the_adapted_level_54_sprite_is_minutes_away()
     {
-        // It "always adapts" (80 %) and drops 5 Inimical: 97 % that one is useful, so 78 % a kill.
-        // Hard at lv 45 (8 min a kill): about 10 min. The NMs need preparing: 80 min.
-        var options = Rank("Inimical, lv 45, Thunder", Shard(Inimical, 1), Context(Pyros, Under(Pyros, "Thunder"), 45));
+        // It "always adapts" (80 %) and drops 5 Inimical: 97 % that one is useful, 78 % a kill.
+        // 4 levels above (hard): 8 min alone, 4 for two: about 5 min. NMs: over an hour and a half.
+        var options = Rank("Inimical, duo lv 50, Thunder", Shard(Inimical, 1), Context(Pyros, Under(Pyros, "Thunder"), 50));
         var first = options[0];
         Assert.Equal((7772u, 54, true), (first.Farm!.Npc, first.Farm.Level, first.Farm.Adapted));
-        Assert.InRange(Minutes(first), 8, 12);
-        Assert.True(options.Where(o => o.Nm != null && o.Eta != null).All(o => Minutes(o) >= 80));
+        Assert.InRange(Minutes(first), 4, 6);
+        Assert.True(options.Where(o => o.Nm != null && o.Eta != null).All(o => Minutes(o) >= 100));
     }
 
-    // ---------- Offensive, Protective: the rare ones ----------
+    // ---------- Protective, Offensive: NMs or gold coffers ----------
+
+    [Fact]
+    public void Protective_one_NM_prepped_by_two_beats_gold_coffers_by_far()
+    {
+        // Both Protective mnemes missing: one NM is enough. Lesath (lv 42): 53 min for two. Skoll
+        // (lv 50, prep mob lv 55, hard): 60 min of prep, a 10 min fight: 88 min, and Blizzards.
+        var options = Rank("Protective, duo lv 50, Pyros", Shard(Protective, 2), Context(Pyros, Under(Pyros, "Fair Skies"), 50));
+        Assert.NotNull(options[0].Nm);
+        Assert.Equal(53, Minutes(options[0]), 3);
+        var skoll = options.First(o => o.Nm?.Nm.Npc == 7739);
+        Assert.Equal(88, skoll.FirstTry.TotalMinutes, 3);
+        Assert.True(Minutes(options.First(o => o.Farm is { Kind: FarmKind.Bunny })) > 600);
+    }
 
     [Fact]
     public void Offensive_in_Pyros_only_comes_from_gold_coffers_about_twelve_hours()
     {
         // 8 % of bunny coffers are gold, half of them Offensive: 4 % a FATE, ~26 FATEs of 28 min.
-        // The Hydatos sources (adapted lv 64 Snowstorm sprite, its gold coffers) are another zone.
-        var options = Rank("Offensive, Pyros", Shard(Offensive, 1), Context(Pyros, Under(Pyros, "Fair Skies"), 45));
+        var options = Rank("Offensive, duo lv 50, Pyros", Shard(Offensive, 1), Context(Pyros, Under(Pyros, "Fair Skies"), 50));
         var pyros = options.Where(o => o.Eta != null).ToList();
         Assert.All(pyros, o => Assert.Equal(("gold", FarmKind.Bunny), (o.Drop!.Chest, o.Farm!.Kind)));
         Assert.InRange(Minutes(pyros[0]), 600, 800);
         Assert.All(options.Where(o => o.Territory == Hydatos), o => Assert.Null(o.Eta));
     }
 
+    // ---------- Hydatos at level 50: much is out of reach for two ----------
+
     [Fact]
-    public void Protective_in_Pyros_NMs_beat_gold_coffers_by_far()
+    public void Hydatos_at_50_mobs_more_than_5_levels_above_are_not_proposed()
     {
-        // Both Protective mnemes missing: every logogram is useful, one NM is enough (50 min);
-        // gold coffers would take about 11 hours.
-        var options = Rank("Protective, Pyros", Shard(Protective, 2), Context(Pyros, Under(Pyros, "Fair Skies"), 45));
-        Assert.NotNull(options[0].Nm);
-        Assert.Equal(HuntOptions.NmToPrep.TotalMinutes, Minutes(options[0]), 3);
-        Assert.True(Minutes(options.First(o => o.Farm is { Kind: FarmKind.Bunny })) > 600);
+        // Offensive: the adapted lv 64 Snowstorm sprite would be the fast way, but 14 levels above:
+        // only the gold coffers of "Drink Me" are left (about 9 hours).
+        var offensive = Rank("Offensive, duo lv 50, Hydatos, Snow", Shard(Offensive, 1), Context(Hydatos, Under(Hydatos, "Snow"), 50));
+        Assert.DoesNotContain(offensive, o => o.Farm is { Kind: FarmKind.Sprite });
+        Assert.Equal((FarmKind.Bunny, (ushort)1425), (offensive[0].Farm!.Kind, offensive[0].Farm!.Fate));
+
+        // Obscure: only Khalamari is preppable (Xzomit lv 55); Stegodon's and Frostmane's prep
+        // mobs (56, 59) are too strong for two: no time for them. The lv 62+ mobs are not proposed.
+        var obscure = Rank("Obscure, duo lv 50, Hydatos", Shard(Obscure, 1), Context(Hydatos, Under(Hydatos, "Fair Skies"), 50));
+        Assert.Equal(8063u, obscure[0].Nm!.Nm.Npc);
+        Assert.All(obscure.Where(o => o.Nm != null && o.Nm.Nm.Npc != 8063), o =>
+        {
+            Assert.Null(o.Eta);
+            Assert.Contains(o.Notes, n => n.Contains("prépa trop forte"));
+        });
+        Assert.DoesNotContain(obscure, o => o.Farm is { Kind: FarmKind.Mob });
     }
 
-    // ---------- Hydatos ----------
-
     [Fact]
-    public void Obscure_in_Hydatos_three_NMs_before_the_random_drops_of_prep_mobs()
+    public void Hydatos_at_50_Conceptual_from_the_level_51_snowmelt_sprites_under_Showers()
     {
-        // 4 mnemes, 1 missing: 25 %. An NM gives one: about 4 NMs of the train (140 min). The lv 62+
-        // prep mobs drop it at random (5 %, guessed), hard at lv 55: about 8 hours.
-        var options = Rank("Obscure, Hydatos lv 55", Shard(Obscure, 1), Context(Hydatos, Under(Hydatos, "Fair Skies"), 55));
-        Assert.Equal([8063u, 8069u, 8072u], options.Take(3).Select(o => o.Nm!.Nm.Npc).Order());
-        Assert.All(options.Skip(3), o => Assert.Equal(FarmKind.Mob, o.Farm!.Kind));
-        Assert.True(Minutes(options[3]) > 3 * Minutes(options[0]));
-    }
-
-    [Fact]
-    public void Offensive_in_Hydatos_under_Snow_the_adapted_level_64_sprite_beats_gold_coffers()
-    {
-        // 20 at once but rarely (5 %, at a 30 chain): about 20 kills of 8 min, 2 h 40; gold coffers
-        // (10 % of FATEs): about 9 hours.
-        var options = Rank("Offensive, Hydatos lv 60, Snow", Shard(Offensive, 1), Context(Hydatos, Under(Hydatos, "Snow"), 60));
-        Assert.Equal((7469u, 64), (options[0].Farm!.Npc, options[0].Farm!.Level));
-        Assert.InRange(Minutes(options[0]), 140, 180);
-        Assert.True(Minutes(options.First(o => o.Farm is { Kind: FarmKind.Bunny, Fate: 1425 })) > 3 * Minutes(options[0]));
+        var first = Rank("Conceptual, duo lv 50, Hydatos, Showers", Shard(Conceptual, 2), Context(Hydatos, Under(Hydatos, "Showers"), 50))[0];
+        Assert.Equal((7471u, 51), (first.Farm!.Npc, first.Farm.Level));
+        Assert.InRange(Minutes(first), 11, 13);
     }
 }

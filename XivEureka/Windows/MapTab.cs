@@ -109,7 +109,8 @@ public sealed class MapTab
         var zone = EurekaWeather.Zone(inEureka ? state.Territory : configuration.LastZone) ?? EurekaWeather.Zones[2];
         if (!inEureka) state = MapState.Empty;
         Compute(zone, state);
-        return new HuntContext(zone.Territory, statuses, state.BunnyFates, sources.ElementalLevel(), DateTimeOffset.UtcNow);
+        var party = Math.Max(configuration.FarmPartySize, state.Party.Count + 1);
+        return new HuntContext(zone.Territory, statuses, state.BunnyFates, sources.ElementalLevel(), DateTimeOffset.UtcNow, party);
     }
 
     /// <summary>Chooses the NM and centers the map on it at the next draw.</summary>

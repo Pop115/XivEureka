@@ -57,6 +57,12 @@ public sealed class Configuration : IPluginConfiguration
     /// <summary>2 since the code moved to English names (version 1 is migrated by <see cref="ConfigurationMigration"/>).</summary>
     public int Version { get; set; } = 2;
 
+    /// <summary>
+    /// Players farming the logograms together, for the "Quoi taper" times (no public group counted
+    /// on). The actual party counts when it is bigger.
+    /// </summary>
+    public int FarmPartySize { get; set; } = 2;
+
     /// <summary>One state per character (ContentId), for players with several in Eureka.</summary>
     public Dictionary<ulong, CharacterState> Characters { get; set; } = [];
 

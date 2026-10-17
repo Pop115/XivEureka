@@ -31,12 +31,17 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   mutation, mobs au hasard ; bouton « Carte » qui montre l'endroit, bouton « Drapeau » qui pose le
   drapeau du jeu sur l'endroit le plus proche de toi), et les mnemes qu'il peut donner à l'analyse
   avec ce qui manque pour quelles actions. Classement : temps estimé avant le premier mneme **utile**
-  = attente (météo, jour/nuit, respawn, FATE) + essais × temps par essai. Temps par essai : kill
-  d'élémentaire 2 min, adapté 4, mob 3, mob muté 4, ×2 si 4 niveaux au-dessus de toi ; FATE lapin :
-  cycle de 28 min (le lapin revient 7-8 min après le dernier coffre, trajet 5, FATE 5, chasse au
-  trésor 10), 15 min pour la première si elle est déjà en cours ; NM : 5 min si sa FATE est en cours,
-  sinon ~30 kills du mob de prépa (30 min à plusieurs) + le tirage du jeu parmi les NM préparés
-  (toutes les ~11 min, 15 en moyenne) + le combat = 50 min, 20 s'il est déjà préparé (tracker).
+  = attente (météo, jour/nuit, respawn, FATE) + essais × temps par essai, **pour un petit groupe
+  qui farme seul** (réglage « Joueurs pour farmer », 2 par défaut ; le groupe réel compte s'il est
+  plus grand ; aucun groupe public ni train n'est compté). Temps par essai, seul : kill d'élémentaire
+  2 min, adapté 4, mob 3, mob muté 4, ×2 si plus de 3 niveaux au-dessus de toi, divisé par le
+  nombre de joueurs (jusqu'à 4) ; un mob à plus de 5 niveaux au-dessus n'est pas proposé. FATE
+  lapin : cycle de 28 min (le lapin revient 7-8 min après le dernier coffre, trajet 5, FATE 5,
+  chasse au trésor 10), 15 min pour la première si elle est déjà en cours, quel que soit le groupe.
+  NM : ~30 kills du mob de prépa (2 min seul, ×2 s'il est costaud, partagés), le tirage du jeu parmi
+  les NM préparés (toutes les ~11 min, 15 en moyenne), le trajet (3) et le combat (20 min seul pour
+  un NM à ton niveau, moitié s'il a 5 niveaux de moins, double s'il est au-dessus, partagé) ; pas de
+  temps si son mob de prépa est hors de portée. Chaque essai de plus = un autre NM à préparer.
   Temps = attente + premier essai + (essais − 1) × essai suivant, détaillé dans l'infobulle.
   Essais = 1 / (chance que
   l'éclat tombe × chance qu'un des éclats tombés donne un mneme qui manque encore). Chances
@@ -45,14 +50,14 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   adapté ; **estimées** ailleurs (élémentaire 30 %, adapté 40 %, l'orage Nv 54 de Pyros 80 %, mob 5 %,
   coffre de mutation 3 %). Pour un NM, chaque essai de plus = un autre NM du train (30 min). Colonne
   « combien » : temps total, nombre d'essais et chance par essai. Calcul dans `Hunt` et `HuntOptions`.
-  **Scénarios** (`HuntScenarioTests`, sur les vraies données, chacun affiche son classement avec
-  `dotnet test --logger "console;verbosity=detailed"`) : Conceptuel au Nv 45 sous Vagues de chaleur
-  (élémentaire de braise Nv 53, ≈ 47 min ; coffres de bronze : plus de 3 h même FATE lapin en
-  cours) ; sans météo d'élémentaire (on attend la Neige) ; Curatif sans rien en cours (NM à préparer
-  ≈ 80 min, coffres d'argent ≈ 90 min) ou FATE de Leucosia en cours (≈ 35 min) ; NM préparé ou en
-  respawn ; Inimical sous Orage (orage adapté Nv 54, ≈ 10 min) ; Offensif à Pyros (coffres d'or
-  seulement, ≈ 12 h) ; Protecteur (un NM, 50 min) ; Obscur à Hydatos (3 NM avant les mobs) ;
-  Offensif à Hydatos sous la Neige (blizzard adapté Nv 64 avant les coffres d'or).
+  **Scénarios** (`HuntScenarioTests`, duo Nv 50 sur les vraies données ; chacun affiche son classement
+  avec `dotnet test --logger "console;verbosity=detailed"`) : Conceptuel sous une météo d'élémentaire
+  (≈ 12 min) ou sans (on attend la suivante) ; coffres de bronze (plus de 3 h même FATE lapin en
+  cours) ; Curatif sans rien en cours (coffres d'argent ≈ 90 min, devant un NM à préparer à deux,
+  ≈ 106 min) ou FATE de Leucosia en cours ; NM préparé ou en respawn ; Inimical sous Orage (orage
+  adapté Nv 54, ≈ 5 min) ; Protecteur (un NM à préparer, 53 min) ; Offensif à Pyros (coffres d'or,
+  ≈ 12 h) ; Hydatos au Nv 50 (mobs à plus de 5 niveaux écartés : Offensif par les coffres d'or,
+  Obscur par Khalamari seulement ; Conceptuel par les élémentaires de fonte Nv 51).
 - **Carte** (`/xiveureka carte`) : la carte du jeu de la zone d'Eurêka, redessinée par le plugin.
   Repères et noms de zone du jeu, toi (flèche), ton groupe, le drapeau, et en plus les 17 NM de la
   zone avec leur état (FATE en cours, respawn ≥ N min s'il a été vu finir, météo ou nuit à venir),
