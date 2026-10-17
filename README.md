@@ -174,9 +174,12 @@ Le journal Dalamud dit « Relevé écrit : … ».
 
 Un tracker est temporaire et lié à une instance. Le plugin suit celui crié dans le chat de la zone
 (canal Phoenix `instance:<id>` sur `wss://ffxiv-eureka.com/socket/websocket?vsn=2.0.0`, lecture
-sans mot de passe) ; sans tracker au bout de 3 min, il en crée un (`POST /api/instances`, JSON:API
-`zone-id`), garde son mot de passe, le rattache au data center (`set_instance_information`) et
-l'écrit dans le chat pour qu'on le crie. Sur un tracker créé par le plugin seulement, les NM vus
+sans mot de passe). Le bouton « Créer un tracker » de l'onglet Carte en crée un (`POST
+/api/instances`, JSON:API `zone-id`), garde son mot de passe, le rattache au data center
+(`set_instance_information`) et l'écrit dans le chat pour qu'on le crie. Plus de création
+automatique (2026-10-17) : une erreur du site en réponse à un message quelconque faisait oublier le
+tracker, et le plugin en recréait un toutes les 3 min. Seuls un tracker supprimé par le site ou une
+connexion refusée (réponse au `phx_join`) font maintenant oublier le tracker suivi. Sur un tracker créé par le plugin seulement, les NM vus
 tués (FATE à l'état `Ended`, à valider en jeu) sont signalés (`set_kill_time`). Le canal
 `datacenter:<n>` liste les autres trackers ouverts de la zone (choix dans l'onglet Carte).
 Protocole relu dans le JS du site et essayé le 2026-10-14 ; messages réels dans les tests.

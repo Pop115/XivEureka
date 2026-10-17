@@ -59,12 +59,18 @@ public class TrackerFormatTests
     }
 
     [Fact]
-    public void Creation_only_in_Eureka_without_a_tracker()
+    public void Only_a_refused_join_or_a_removal_drops_the_tracker()
     {
-        Assert.True(TrackerSession.CreationPending(inEureka: true, trackerFollowed: false, creationUnderWay: false, setting: true));
-        Assert.False(TrackerSession.CreationPending(false, false, false, true));
-        Assert.False(TrackerSession.CreationPending(true, true, false, true));
-        Assert.False(TrackerSession.CreationPending(true, false, true, true));
-        Assert.False(TrackerSession.CreationPending(true, false, false, false));
+        // Join "3" refused: the tracker is gone.
+        Assert.True(TrackerSession.LosesTracker(TrackerFormat.Parse(
+            """["3","3","instance:ZduYe9","phx_reply",{"response":{"reason":"not found"},"status":"error"}]""")!));
+        Assert.True(TrackerSession.LosesTracker(TrackerFormat.Parse(
+            """["3",null,"instance:ZduYe9","instance_removed",{}]""")!));
+        // A push (ref "7") refused, e.g. the data center or a kill report: the tracker stays.
+        Assert.False(TrackerSession.LosesTracker(TrackerFormat.Parse(
+            """["3","7","instance:ZduYe9","phx_reply",{"response":{},"status":"error"}]""")!));
+        // The join accepted.
+        Assert.False(TrackerSession.LosesTracker(TrackerFormat.Parse(
+            """["3","3","instance:ZduYe9","phx_reply",{"response":{},"status":"ok"}]""")!));
     }
 }

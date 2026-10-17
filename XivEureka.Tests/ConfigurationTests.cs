@@ -61,7 +61,6 @@ public class ConfigurationMigrationTests
         Assert.False(c.OpenWithManipulator);
         Assert.False(c.FlagOnFate);
         Assert.False(c.AlertSound);
-        Assert.False(c.AutoCreateTracker);
         Assert.False(c.Layers.Points);
         Assert.False(c.Layers.Prep);
         Assert.True(c.Layers.Nms);

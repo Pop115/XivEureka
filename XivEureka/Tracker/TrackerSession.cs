@@ -13,14 +13,13 @@ namespace XivEureka.Tracker;
 
 /// <summary>
 /// The ffxiv-eureka.com tracker of the current instance, followed live. A tracker is temporary and
-/// tied to one instance: we follow the one shouted in the zone chat; with no tracker after a few
-/// minutes, the plugin creates one (and says so in the chat, for the player to shout it). We only
-/// write to a tracker whose password we hold, i.e. one the plugin created: the NMs seen killed are
-/// reported there. The data center channel is also joined, to list the zone's open trackers.
+/// tied to one instance: we follow the one shouted in the zone chat, or one picked from the data
+/// center list; the player can create one with a button (never automatically: it once looped). We
+/// only write to a tracker whose password we hold, i.e. one the plugin created: the NMs seen killed
+/// are reported there. The data center channel is also joined, to list the zone's open trackers.
 /// </summary>
 public sealed class TrackerSession : IDisposable
 {
-    public static readonly TimeSpan CreationDelay = TimeSpan.FromMinutes(3);
     private static readonly TimeSpan MaxResumeAge = TimeSpan.FromHours(3);
     private static readonly HttpClient Http = CreateHttp();
     private const string ChatTitle = "Xiv Eurêka";
@@ -38,7 +37,6 @@ public sealed class TrackerSession : IDisposable
     private readonly Dictionary<string, TrackerInstance> dataCenterTrackers = [];
 
     private uint territory;
-    private DateTime zoneEntry = DateTime.UtcNow;
     private string? followedId;
     private string? dataCenterTopic;
     private bool creating;
@@ -74,11 +72,6 @@ public sealed class TrackerSession : IDisposable
 
     public string? FollowedId => followedId;
 
-    /// <summary>When the plugin will create a tracker if there still is none (null: it will not).</summary>
-    public DateTime? PlannedCreation =>
-        CreationPending(SiteZone != null, followedId != null, creating, configuration.AutoCreateTracker)
-            ? zoneEntry + CreationDelay : null;
-
     /// <summary>The other open trackers on the data center for the current zone.</summary>
     public IReadOnlyList<TrackerInstance> OtherTrackers =>
         dataCenterTrackers.Values.Where(t => t.Zone == SiteZone && t.Id != followedId).OrderByDescending(t => t.UpdatedAt).ToList();
@@ -93,11 +86,15 @@ public sealed class TrackerSession : IDisposable
     }
 
     /// <summary>
-    /// Will the plugin create a tracker? In Eureka, with no followed tracker nor creation under way,
-    /// if the setting allows it; it then waits <see cref="CreationDelay"/> in the zone, for someone to shout one.
+    /// Does this message mean the followed tracker is gone? Removed by the site, or the join itself
+    /// refused (its reply carries the join's ref). An error answering any other push (kill report,
+    /// data center) leaves the tracker followed: treating those as "gone" made the plugin drop its
+    /// own tracker and create another one, again and again.
     /// </summary>
-    public static bool CreationPending(bool inEureka, bool trackerFollowed, bool creationUnderWay, bool setting) =>
-        inEureka && !trackerFollowed && !creationUnderWay && setting;
+    public static bool LosesTracker(PhoenixMessage m) =>
+        m.Event == "instance_removed"
+        || (m.Event == "phx_reply" && m.Ref != null && m.Ref == m.JoinRef
+            && m.Payload.TryGetProperty("status", out var s) && s.GetString() == "error");
 
     // ---------- events from the rest of the plugin ----------
 
@@ -150,7 +147,6 @@ public sealed class TrackerSession : IDisposable
         // New zone = new instance: the old tracker no longer applies.
         Forget();
         territory = newTerritory;
-        zoneEntry = DateTime.UtcNow;
         configuration.CurrentTracker = null;
         save();
         ListenToDataCenter();
@@ -226,7 +222,6 @@ public sealed class TrackerSession : IDisposable
                 pending.Enqueue(() =>
                 {
                     creating = false;
-                    zoneEntry = DateTime.UtcNow; // try again in a few minutes
                     Status = "création du tracker impossible (site injoignable ?)";
                 });
             }
@@ -261,10 +256,6 @@ public sealed class TrackerSession : IDisposable
         // On arrival the player may not be loaded yet, so the data center was unknown: try again.
         if (SiteZone != null && dataCenterTopic == null && DataCenter() != null) ListenToDataCenter();
 
-        if (CreationPending(SiteZone != null, followedId != null, creating, configuration.AutoCreateTracker)
-            && DateTime.UtcNow - zoneEntry >= CreationDelay)
-            Create(SiteZone!.Value);
-
         if (followedId != null && Current != null)
             Status = client.IsConnected ? $"tracker {followedId} en direct" + (IsOwned ? " (le tien)" : string.Empty)
                 : $"tracker {followedId} : reconnexion…";
@@ -294,14 +285,15 @@ public sealed class TrackerSession : IDisposable
             case "payload" when Current != null:
                 Current = TrackerFormat.Merge(Current, m.Payload.GetProperty("data"));
                 break;
-            case "phx_reply" when m.Payload.TryGetProperty("status", out var s) && s.GetString() == "error":
-            case "instance_removed":
+            case var _ when LosesTracker(m):
                 var id = followedId;
                 Forget();
                 configuration.CurrentTracker = null;
                 save();
                 Status = $"tracker {id} introuvable (expiré ?)";
-                zoneEntry = DateTime.UtcNow; // creation waits a few minutes again
+                break;
+            case "phx_reply" when m.Payload.TryGetProperty("status", out var s) && s.GetString() == "error":
+                log.Warning("Tracker {Id}: the site refused a message ({Payload})", followedId, m.Payload.ToString());
                 break;
         }
     }

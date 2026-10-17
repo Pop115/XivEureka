@@ -265,17 +265,11 @@ public sealed class MapTab
             ImGui.SameLine();
             if (ImGui.SmallButton("Ouvrir")) Dalamud.Utility.Util.OpenLink(link);
         }
-        else if (t.PlannedCreation is { } when)
-        {
-            ImGui.SameLine();
-            ImGui.TextColored(Grey, $"· création dans {Formatting.Duration(when - DateTime.UtcNow)} si aucun n'est crié");
-            ImGui.SameLine();
-            if (ImGui.SmallButton("Créer maintenant")) t.CreateNow();
-        }
         else
         {
             ImGui.SameLine();
             if (ImGui.SmallButton("Créer un tracker")) t.CreateNow();
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Crée un tracker ffxiv-eureka.com pour cette instance ; le lien s'affiche dans le chat, à crier.");
         }
 
         var others = t.OtherTrackers;

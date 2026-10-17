@@ -57,7 +57,6 @@ public static class ConfigurationMigration
         c.FlagOnChatPop = Bool(r, "DrapeauSurChat") ?? c.FlagOnChatPop;
         c.AlertSound = Bool(r, "SonAlertes") ?? c.AlertSound;
         c.FollowShoutedTracker = Bool(r, "SuivreTrackerCrie") ?? c.FollowShoutedTracker;
-        c.AutoCreateTracker = Bool(r, "CreerTrackerAuto") ?? c.AutoCreateTracker;
         c.ReportKills = Bool(r, "SignalerMorts") ?? c.ReportKills;
         c.LastTracker = Text(r, "DernierTracker");
         if (r.TryGetProperty("DerniereZone", out var zone) && zone.TryGetUInt32(out var z)) c.LastZone = z;

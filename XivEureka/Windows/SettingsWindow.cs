@@ -51,7 +51,6 @@ public sealed class SettingsWindow : Window
         ImGui.Spacing();
         ImGui.TextDisabled("Tracker ffxiv-eureka.com");
         Checkbox("Suivre le tracker crié dans le chat", () => c.FollowShoutedTracker, v => c.FollowShoutedTracker = v);
-        Checkbox("Créer un tracker si aucun n'est crié en 3 min", () => c.AutoCreateTracker, v => c.AutoCreateTracker = v);
         Checkbox("Signaler les NM tués sur mon tracker", () => c.ReportKills, v => c.ReportKills = v);
 
         if (c.LastTracker is { } tracker)

@@ -96,8 +96,6 @@ public sealed class Configuration : IPluginConfiguration
     /// <summary>Follow live the ffxiv-eureka.com tracker shouted in the zone chat.</summary>
     public bool FollowShoutedTracker { get; set; } = true;
 
-    /// <summary>With no tracker shouted or picked after a few minutes in the zone, create one.</summary>
-    public bool AutoCreateTracker { get; set; } = true;
 
     /// <summary>On a tracker whose password we hold (created by the plugin), report the NMs killed.</summary>
     public bool ReportKills { get; set; } = true;
