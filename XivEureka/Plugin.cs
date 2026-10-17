@@ -63,6 +63,8 @@ public sealed class Plugin : IDalamudPlugin
     public Plugin()
     {
         configuration = LoadConfiguration();
+        // The client language is static data (no game state): safe off the main thread.
+        Loc.Apply(configuration.Language, DataManager.Language);
         catalog = LogosCatalog.Embedded();
         logosTracker = new LogosTracker(catalog);
         companion = new ZoneCompanion(configuration, ClientState, ObjectTable, Framework, FateTable, ChatGui, ToastGui, Log, Save);
@@ -97,13 +99,14 @@ public sealed class Plugin : IDalamudPlugin
             mapTab.FlagAt);
         mainWindow = new MainWindow(logosTab, huntTab, mapTab);
         windows.AddWindow(mainWindow);
-        settingsWindow = new SettingsWindow(configuration, Save);
+        settingsWindow = new SettingsWindow(configuration, Save, () => Loc.Apply(configuration.Language, DataManager.Language));
         windows.AddWindow(settingsWindow);
         serverInfoEntry = new ServerInfoEntry(configuration, DtrBar, ClientState, Framework, weatherNames, mainWindow);
 
         CommandManager.AddHandler(Command, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Ouvre la fenêtre du plugin. « /xiveureka carte » : sur la carte. « /xiveureka releve » : relevé de développement. « /xiveureka niveau » : valeurs de contenu.",
+            HelpMessage = Loc.T("Ouvre la fenêtre du plugin. « /xiveureka carte » : sur la carte. « /xiveureka releve » : relevé de développement. « /xiveureka niveau » : valeurs de contenu.",
+                "Opens the plugin window. \"/xiveureka map\": on the map. \"/xiveureka releve\": development capture. \"/xiveureka niveau\": content values."),
         });
 
         Framework.Update += OnFrameworkUpdate;
@@ -198,7 +201,8 @@ public sealed class Plugin : IDalamudPlugin
         var state = FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.Instance();
         if (state == null) return;
         var values = Enumerable.Range(0, 10).Select(i => $"{i}={state->GetContentValue((uint)i)}");
-        ChatGui.Print($"Valeurs de contenu : {string.Join(" ", values)} (niveau élémentaire attendu en 2)", "Xiv Eurêka");
+        ChatGui.Print(Loc.T($"Valeurs de contenu : {string.Join(" ", values)} (niveau élémentaire attendu en 2)",
+            $"Content values: {string.Join(" ", values)} (elemental level expected at 2)"), "Xiv Eurêka");
     }
 
     private void Save() => PluginInterface.SavePluginConfig(configuration);
@@ -220,7 +224,7 @@ public sealed class Plugin : IDalamudPlugin
             PrintContentValues();
             return;
         }
-        if (argument.StartsWith("carte", StringComparison.OrdinalIgnoreCase))
+        if (argument.StartsWith("carte", StringComparison.OrdinalIgnoreCase) || argument.StartsWith("map", StringComparison.OrdinalIgnoreCase))
         {
             mainWindow.Open(MainWindow.Tab.Map);
             return;

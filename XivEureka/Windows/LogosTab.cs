@@ -33,8 +33,11 @@ public sealed class LogosTab
     private static readonly Vector4 EmptyBorder = new(0.3f, 0.3f, 0.34f, 1f);
     private static readonly Vector4 LightCell = new(0.92f, 0.92f, 0.95f, 1f);
 
-    private static readonly (string Letter, string Name)[] Roles =
-        [("T", "tank"), ("H", "soigneur"), ("M", "mêlée"), ("P", "distance physique"), ("C", "distance magique")];
+    private static (string Letter, string Name)[] Roles =>
+    [
+        ("T", "tank"), ("H", Loc.T("soigneur", "healer")), ("M", Loc.T("mêlée", "melee")),
+        ("P", Loc.T("distance physique", "physical ranged")), ("C", Loc.T("distance magique", "caster")),
+    ];
 
     private readonly LogosCatalog catalog;
     private readonly GameTexts texts;
@@ -61,7 +64,7 @@ public sealed class LogosTab
         var state = currentCharacter();
         if (state == null)
         {
-            ImGui.TextWrapped("Connecte-toi à un personnage pour voir ses mnemes.");
+            ImGui.TextWrapped(Loc.T("Connecte-toi à un personnage pour voir ses mnemes.", "Log in to a character to see its mnemes."));
             return;
         }
 
@@ -88,7 +91,7 @@ public sealed class LogosTab
 
     private void DrawHeader(CharacterState state, LogosBoard board)
     {
-        ImGui.TextUnformatted("ACTIONS LOGOS");
+        ImGui.TextUnformatted(Loc.T("ACTIONS LOGOS", "LOGOS ACTIONS"));
         ImGui.SameLine();
         ImGui.TextColored(Yellow, $"{board.Learned}");
         ImGui.SameLine(0, 0);
@@ -96,21 +99,24 @@ public sealed class LogosTab
         if (board.ToLearn > 0)
         {
             ImGui.SameLine();
-            ImGui.TextColored(Yellow, $"· {board.ToLearn} à apprendre maintenant (cases qui clignotent)");
+            ImGui.TextColored(Yellow, Loc.T($"· {board.ToLearn} à apprendre maintenant (cases qui clignotent)",
+                $"· {board.ToLearn} to learn now (blinking cells)"));
         }
 
         ImGui.TextColored(Grey, Provenance(state));
-        ImGui.TextColored(Grey, "Clic : recettes de l'action. Clic droit : apprise / pas apprise.");
+        ImGui.TextColored(Grey, Loc.T("Clic : recettes de l'action. Clic droit : apprise / pas apprise.",
+            "Click: the action's recipes. Right click: learned / not learned."));
         ImGui.Spacing();
     }
 
     private string Provenance(CharacterState state)
     {
-        var stock = liveStock() ? "Mnemes lues en direct"
-            : state.StockReadAt is { } s ? $"Mnemes du {s:dd/MM HH:mm}"
-            : "Mnemes jamais lues : ouvre la fenêtre des éclats au manipulateur";
-        var learned = state.LearnedReadAt is { } l ? $"apprises du {l:dd/MM HH:mm}"
-            : "apprises jamais lues : ouvre le journal chez Drake";
+        var stock = liveStock() ? Loc.T("Mnemes lues en direct", "Mnemes read live")
+            : state.StockReadAt is { } s ? Loc.T($"Mnemes du {s:dd/MM HH:mm}", $"Mnemes as of {s:MM/dd HH:mm}")
+            : Loc.T("Mnemes jamais lues : ouvre la fenêtre des éclats au manipulateur",
+                "Mnemes never read: open the logogram window at the manipulator");
+        var learned = state.LearnedReadAt is { } l ? Loc.T($"apprises du {l:dd/MM HH:mm}", $"learned as of {l:MM/dd HH:mm}")
+            : Loc.T("apprises jamais lues : ouvre le journal chez Drake", "learned never read: open the notebook at Drake");
         return $"{stock} · {learned}";
     }
 
@@ -176,8 +182,9 @@ public sealed class LogosTab
 
         if (hovered)
         {
-            var learnedText = e.Learned ? "apprise" : "pas apprise";
-            var detail = e.Craftable > 0 ? $"fabricable ×{e.Craftable}" : $"il manque {e.Closest.Missing} mneme(s)";
+            var learnedText = e.Learned ? Loc.T("apprise", "learned") : Loc.T("pas apprise", "not learned");
+            var detail = e.Craftable > 0 ? Loc.T($"fabricable ×{e.Craftable}", $"craftable ×{e.Craftable}")
+                : Loc.T($"il manque {e.Closest.Missing} mneme(s)", $"{e.Closest.Missing} mneme(s) missing");
             ImGui.SetTooltip($"{text.Name}\n{learnedText} · {detail}");
         }
     }
@@ -188,7 +195,7 @@ public sealed class LogosTab
     {
         ImGui.TextUnformatted("MNEMES");
         ImGui.SameLine();
-        ImGui.TextColored(Grey, "par éclat Logos · actions qui s'en servent");
+        ImGui.TextColored(Grey, Loc.T("par éclat Logos · actions qui s'en servent", "by logogram · actions that use them"));
         foreach (var shard in catalog.Shards)
         {
             ImGui.Spacing();
@@ -241,7 +248,8 @@ public sealed class LogosTab
     {
         if (chosen is not { } number || !states.TryGetValue(number, out var e))
         {
-            ImGui.TextWrapped("Clique une action pour voir sa description et ses recettes, avec ce que tu as de chaque mneme.");
+            ImGui.TextWrapped(Loc.T("Clique une action pour voir sa description et ses recettes, avec ce que tu as de chaque mneme.",
+                "Click an action to see its description and recipes, with what you own of each mneme."));
             return;
         }
         var text = texts.Action(e.Action.Action);
@@ -249,24 +257,24 @@ public sealed class LogosTab
         ImGui.SameLine();
         ImGui.BeginGroup();
         ImGui.TextUnformatted(text.ShortName);
-        ImGui.TextColored(Grey, $"n° {e.Action.Number} · {RoleNames(e.Action.Roles)}");
-        if (e.Action.Uses is { } uses) ImGui.TextColored(Grey, $"{uses} utilisation(s)");
+        ImGui.TextColored(Grey, $"{Loc.T("n°", "#")} {e.Action.Number} · {RoleNames(e.Action.Roles)}");
+        if (e.Action.Uses is { } uses) ImGui.TextColored(Grey, Loc.T($"{uses} utilisation(s)", $"{uses} use(s)"));
         ImGui.EndGroup();
 
         var learned = e.Learned;
-        if (ImGui.Checkbox("Apprise", ref learned)) ToggleLearned(state, e.Action.Action);
+        if (ImGui.Checkbox(Loc.T("Apprise", "Learned") + "##learned", ref learned)) ToggleLearned(state, e.Action.Action);
 
         ImGui.Spacing();
         ImGui.PushTextWrapPos(0);
         ImGui.TextUnformatted(text.Description);
         ImGui.PopTextWrapPos();
         ImGui.Separator();
-        ImGui.TextUnformatted("Recettes");
+        ImGui.TextUnformatted(Loc.T("Recettes", "Recipes"));
         foreach (var recipe in e.Recipes)
         {
             ImGui.Spacing();
-            if (recipe.Craftable > 0) ImGui.TextColored(Green, $"×{recipe.Craftable} possible(s)");
-            else ImGui.TextColored(Grey, $"il manque {recipe.Missing}");
+            if (recipe.Craftable > 0) ImGui.TextColored(Green, Loc.T($"×{recipe.Craftable} possible(s)", $"×{recipe.Craftable} possible"));
+            else ImGui.TextColored(Grey, Loc.T($"il manque {recipe.Missing}", $"{recipe.Missing} missing"));
             foreach (var (item, need) in recipe.Needs)
             {
                 var mneme = texts.Item(item);
@@ -282,7 +290,7 @@ public sealed class LogosTab
     }
 
     private static string RoleNames(string letters) =>
-        letters.Length == Roles.Length ? "tous les rôles"
+        letters.Length == Roles.Length ? Loc.T("tous les rôles", "all roles")
             : string.Join(", ", Roles.Where(r => letters.Contains(r.Letter, StringComparison.Ordinal)).Select(r => r.Name));
 
     private void ToggleLearned(CharacterState state, uint action)

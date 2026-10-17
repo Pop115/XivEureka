@@ -54,15 +54,18 @@ public sealed class MapTab
     private static readonly uint PrepPurple = Color(0.42f, 0.17f, 0.55f);
     private static readonly uint FarmTeal = Color(0.05f, 0.45f, 0.5f);
 
-    private static readonly Dictionary<string, (uint Color, string Name)> Elements = new()
+    private static readonly Dictionary<string, (uint Color, string French, string English)> Elements = new()
     {
-        ["fire"] = (Color(0.91f, 0.36f, 0.24f), "Feu"),
-        ["ice"] = (Color(0.44f, 0.82f, 0.93f), "Glace"),
-        ["wind"] = (Color(0.37f, 0.81f, 0.48f), "Vent"),
-        ["earth"] = (Color(0.85f, 0.71f, 0.29f), "Terre"),
-        ["lightning"] = (Color(0.72f, 0.48f, 0.9f), "Foudre"),
-        ["water"] = (Color(0.29f, 0.56f, 0.91f), "Eau"),
+        ["fire"] = (Color(0.91f, 0.36f, 0.24f), "Feu", "Fire"),
+        ["ice"] = (Color(0.44f, 0.82f, 0.93f), "Glace", "Ice"),
+        ["wind"] = (Color(0.37f, 0.81f, 0.48f), "Vent", "Wind"),
+        ["earth"] = (Color(0.85f, 0.71f, 0.29f), "Terre", "Earth"),
+        ["lightning"] = (Color(0.72f, 0.48f, 0.9f), "Foudre", "Lightning"),
+        ["water"] = (Color(0.29f, 0.56f, 0.91f), "Eau", "Water"),
     };
+
+    private static string ElementName(string element) =>
+        Elements.TryGetValue(element, out var e) ? Loc.T(e.French, e.English) : element;
 
     private readonly Configuration configuration;
     private readonly MapReader maps;
@@ -161,7 +164,7 @@ public sealed class MapTab
         DrawHeader(zone, inEureka);
         if (map == null)
         {
-            ImGui.TextColored(Grey, "Carte introuvable dans les données du jeu.");
+            ImGui.TextColored(Grey, Loc.T("Carte introuvable dans les données du jeu.", "Map not found in the game data."));
             return;
         }
 
@@ -217,7 +220,7 @@ public sealed class MapTab
                         }
             }
             ImGui.SameLine();
-            ImGui.TextColored(Grey, "(tu n'es pas à Eurêka : carte seule)");
+            ImGui.TextColored(Grey, Loc.T("(tu n'es pas à Eurêka : carte seule)", "(you are not in Eureka: map only)"));
         }
         else
         {
@@ -227,11 +230,11 @@ public sealed class MapTab
         var (h, m) = EurekaWeather.EorzeaTime(now);
         var (night, at) = EurekaWeather.NextDayNightSwitch(now);
         ImGui.SameLine();
-        ImGui.TextUnformatted($"· ET {h:00}:{m:00} · {(night ? "nuit" : "jour")} dans {Formatting.Duration(at - now)}");
+        ImGui.TextUnformatted(Loc.T($"· ET {h:00}:{m:00} · {(night ? "nuit" : "jour")} dans {Formatting.Duration(at - now)}", $"· ET {h:00}:{m:00} · {(night ? "night" : "day")} in {Formatting.Duration(at - now)}"));
         if (sources.ElementalLevel() is { } level)
         {
             ImGui.SameLine();
-            ImGui.TextUnformatted($"· niveau élémentaire {level}");
+            ImGui.TextUnformatted(Loc.T($"· niveau élémentaire {level}", $"· elemental level {level}"));
         }
 
         // Weather: the current one, then the next six, with how long until each.
@@ -240,9 +243,9 @@ public sealed class MapTab
         {
             if (!first) ImGui.SameLine(0, 14);
             var name = names.Weather(p.Weather);
-            if (first) ImGui.TextColored(Yellow, $"{name} (encore {Formatting.Duration(p.End - now)})");
+            if (first) ImGui.TextColored(Yellow, Loc.T($"{name} (encore {Formatting.Duration(p.End - now)})", $"{name} ({Formatting.Duration(p.End - now)} left)"));
             else ImGui.TextUnformatted($"{name} {Formatting.Duration(p.Start - now)}");
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip($"{p.Start.ToLocalTime():HH:mm} → {p.End.ToLocalTime():HH:mm} (heure locale)");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip($"{p.Start.ToLocalTime():HH:mm} → {p.End.ToLocalTime():HH:mm} " + Loc.T("(heure locale)", "(local time)"));
             first = false;
         }
         if (inEureka) DrawTracker();
@@ -253,23 +256,23 @@ public sealed class MapTab
     private void DrawTracker()
     {
         var t = sources.Tracker;
-        ImGui.TextColored(t.Current != null ? Yellow : Grey, "Tracker :");
+        ImGui.TextColored(t.Current != null ? Yellow : Grey, Loc.T("Tracker :", "Tracker:"));
         ImGui.SameLine();
         ImGui.TextUnformatted(t.Status);
         if (t.FollowedId is { } id)
         {
             var link = $"https://ffxiv-eureka.com/{id}";
             ImGui.SameLine();
-            if (ImGui.SmallButton("Copier le lien")) ImGui.SetClipboardText(link);
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("À crier dans le chat pour que les autres le suivent.");
+            if (ImGui.SmallButton(Loc.T("Copier le lien", "Copy link") + "##copy")) ImGui.SetClipboardText(link);
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip(Loc.T("À crier dans le chat pour que les autres le suivent.", "Shout it in chat so others follow it."));
             ImGui.SameLine();
-            if (ImGui.SmallButton("Ouvrir")) Dalamud.Utility.Util.OpenLink(link);
+            if (ImGui.SmallButton(Loc.T("Ouvrir", "Open") + "##open")) Dalamud.Utility.Util.OpenLink(link);
         }
         else
         {
             ImGui.SameLine();
-            if (ImGui.SmallButton("Créer un tracker")) t.CreateNow();
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Crée un tracker ffxiv-eureka.com pour cette instance ; le lien s'affiche dans le chat, à crier.");
+            if (ImGui.SmallButton(Loc.T("Créer un tracker", "Create a tracker") + "##create")) t.CreateNow();
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip(Loc.T("Crée un tracker ffxiv-eureka.com pour cette instance ; le lien s'affiche dans le chat, à crier.", "Creates a ffxiv-eureka.com tracker for this instance; the link shows in chat, to shout."));
         }
 
         var others = t.OtherTrackers;
@@ -280,8 +283,10 @@ public sealed class MapTab
         if (!combo) return;
         foreach (var other in others)
         {
-            var updated = other.UpdatedAt is { } u ? $"mis à jour il y a {Formatting.Duration(DateTimeOffset.UtcNow - u)}" : "jamais mis à jour";
-            if (ImGui.Selectable($"{other.Id} · {other.Kills.Count} NM tué(s) · {updated}")) t.Pick(other.Id);
+            var updated = other.UpdatedAt is { } u
+                ? Loc.T($"mis à jour il y a {Formatting.Duration(DateTimeOffset.UtcNow - u)}", $"updated {Formatting.Duration(DateTimeOffset.UtcNow - u)} ago")
+                : Loc.T("jamais mis à jour", "never updated");
+            if (ImGui.Selectable($"{other.Id} · " + Loc.T($"{other.Kills.Count} NM tué(s)", $"{other.Kills.Count} NM(s) killed") + $" · {updated}")) t.Pick(other.Id);
         }
     }
 
@@ -355,7 +360,7 @@ public sealed class MapTab
                 var radius = PrepRadius * 50 * g.Scale / 100f * zoom;
                 draw.AddCircleFilled(s, radius, (PrepPurple & 0x00FFFFFF) | 0x38000000);
                 draw.AddCircle(s, radius, PrepPurple, 0, 2);
-                var text = $"prépa : {names.Npc(chosen.Nm.Prep.Npc)}";
+                var text = Loc.T("prépa : ", "prep: ") + names.Npc(chosen.Nm.Prep.Npc);
                 var rect = labels.PlaceAround(s, radius, ImGui.CalcTextSize(text));
                 OutlinedText(draw, rect.Min, text, PrepPurple, Parchment);
             }
@@ -404,7 +409,7 @@ public sealed class MapTab
                 var s = Screen(g.Pixel(pop.Position));
                 var pulse = 10 + (4 * MathF.Sin((float)ImGui.GetTime() * 4));
                 draw.AddCircle(s, pulse, PopRed, 0, 3);
-                var text = $"{pop.Title} · il y a {Formatting.Duration(DateTime.UtcNow - pop.When)}";
+                var text = $"{pop.Title} · " + Loc.T($"il y a {Formatting.Duration(DateTime.UtcNow - pop.When)}", $"{Formatting.Duration(DateTime.UtcNow - pop.When)} ago");
                 var rect = labels.PlaceAround(s, 14, ImGui.CalcTextSize(text));
                 OutlinedText(draw, rect.Min, text, White, Black);
             }
@@ -441,20 +446,20 @@ public sealed class MapTab
         {
             if (menu)
             {
-                if (ImGui.MenuItem("Poser le drapeau du jeu ici"))
+                if (ImGui.MenuItem(Loc.T("Poser le drapeau du jeu ici", "Set the game flag here")))
                     sources.SetFlag(map.Territory, map.Map, g.World(PixelUnder(ImGui.GetMousePosOnOpeningCurrentPopup())));
-                if (ImGui.MenuItem("Recentrer sur moi")) followMe = true;
+                if (ImGui.MenuItem(Loc.T("Recentrer sur moi", "Center on me"))) followMe = true;
             }
         }
 
         ImGui.SetCursorScreenPos(origin + new Vector2(size.X - 120, 6));
-        if (ImGui.SmallButton(followMe ? "Suit ma position" : "Centrer sur moi")) followMe = true;
+        if (ImGui.SmallButton((followMe ? Loc.T("Suit ma position", "Following me") : Loc.T("Centrer sur moi", "Center on me")) + "##follow")) followMe = true;
     }
 
     /// <summary>The NM's disc: fill = state (FATE, respawning, idle), ring = element, level inside; cream halo when chosen.</summary>
     private void DrawNmMarker(ImDrawListPtr draw, NmStatus s, Vector2 p, DateTimeOffset now, float radius)
     {
-        var element = Elements.GetValueOrDefault(s.Nm.Element, (Color: White, Name: s.Nm.Element));
+        var element = Elements.GetValueOrDefault(s.Nm.Element, (Color: White, French: s.Nm.Element, English: s.Nm.Element));
         var fill = s.Fate != null ? FateRed : s.IsRespawning(now) ? RespawnFill : NmFill;
         if (s.Fate != null) draw.AddCircleFilled(p, radius + 6, (FateRed & 0x00FFFFFF) | 0x60000000);
         if (s.Nm.Npc == chosenNm) draw.AddCircle(p, radius + 4, MeCream, 0, 3);
@@ -487,17 +492,17 @@ public sealed class MapTab
     {
         if (s.Fate is { } f) return (FateLabel(f), FateRed);
         if (s.IsRespawning(now)) return ($"respawn ≥ {Formatting.Duration(s.RespawnNotBefore!.Value - now)}", RespawnFill);
-        if (s.Prepped) return ("préparé", PrepPurple);
+        if (s.Prepped) return (Loc.T("préparé", "prepped"), PrepPurple);
         if (s.Wait is not { } window) return null;
         var condition = s.NmWindow != null ? s.Nm.Condition : s.Nm.Prep.Condition;
-        var name = condition.Weather is { } w ? names.Weather(w) : "nuit";
+        var name = condition.Weather is { } w ? names.Weather(w) : Loc.T("nuit", "night");
         return window.IsOpen(now)
-            ? ($"{name} en cours", OpenGreen)
-            : ($"{name} dans {Formatting.Duration(window.Start - now)}", ComingAmber);
+            ? (Loc.T($"{name} en cours", $"{name} now"), OpenGreen)
+            : (Loc.T($"{name} dans", $"{name} in") + $" {Formatting.Duration(window.Start - now)}", ComingAmber);
     }
 
     private static string FateLabel(MapFate f) =>
-        f.Preparing ? "FATE en préparation" : $"FATE {f.Progress} % · {Formatting.Duration(f.Remaining)}";
+        f.Preparing ? Loc.T("FATE en préparation", "FATE preparing") : $"FATE {f.Progress} % · {Formatting.Duration(f.Remaining)}";
 
     private static void MeArrow(ImDrawListPtr draw, Vector2 p, float rotation)
     {
@@ -517,9 +522,9 @@ public sealed class MapTab
     private void DrawPanel(GameMap map, MapState state)
     {
         var now = DateTimeOffset.UtcNow;
-        ImGui.TextColored(Yellow, "Où aller maintenant");
-        if (statuses.Count == 0) ImGui.TextColored(Grey, "Pas encore de données de NM pour cette zone.");
-        else if (suggestions.Count == 0) ImGui.TextColored(Grey, "Rien de pressé : aucune FATE, aucune condition dans la demi-heure.");
+        ImGui.TextColored(Yellow, Loc.T("Où aller maintenant", "Where to go now"));
+        if (statuses.Count == 0) ImGui.TextColored(Grey, Loc.T("Pas encore de données de NM pour cette zone.", "No NM data for this zone yet."));
+        else if (suggestions.Count == 0) ImGui.TextColored(Grey, Loc.T("Rien de pressé : aucune FATE, aucune condition dans la demi-heure.", "Nothing urgent: no FATE, no condition within half an hour."));
         foreach (var (s, i) in suggestions.Select((s, i) => (s, i)))
         {
             using var id = ImRaii.PushId(i);
@@ -530,13 +535,13 @@ public sealed class MapTab
             ImGui.TextUnformatted(s.Title);
             ImGui.TextColored(Grey, s.Text);
             ImGui.PopTextWrapPos();
-            if (ImGui.SmallButton("Voir"))
+            if (ImGui.SmallButton(Loc.T("Voir", "Show") + "##show"))
             {
                 CenterOnCoordinates(map, s.Coordinates);
                 chosenNm = s.Npc ?? chosenNm;
             }
             ImGui.SameLine();
-            if (ImGui.SmallButton("Drapeau"))
+            if (ImGui.SmallButton(Loc.T("Drapeau", "Flag") + "##flag"))
                 sources.SetFlag(map.Territory, map.Map, map.Geometry.World(map.Geometry.PixelFromCoordinates(s.Coordinates)));
             ImGui.EndGroup();
             ImGui.Spacing();
@@ -545,15 +550,15 @@ public sealed class MapTab
         if (shownFarm is { } farm)
         {
             ImGui.Separator();
-            ImGui.TextColored(Yellow, "Farm montré");
+            ImGui.TextColored(Yellow, Loc.T("Farm montré", "Farm shown"));
             ImGui.SameLine();
             ImGui.TextUnformatted(farm.Label);
-            if (ImGui.SmallButton("Centrer##farm")) CenterOnCoordinates(map, farm.Places[0]);
+            if (ImGui.SmallButton(Loc.T("Centrer", "Center") + "##farm")) CenterOnCoordinates(map, farm.Places[0]);
             ImGui.SameLine();
-            if (ImGui.SmallButton("Drapeau##farm"))
+            if (ImGui.SmallButton(Loc.T("Drapeau", "Flag") + "##farmflag"))
                 sources.SetFlag(map.Territory, map.Map, map.Geometry.World(map.Geometry.PixelFromCoordinates(farm.Places[0])));
             ImGui.SameLine();
-            if (ImGui.SmallButton("Effacer##farm")) shownFarm = null;
+            if (ImGui.SmallButton(Loc.T("Effacer", "Clear") + "##farmclear")) shownFarm = null;
         }
 
         if (statuses.FirstOrDefault(s => s.Nm.Npc == chosenNm) is { } chosen)
@@ -565,60 +570,61 @@ public sealed class MapTab
         if (state.Pops.Count > 0)
         {
             ImGui.Separator();
-            ImGui.TextColored(Yellow, "Pops du chat");
+            ImGui.TextColored(Yellow, Loc.T("Pops du chat", "Chat pops"));
             foreach (var (pop, i) in state.Pops.Select((p, i) => (p, i)).Reverse())
             {
                 if (ImGui.Selectable($"{pop.Title}##pop{i}")) CenterOn(map, pop.Position);
                 ImGui.SameLine();
-                ImGui.TextColored(Grey, $"il y a {Formatting.Duration(DateTime.UtcNow - pop.When)}");
+                ImGui.TextColored(Grey, Loc.T($"il y a {Formatting.Duration(DateTime.UtcNow - pop.When)}", $"{Formatting.Duration(DateTime.UtcNow - pop.When)} ago"));
             }
         }
 
         ImGui.Separator();
-        ImGui.TextColored(Grey, "Calques");
+        ImGui.TextColored(Grey, Loc.T("Calques", "Layers"));
         var k = configuration.Layers;
         using (var table = ImRaii.Table("##layers", 2))
         {
             if (table)
             {
-                ImGui.TableNextColumn(); Checkbox("NM", () => k.Nms, v => k.Nms = v);
-                ImGui.TableNextColumn(); Checkbox("Zone de prépa", () => k.Prep, v => k.Prep = v);
-                ImGui.TableNextColumn(); Checkbox("Pops du chat", () => k.Pops, v => k.Pops = v);
-                ImGui.TableNextColumn(); Checkbox("Groupe", () => k.Party, v => k.Party = v);
-                ImGui.TableNextColumn(); Checkbox("Repères du jeu", () => k.Points, v => k.Points = v);
-                ImGui.TableNextColumn(); Checkbox("Noms de zone", () => k.AreaNames, v => k.AreaNames = v);
-                ImGui.TableNextColumn(); Checkbox("Autres FATE", () => k.Fates, v => k.Fates = v);
-                ImGui.TableNextColumn(); Checkbox("NM pas faisables", () => k.UnavailableNms, v => k.UnavailableNms = v);
+                ImGui.TableNextColumn(); Checkbox("NM##nms", () => k.Nms, v => k.Nms = v);
+                ImGui.TableNextColumn(); Checkbox(Loc.T("Zone de prépa", "Prep area") + "##prep", () => k.Prep, v => k.Prep = v);
+                ImGui.TableNextColumn(); Checkbox(Loc.T("Pops du chat", "Chat pops") + "##pops", () => k.Pops, v => k.Pops = v);
+                ImGui.TableNextColumn(); Checkbox(Loc.T("Groupe", "Party") + "##party", () => k.Party, v => k.Party = v);
+                ImGui.TableNextColumn(); Checkbox(Loc.T("Repères du jeu", "Game markers") + "##points", () => k.Points, v => k.Points = v);
+                ImGui.TableNextColumn(); Checkbox(Loc.T("Noms de zone", "Area names") + "##areas", () => k.AreaNames, v => k.AreaNames = v);
+                ImGui.TableNextColumn(); Checkbox(Loc.T("Autres FATE", "Other FATEs") + "##fates", () => k.Fates, v => k.Fates = v);
+                ImGui.TableNextColumn(); Checkbox(Loc.T("NM pas faisables", "Unavailable NMs") + "##unavailable", () => k.UnavailableNms, v => k.UnavailableNms = v);
             }
         }
-        ImGui.TextColored(Grey, "Molette : zoom · glisser : déplacer · clic : fiche du NM · clic droit : drapeau.");
+        ImGui.TextColored(Grey, Loc.T("Molette : zoom · glisser : déplacer · clic : fiche du NM · clic droit : drapeau.", "Wheel: zoom · drag: pan · click: NM sheet · right click: flag."));
     }
 
     private void DrawNmSheet(NmStatus s, DateTimeOffset now, bool buttons, GameMap? map = null)
     {
         var nm = s.Nm;
-        var element = Elements.GetValueOrDefault(nm.Element, (Color: White, Name: nm.Element)).Name;
+        var element = ElementName(nm.Element);
         ImGui.TextColored(Yellow, names.Npc(nm.Npc));
         ImGui.SameLine();
-        ImGui.TextColored(Grey, $"Nv {nm.Level} · {element} · {Formatting.Coordinates(nm.Position)}");
+        ImGui.TextColored(Grey, $"{Loc.T("Nv", "lv")} {nm.Level} · {element} · {Formatting.Coordinates(nm.Position)}");
         ImGui.PushTextWrapPos(buttons ? 0 : 360);
         ImGui.TextUnformatted(Suggestions.PrepText(nm, names));
-        ImGui.TextUnformatted("Condition : " + ConditionText(s, now));
+        ImGui.TextUnformatted(Loc.T("Condition : ", "Condition: ") + ConditionText(s, now));
         var drops = new[] { nm.Shard }.Where(s => s != 0).Concat(nm.Items).Select(i => GameTexts.WithoutUnidentified(names.Item(i)));
-        ImGui.TextUnformatted("Lâche : " + (drops.Any() ? string.Join(", ", drops) : "rien de notable"));
-        ImGui.TextUnformatted("État : " + (Badge(s, now) is { } badge ? badge.Text
-            : s.RespawnNotBefore != null ? "réapparu (2 h passées)" : "inconnu (pas vu tué dans cette instance)"));
+        ImGui.TextUnformatted(Loc.T("Lâche : ", "Drops: ") + (drops.Any() ? string.Join(", ", drops) : Loc.T("rien de notable", "nothing notable")));
+        ImGui.TextUnformatted(Loc.T("État : ", "State: ") + (Badge(s, now) is { } badge ? badge.Text
+            : s.RespawnNotBefore != null ? Loc.T("réapparu (2 h passées)", "back (2 h passed)")
+            : Loc.T("inconnu (pas vu tué dans cette instance)", "unknown (not seen killed in this instance)")));
         ImGui.PopTextWrapPos();
 
         if (!buttons || map == null) return;
-        if (ImGui.SmallButton("Centrer")) CenterOnCoordinates(map, nm.Position);
+        if (ImGui.SmallButton(Loc.T("Centrer", "Center") + "##nmcenter")) CenterOnCoordinates(map, nm.Position);
         ImGui.SameLine();
-        if (ImGui.SmallButton("Drapeau sur la FATE"))
+        if (ImGui.SmallButton(Loc.T("Drapeau sur la FATE", "Flag on the FATE") + "##nmflag"))
             sources.SetFlag(map.Territory, map.Map, map.Geometry.World(map.Geometry.PixelFromCoordinates(nm.Position)));
         if (nm.Prep.Places.Count > 0)
         {
             ImGui.SameLine();
-            if (ImGui.SmallButton("Drapeau sur la prépa"))
+            if (ImGui.SmallButton(Loc.T("Drapeau sur la prépa", "Flag on the prep") + "##prepflag"))
                 sources.SetFlag(map.Territory, map.Map, map.Geometry.World(map.Geometry.PixelFromCoordinates(nm.Prep.Places[0])));
         }
     }
@@ -627,14 +633,15 @@ public sealed class MapTab
     {
         string Window(SpawnCondition c, TimeWindow? w, string who)
         {
-            var name = c.Weather is { } weather ? names.Weather(weather) : "la nuit";
-            return w == null ? $"{who} : {name}"
-                : w.IsOpen(now) ? $"{who} : {name}, en cours (encore {Formatting.Duration(w.End - now)})"
-                : $"{who} : {name}, dans {Formatting.Duration(w.Start - now)}";
+            var name = c.Weather is { } weather ? names.Weather(weather) : Loc.T("la nuit", "at night");
+            return w == null ? Loc.T($"{who} : {name}", $"{who} {name}")
+                : w.IsOpen(now) ? Loc.T($"{who} : {name}, en cours (encore {Formatting.Duration(w.End - now)})", $"{who} {name}, now ({Formatting.Duration(w.End - now)} left)")
+                : Loc.T($"{who} : {name}, dans", $"{who} {name}, in") + $" {Formatting.Duration(w.Start - now)}";
         }
-        if (!s.Nm.Condition.None) return Window(s.Nm.Condition, s.NmWindow, "le NM n'apparaît que par");
-        if (!s.Nm.Prep.Condition.None) return Window(s.Nm.Prep.Condition, s.PrepWindow, "le mob de prépa n'apparaît que par");
-        return "aucune";
+        if (!s.Nm.Condition.None) return Window(s.Nm.Condition, s.NmWindow, Loc.T("le NM n'apparaît que par", "the NM only spawns in"));
+        if (!s.Nm.Prep.Condition.None)
+            return Window(s.Nm.Prep.Condition, s.PrepWindow, Loc.T("le mob de prépa n'apparaît que par", "the prep mob only spawns in"));
+        return Loc.T("aucune", "none");
     }
 
     private void CenterOn(GameMap map, Vector3 world)

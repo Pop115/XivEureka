@@ -31,18 +31,20 @@ public sealed record NmStatus(EurekaNm Nm, MapFate? Fate, DateTimeOffset? Respaw
         Fate != null || Prepped || (!IsRespawning(now) && (Wait == null || Wait.IsOpen(now)));
 
     /// <summary>
-    /// Short French state for lists: "FATE en cours", "préparé", "respawn ≥ 12 min", "Neige en
-    /// cours", "nuit dans 8 min", "disponible". <paramref name="weatherName"/> names a weather.
+    /// Short state for lists, in the plugin language: "FATE en cours" / "FATE running", "préparé" /
+    /// "prepped", "respawn ≥ 12 min", "Neige en cours" / "Snow now", "nuit dans 8 min" / "night in 8
+    /// min", "disponible" / "available". <paramref name="weatherName"/> names a weather.
     /// </summary>
     public string Describe(DateTimeOffset now, Func<string, string> weatherName)
     {
-        if (Fate != null) return "FATE en cours";
-        if (Prepped) return "préparé";
+        if (Fate != null) return Loc.T("FATE en cours", "FATE running");
+        if (Prepped) return Loc.T("préparé", "prepped");
         if (IsRespawning(now)) return $"respawn ≥ {Formatting.Duration(RespawnNotBefore!.Value - now)}";
-        if (Wait is not { } window) return "disponible";
+        if (Wait is not { } window) return Loc.T("disponible", "available");
         var condition = NmWindow != null ? Nm.Condition : Nm.Prep.Condition;
-        var name = condition.Weather is { } w ? weatherName(w) : "nuit";
-        return window.IsOpen(now) ? $"{name} en cours" : $"{name} dans {Formatting.Duration(window.Start - now)}";
+        var name = condition.Weather is { } w ? weatherName(w) : Loc.T("nuit", "night");
+        return window.IsOpen(now) ? Loc.T($"{name} en cours", $"{name} now")
+            : Loc.T($"{name} dans", $"{name} in") + $" {Formatting.Duration(window.Start - now)}";
     }
 }
 

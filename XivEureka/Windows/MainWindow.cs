@@ -6,7 +6,7 @@ using Dalamud.Interface.Windowing;
 
 namespace XivEureka.Windows;
 
-/// <summary>The plugin window: "Actions Logos", "Quoi taper" and "Carte" tabs.</summary>
+/// <summary>The plugin window: Logos actions, what to hit, and map tabs.</summary>
 public sealed class MainWindow : Window
 {
     public enum Tab
@@ -47,9 +47,9 @@ public sealed class MainWindow : Window
     {
         using var bar = ImRaii.TabBar("##tabs");
         if (!bar) return;
-        DrawTab("Actions Logos", Tab.Logos, logos.Draw);
-        DrawTab("Quoi taper", Tab.Hunt, hunt.Draw);
-        DrawTab("Carte", Tab.Map, map.Draw);
+        DrawTab(Loc.T("Actions Logos", "Logos actions") + "###logos", Tab.Logos, logos.Draw);
+        DrawTab(Loc.T("Quoi taper", "What to hit") + "###hunt", Tab.Hunt, hunt.Draw);
+        DrawTab(Loc.T("Carte", "Map") + "###map", Tab.Map, map.Draw);
         toSelect = null;
     }
 

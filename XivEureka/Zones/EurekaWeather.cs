@@ -5,8 +5,11 @@ using System.Linq;
 namespace XivEureka.Zones;
 
 /// <summary>A Eureka zone: its TerritoryType row, display name and weather slices (value 0-99 → weather).</summary>
-public sealed record EurekaZone(uint Territory, string Name, IReadOnlyList<(int UpTo, string Weather)> Slices)
+public sealed record EurekaZone(uint Territory, string FrenchName, IReadOnlyList<(int UpTo, string Weather)> Slices)
 {
+    /// <summary>The zone's name in the plugin language (only Anemos differs).</summary>
+    public string Name => Loc.T(FrenchName, FrenchName.Replace('é', 'e'));
+
     public string WeatherFor(int value) => Slices.First(s => value <= s.UpTo).Weather;
 }
 

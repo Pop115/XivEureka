@@ -62,13 +62,14 @@ public sealed class ServerInfoEntry : IDisposable
 
     private string Tooltip()
     {
-        const string clicks = "Clic : carte (à Eurêka) ou actions Logos · clic droit : actions Logos";
+        var clicks = Loc.T("Clic : carte (à Eurêka) ou actions Logos · clic droit : actions Logos",
+            "Click: map (in Eureka) or Logos actions · right click: Logos actions");
         if (EurekaWeather.Zone(clientState.TerritoryType) is not { } zone) return clicks;
         var now = DateTimeOffset.UtcNow;
         var (h, m) = EurekaWeather.EorzeaTime(now);
         var periods = EurekaWeather.Periods(zone, now).Take(2).ToList();
         return $"{zone.Name} · ET {h:00}:{m:00}\n"
-               + $"{weatherNames[periods[0].Weather]} → {weatherNames[periods[1].Weather]} dans {Formatting.Duration(periods[1].Start - now)}\n"
+               + $"{weatherNames[periods[0].Weather]} → {weatherNames[periods[1].Weather]} {Loc.T("dans", "in")} {Formatting.Duration(periods[1].Start - now)}\n"
                + clicks;
     }
 }

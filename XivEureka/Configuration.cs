@@ -63,6 +63,9 @@ public sealed class Configuration : IPluginConfiguration
     /// </summary>
     public int FarmPartySize { get; set; } = 2;
 
+    /// <summary>Plugin text language: the game client's (French or English), or forced.</summary>
+    public TextLanguage Language { get; set; } = TextLanguage.Auto;
+
     /// <summary>One state per character (ContentId), for players with several in Eureka.</summary>
     public Dictionary<ulong, CharacterState> Characters { get; set; } = [];
 

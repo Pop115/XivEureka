@@ -24,7 +24,7 @@ public sealed class GameTexts(IDataManager data)
     {
         if (items.TryGetValue(id, out var text)) return text;
         var row = data.GetExcelSheet<Item>().GetRowOrDefault(id);
-        var name = row?.Name.ExtractText() ?? $"Objet {id}";
+        var name = row?.Name.ExtractText() ?? Loc.T($"Objet {id}", $"Item {id}");
         return items[id] = new GameText(name, Shorten(name), row?.Icon ?? 0u, string.Empty);
     }
 
@@ -42,7 +42,7 @@ public sealed class GameTexts(IDataManager data)
     {
         if (npcs.TryGetValue(id, out var name)) return name;
         var raw = data.GetExcelSheet<BNpcName>().GetRowOrDefault(id)?.Singular.ExtractText();
-        return npcs[id] = string.IsNullOrEmpty(raw) ? $"Monstre {id}"
+        return npcs[id] = string.IsNullOrEmpty(raw) ? Loc.T($"Monstre {id}", $"Monster {id}")
             : char.ToUpper(raw[0], CultureInfo.CurrentCulture) + raw[1..];
     }
 

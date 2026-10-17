@@ -15,8 +15,9 @@
   <img alt="Dalamud API 15" src="https://img.shields.io/badge/Dalamud%20API-15-6c5ce7">
 </p>
 
-> **In-game texts are in French for now.** English is planned; the plugin works on any client
-> language (item, action, monster and weather names come from the game in your language).
+> **English and French.** The plugin speaks French on a French client and English on any other
+> (English, German, Japanese); a setting can force either. Item, action, monster and weather names
+> come from the game, in your client's language.
 
 ## Install
 
@@ -77,6 +78,11 @@ button, and reports NM kills on a tracker it created. Nothing else leaves your g
   community bestiary and drop-record spreadsheets: drop tables, places and odds (sources are listed
   in each `XivEureka/Data/*.json` file).
 
+## License
+
+[AGPL-3.0](LICENSE), like the Dalamud sample plugin: you may use, change and share the code, as long
+as what you share stays open under the same license.
+
 Issues and ideas are welcome in [GitHub issues](https://github.com/Pop115/XivEureka/issues).
 Building, tests and data notes (in French): [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
@@ -86,7 +92,8 @@ Building, tests and data notes (in French): [docs/DEVELOPMENT.md](docs/DEVELOPME
 
 Un compagnon pour Eurêka dans le jeu : tes actions Logos lues dans le jeu, quoi taper pour les
 éclats qui te manquent (avec un temps estimé par source), une carte des NM en direct et le tracker
-ffxiv-eureka.com. **Les textes en jeu sont en français.**
+ffxiv-eureka.com. **En français sur un client français, en anglais sinon** (un réglage permet de
+choisir). Licence AGPL-3.0.
 
 **Installer** : `/xlsettings` → onglet **Experimental** → **Custom Plugin Repositories**, coller
 `https://github.com/Pop115/XivEureka/releases/latest/download/repo.json`, cocher **Enabled**,

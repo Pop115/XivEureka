@@ -124,7 +124,7 @@ public sealed class ZoneCompanion : IDisposable
     private void AnnounceFate(SeenFate fate)
     {
         if (!configuration.AlertFates || AlreadyAlerted($"fate:{fate.Id}")) return;
-        Alert($"FATE : {fate.Name}", fate.Position, configuration.FlagOnFate);
+        Alert(Loc.T($"FATE : {fate.Name}", $"FATE: {fate.Name}"), fate.Position, configuration.FlagOnFate);
     }
 
     private void OnChatMessage(IHandleableChatMessage message)
@@ -161,7 +161,8 @@ public sealed class ZoneCompanion : IDisposable
         {
             configuration.LastTracker = info.Tracker;
             save();
-            chat.Print($"Tracker repéré dans le chat : https://ffxiv-eureka.com/{info.Tracker}", ChatTitle);
+            chat.Print(Loc.T($"Tracker repéré dans le chat : https://ffxiv-eureka.com/{info.Tracker}",
+                $"Tracker spotted in chat: https://ffxiv-eureka.com/{info.Tracker}"), ChatTitle);
         }
 
         // A pop called by the player: they know already, no alert (the tracker link above still counts).
@@ -180,7 +181,8 @@ public sealed class ZoneCompanion : IDisposable
 
         var key = fate != null ? $"fate:{fate.Id}" : $"pos:{(int)(position.Value.X / 20)}:{(int)(position.Value.Z / 20)}";
         if (AlreadyAlerted(key)) return;
-        var title = fate != null ? $"Pop annoncé : {fate.Name}" : "Pop annoncé dans le chat";
+        var title = fate != null ? Loc.T($"Pop annoncé : {fate.Name}", $"Pop called: {fate.Name}")
+            : Loc.T("Pop annoncé dans le chat", "Pop called in chat");
         pops.Add(new ChatPop(title, position.Value, DateTime.UtcNow));
         Alert(title, position.Value, configuration.FlagOnChatPop);
     }

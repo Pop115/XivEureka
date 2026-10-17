@@ -65,7 +65,7 @@ public sealed class TrackerSession : IDisposable
     public TrackerInstance? Current { get; private set; }
 
     /// <summary>What is going on, in one line (map header). User-facing.</summary>
-    public string Status { get; private set; } = "pas de tracker";
+    public string Status { get; private set; } = Loc.T("pas de tracker", "no tracker");
 
     /// <summary>The plugin holds the followed tracker's password: it can write to it.</summary>
     public bool IsOwned => followedId != null && configuration.TrackerPasswords.ContainsKey(followedId);
@@ -184,7 +184,7 @@ public sealed class TrackerSession : IDisposable
     {
         Forget();
         followedId = id;
-        Status = $"connexion au tracker {id}…";
+        Status = Loc.T($"connexion au tracker {id}…", $"connecting to tracker {id}…");
         var payload = configuration.TrackerPasswords.TryGetValue(id, out var pw) ? (object)new { password = pw } : new { };
         client.Join($"instance:{id}", payload);
         configuration.CurrentTracker = new SavedTracker { Id = id, Territory = territory, Since = DateTime.UtcNow };
@@ -197,13 +197,13 @@ public sealed class TrackerSession : IDisposable
         if (followedId != null) client.Leave($"instance:{followedId}");
         followedId = null;
         Current = null;
-        Status = "pas de tracker";
+        Status = Loc.T("pas de tracker", "no tracker");
     }
 
     private void Create(int zone)
     {
         creating = true;
-        Status = "création d'un tracker…";
+        Status = Loc.T("création d'un tracker…", "creating a tracker…");
         var creationTerritory = territory;
         _ = Task.Run(async () =>
         {
@@ -222,7 +222,7 @@ public sealed class TrackerSession : IDisposable
                 pending.Enqueue(() =>
                 {
                     creating = false;
-                    Status = "création du tracker impossible (site injoignable ?)";
+                    Status = Loc.T("création du tracker impossible (site injoignable ?)", "could not create the tracker (site unreachable?)");
                 });
             }
         });
@@ -238,7 +238,8 @@ public sealed class TrackerSession : IDisposable
         Follow(created.Id, "created");
         if (DataCenter() is { } dc)
             client.Push($"instance:{created.Id}", "set_instance_information", new { instance_id = (int?)null, data_center_id = dc });
-        chat.Print($"Tracker créé pour cette instance : https://ffxiv-eureka.com/{created.Id} — crie-le pour le partager.", ChatTitle);
+        chat.Print(Loc.T($"Tracker créé pour cette instance : https://ffxiv-eureka.com/{created.Id} — crie-le pour le partager.",
+            $"Tracker created for this instance: https://ffxiv-eureka.com/{created.Id} — shout it to share it."), ChatTitle);
     }
 
     // ---------- every frame ----------
@@ -257,8 +258,9 @@ public sealed class TrackerSession : IDisposable
         if (SiteZone != null && dataCenterTopic == null && DataCenter() != null) ListenToDataCenter();
 
         if (followedId != null && Current != null)
-            Status = client.IsConnected ? $"tracker {followedId} en direct" + (IsOwned ? " (le tien)" : string.Empty)
-                : $"tracker {followedId} : reconnexion…";
+            Status = client.IsConnected
+                ? Loc.T($"tracker {followedId} en direct", $"tracker {followedId} live") + (IsOwned ? Loc.T(" (le tien)", " (yours)") : string.Empty)
+                : Loc.T($"tracker {followedId} : reconnexion…", $"tracker {followedId}: reconnecting…");
     }
 
     private void Handle(PhoenixMessage m)
@@ -290,7 +292,7 @@ public sealed class TrackerSession : IDisposable
                 Forget();
                 configuration.CurrentTracker = null;
                 save();
-                Status = $"tracker {id} introuvable (expiré ?)";
+                Status = Loc.T($"tracker {id} introuvable (expiré ?)", $"tracker {id} not found (expired?)");
                 break;
             case "phx_reply" when m.Payload.TryGetProperty("status", out var s) && s.GetString() == "error":
                 log.Warning("Tracker {Id}: the site refused a message ({Payload})", followedId, m.Payload.ToString());

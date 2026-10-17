@@ -31,18 +31,21 @@ public static class Suggestions
         foreach (var s in statuses.Where(s => s.Fate != null))
         {
             var f = s.Fate!;
-            var text = f.Preparing ? "En préparation." : $"{f.Progress} %, encore {Formatting.Duration(f.Remaining)}.";
-            suggestions.Add(new Suggestion(100 + f.Progress, $"{names.Npc(s.Nm.Npc)} – FATE en cours", text, s.Nm.Position, s.Nm.Npc));
+            var text = f.Preparing ? Loc.T("En préparation.", "Preparing.")
+                : Loc.T($"{f.Progress} %, encore {Formatting.Duration(f.Remaining)}.", $"{f.Progress}%, {Formatting.Duration(f.Remaining)} left.");
+            suggestions.Add(new Suggestion(100 + f.Progress, $"{names.Npc(s.Nm.Npc)} – " + Loc.T("FATE en cours", "FATE running"), text,
+                s.Nm.Position, s.Nm.Npc));
         }
 
         foreach (var s in statuses.Where(s => s.Fate == null && !s.IsRespawning(now)))
         {
             if (s.Wait is not { } window || window.Start - now > Horizon) continue;
             var condition = s.NmWindow != null ? s.Nm.Condition : s.Nm.Prep.Condition;
-            var conditionName = condition.Weather is { } w ? names.Weather(w) : "Nuit";
+            var conditionName = condition.Weather is { } w ? names.Weather(w) : Loc.T("Nuit", "Night");
             var when = window.IsOpen(now)
-                ? $"{conditionName} en cours (encore {Formatting.Duration(window.End - now)})"
-                : $"{conditionName} dans {Formatting.Duration(window.Start - now)}";
+                ? Loc.T($"{conditionName} en cours (encore {Formatting.Duration(window.End - now)})",
+                    $"{conditionName} now ({Formatting.Duration(window.End - now)} left)")
+                : Loc.T($"{conditionName} dans", $"{conditionName} in") + $" {Formatting.Duration(window.Start - now)}";
             var minutes = (int)Math.Max(0, (window.Start - now).TotalMinutes);
             suggestions.Add(new Suggestion(80 - minutes, $"{names.Npc(s.Nm.Npc)} – {when}", PrepText(s.Nm, names),
                 s.Nm.Prep.Places.FirstOrDefault(s.Nm.Position), s.Nm.Npc));
@@ -55,8 +58,9 @@ public static class Suggestions
             var atLevel = available.Where(s => s.Nm.Level >= l - 1 && s.Nm.Level <= l + 2)
                 .OrderBy(s => Math.Abs(s.Nm.Level - l)).Take(3).ToList();
             if (atLevel.Count > 0)
-                suggestions.Add(new Suggestion(40, $"À ton niveau ({l})",
-                    "Disponibles : " + string.Join(", ", atLevel.Select(s => $"{names.Npc(s.Nm.Npc)} (Nv {s.Nm.Level})")) + ".",
+                suggestions.Add(new Suggestion(40, Loc.T($"À ton niveau ({l})", $"At your level ({l})"),
+                    Loc.T("Disponibles : ", "Available: ")
+                    + string.Join(", ", atLevel.Select(s => $"{names.Npc(s.Nm.Npc)} ({Loc.T("Nv", "lv")} {s.Nm.Level})")) + ".",
                     atLevel[0].Nm.Position, atLevel[0].Nm.Npc));
         }
 
@@ -65,7 +69,8 @@ public static class Suggestions
             var sources = available.Where(s => s.Nm.Shard == shard).OrderBy(s => s.Nm.Level).Take(4).ToList();
             if (sources.Count == 0) continue;
             suggestions.Add(new Suggestion(30 + Math.Min(actions, 9), $"Logos – {names.Item(shard)}",
-                $"Sert à {actions} action(s) pas encore apprise(s). Disponibles : "
+                Loc.T($"Sert à {actions} action(s) pas encore apprise(s). Disponibles : ",
+                    $"Used by {actions} action(s) not learned yet. Available: ")
                 + string.Join(", ", sources.Select(s => names.Npc(s.Nm.Npc))) + ".",
                 sources[0].Nm.Position, sources[0].Nm.Npc));
         }
@@ -79,8 +84,9 @@ public static class Suggestions
 
     public static string PrepText(EurekaNm nm, GameNames names)
     {
-        var places = string.Join(" ou ", nm.Prep.Places.Select(Formatting.Coordinates));
-        return $"Prépa : {names.Npc(nm.Prep.Npc)} (Nv {nm.Prep.Level})" + (places.Length > 0 ? $" vers {places}." : ".");
+        var places = string.Join(Loc.T(" ou ", " or "), nm.Prep.Places.Select(Formatting.Coordinates));
+        return Loc.T($"Prépa : {names.Npc(nm.Prep.Npc)} (Nv {nm.Prep.Level})", $"Prep: {names.Npc(nm.Prep.Npc)} (lv {nm.Prep.Level})")
+               + (places.Length > 0 ? Loc.T($" vers {places}.", $" around {places}.") : ".");
     }
 }
 

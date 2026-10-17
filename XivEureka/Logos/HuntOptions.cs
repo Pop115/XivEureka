@@ -169,7 +169,7 @@ public static class HuntOptions
         if (drop.IfAtOrAboveYou)
         {
             if (context.Level is { } level && farm.Level < level) return null; // drops nothing below the player's level
-            if (context.Level == null) notes.Add("seulement si son niveau ≥ le tien");
+            if (context.Level == null) notes.Add(Loc.T("seulement si son niveau ≥ le tien", "only if its level ≥ yours"));
         }
 
         TimeWindow? window = null;
@@ -196,7 +196,7 @@ public static class HuntOptions
         if (context.Level is { } you && farm.Kind != FarmKind.Bunny && farm.Level > you + HardAbove)
         {
             tryTime *= 2;
-            notes.Add($"Nv {farm.Level} : costaud");
+            notes.Add(Loc.T($"Nv {farm.Level} : costaud", $"lv {farm.Level}: tough"));
         }
         if (farm.Kind != FarmKind.Bunny && farm.Minutes == null) tryTime = Shared(tryTime, context);
 
@@ -206,13 +206,19 @@ public static class HuntOptions
 
         if (farm.Kind == FarmKind.Bunny)
         {
-            notes.Add($"coffre {Chest(drop.Chest)}");
-            notes.Add(running ? "FATE lapin en cours" : "le lapin revient 7-8 min après le dernier coffre, puis chasse au trésor");
+            notes.Add(Chest(drop.Chest));
+            notes.Add(running ? Loc.T("FATE lapin en cours", "bunny FATE running")
+                : Loc.T("le lapin revient 7-8 min après le dernier coffre, puis chasse au trésor",
+                    "the bunny comes back 7-8 min after the last coffer, then the treasure hunt"));
         }
         if (farm.Note != null) notes.Add(farm.Note);
-        if (farm.Adapted) notes.Add("seulement s'il s'adapte (au hasard ; ne pas l'étourdir avant)");
-        if (farm.Kind == FarmKind.Mob) notes.Add("au hasard, plus souvent en chaîne de 25-30");
-        if (farm.Kind == FarmKind.Lockbox) notes.Add("dans les coffres de mutation (tout mob muté ou adapté peut en lâcher)");
+        if (farm.Adapted)
+            notes.Add(Loc.T("seulement s'il s'adapte (au hasard ; ne pas l'étourdir avant)", "only once it adapts (random; do not stun it before)"));
+        if (farm.Kind == FarmKind.Mob)
+            notes.Add(Loc.T("au hasard, plus souvent en chaîne de 25-30", "at random, more often at a 25-30 chain"));
+        if (farm.Kind == FarmKind.Lockbox)
+            notes.Add(Loc.T("dans les coffres de mutation (tout mob muté ou adapté peut en lâcher)",
+                "in mutation lockboxes (any mutated or adapted mob can drop one)"));
 
         var firstTry = running ? BunnyRunning : tryTime;
         var wait = window != null && window.Start > context.Now ? window.Start - context.Now : TimeSpan.Zero;
@@ -249,11 +255,15 @@ public static class HuntOptions
         var repeat = NmToPrep(source.Nm, context);
         var notes = new List<string>();
         if (status.Fate == null && !status.Prepped)
-            notes.Add($"à préparer : ~{PrepKills} kills du mob de prépa (Nv {source.Nm.Prep.Level}), puis le tirage du jeu (toutes les ~11 min)");
-        if (context.Level is { } level && source.Nm.Level > level) notes.Add($"NM Nv {source.Nm.Level} : long à {context.PartySize}");
+            notes.Add(Loc.T($"à préparer : ~{PrepKills} kills du mob de prépa (Nv {source.Nm.Prep.Level}), puis le tirage du jeu (toutes les ~11 min)",
+                $"to prep: ~{PrepKills} kills of the prep mob (lv {source.Nm.Prep.Level}), then the game's spawn roll (every ~11 min)"));
+        if (context.Level is { } level && source.Nm.Level > level)
+            notes.Add(Loc.T($"NM Nv {source.Nm.Level} : long à {context.PartySize}", $"NM lv {source.Nm.Level}: long for {context.PartySize}"));
         // A prep mob out of reach: the NM only comes if someone else preps it.
         var outOfReach = status.Fate == null && !status.Prepped && context.Level is { } you && source.Nm.Prep.Level > you + MaxAbove;
-        if (outOfReach) notes.Add($"prépa trop forte à {context.PartySize} (mob Nv {source.Nm.Prep.Level})");
+        if (outOfReach)
+            notes.Add(Loc.T($"prépa trop forte à {context.PartySize} (mob Nv {source.Nm.Prep.Level})",
+                $"prep too strong for {context.PartySize} (mob lv {source.Nm.Prep.Level})"));
         TimeSpan? eta = outOfReach ? null : Total(wait, firstTry, tries, repeat);
         return new HuntOption(shard, source.Territory, null, null, source, status, eta, window,
             notes, huntShard.UsefulChance, tries, repeat, wait, firstTry);
@@ -278,9 +288,9 @@ public static class HuntOptions
 
     private static string Chest(string? chest) => chest switch
     {
-        "bronze" => "de bronze",
-        "silver" => "d'argent",
-        "gold" => "d'or",
+        "bronze" => Loc.T("coffre de bronze", "bronze coffer"),
+        "silver" => Loc.T("coffre d'argent", "silver coffer"),
+        "gold" => Loc.T("coffre d'or", "gold coffer"),
         _ => chest ?? "",
     };
 }

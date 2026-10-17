@@ -127,9 +127,12 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
 
 ## Conventions
 
-- **Code et commentaires en anglais** ; les textes affichés en jeu restent en français pour
-  l'instant. Le README public est en anglais (section française incluse) ; ces notes et le plan
-  restent en français.
+- **Code et commentaires en anglais.** Textes affichés en jeu en français et en anglais, écrits
+  côte à côte là où ils servent : `Loc.T("français", "English")` (`Loc.cs`). Français pour un client
+  français, anglais sinon, ou forcé par le réglage « Langue du plugin ». Français par défaut dans les
+  tests ; les tests qui passent en anglais sont dans la collection non parallèle « Language »
+  (`LocTests`). Le README public est en anglais (section française incluse) ; ces notes et le plan
+  restent en français. Licence AGPL-3.0 (`LICENSE`).
 - Les données (`Data/*.json`) ont des clés anglaises et une ligne `source`.
 - Configuration : version 2 depuis le passage à l'anglais (2026-10-15). Un fichier version 1
   (noms français) est migré au chargement par `ConfigurationMigration`, l'ancien gardé en
