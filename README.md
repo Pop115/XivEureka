@@ -31,12 +31,16 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   mutation, mobs au hasard ; bouton « Carte » qui montre l'endroit, bouton « Drapeau » qui pose le
   drapeau du jeu sur l'endroit le plus proche de toi), et les mnemes qu'il peut donner à l'analyse
   avec ce qui manque pour quelles actions. Classement : temps estimé avant le premier mneme **utile**
-  = attente (météo, jour/nuit, respawn, FATE) + effort selon la source (élémentaire 3 min, adapté 8,
-  FATE de NM en cours 5, NM à préparer 20, FATE lapin 10 en cours / 45 à attendre, +15 argent,
-  +30 or, mob 4 niveaux au-dessus +10…) divisé par la chance qu'un éclat donne un mneme qui manque
-  encore (mnemes utiles / mnemes de l'éclat, à chances égales supposées ; relevée pour un coffre
-  qui en donne plusieurs ; pour un NM, chaque essai de plus = un autre NM du train, 30 min). Des
-  ordres de grandeur pour classer. Calcul dans `Hunt` et `HuntOptions`.
+  = attente (météo, jour/nuit, respawn, FATE) + essais × temps par essai. Temps par essai : kill
+  d'élémentaire 2 min, adapté 4, mob 3, mob muté 4, ×2 si 4 niveaux au-dessus de toi ; FATE lapin
+  15 min en cours (finir la FATE, suivre le lapin, déterrer le coffre) ou 25 à attendre (il revient
+  7-8 min après le dernier coffre) ; NM 5 min en cours, 20 à préparer. Essais = 1 / (chance que
+  l'éclat tombe × chance qu'un des éclats tombés donne un mneme qui manque encore). Chances
+  **mesurées** pour les coffres lapin (tier × éclat dans le tier) et les mnemes (à chances égales,
+  700 000 analyses) ; quantités : bronze 1-2/1-3, argent 1-5, or 5-11, 5 Inimical par élémentaire
+  adapté ; **estimées** ailleurs (élémentaire 30 %, adapté 40 %, l'orage Nv 54 de Pyros 80 %, mob 5 %,
+  coffre de mutation 3 %). Pour un NM, chaque essai de plus = un autre NM du train (30 min). Colonne
+  « combien » : temps total, nombre d'essais et chance par essai. Calcul dans `Hunt` et `HuntOptions`.
 - **Carte** (`/xiveureka carte`) : la carte du jeu de la zone d'Eurêka, redessinée par le plugin.
   Repères et noms de zone du jeu, toi (flèche), ton groupe, le drapeau, et en plus les 17 NM de la
   zone avec leur état (FATE en cours, respawn ≥ N min s'il a été vu finir, météo ou nuit à venir),

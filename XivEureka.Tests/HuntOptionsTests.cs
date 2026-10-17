@@ -111,7 +111,12 @@ public class HuntOptionsTests
         [new FarmDrop(24007, true, null, null)]);
 
     private static readonly Farm Bunny = new(FarmKind.Bunny, 0, 1407, 35, false, [], [new Vector2(24, 26)],
-        [new FarmDrop(24007, false, "bronze", "1-2"), new FarmDrop(24010, false, "gold", "5-11")]);
+        [new FarmDrop(24007, false, "bronze", "1-2", 0.278), new FarmDrop(24010, false, "gold", "5-11", 0.039)]);
+
+    /// <summary>Time per kill / chance per kill, for a sprite with nothing else in the way.</summary>
+    private static readonly TimeSpan SpriteEta = TimeSpan.FromMinutes(HuntOptions.SpriteKill.TotalMinutes / HuntOptions.SpriteChance);
+
+    private static void Near(TimeSpan expected, TimeSpan? actual) => Assert.Equal(expected.TotalMinutes, actual!.Value.TotalMinutes, 3);
 
     private static FarmCatalog Farms(params Farm[] farms) => new([new ZoneFarms(Pyros, farms)]);
 
@@ -130,7 +135,7 @@ public class HuntOptionsTests
         var now = When("Heat Waves", true);
         var options = HuntOptions.For(Shard(24007), Farms(Bunny, EmberSprite), Context(now));
         Assert.Equal(FarmKind.Sprite, options[0].Farm!.Kind);
-        Assert.Equal(HuntOptions.Sprite, options[0].Eta);
+        Near(SpriteEta, options[0].Eta);
         Assert.True(options[0].IsOpen(now));
     }
 
@@ -140,7 +145,7 @@ public class HuntOptionsTests
         var now = When("Heat Waves", false);
         var sprite = HuntOptions.For(Shard(24007), Farms(EmberSprite), Context(now)).Single();
         Assert.False(sprite.IsOpen(now));
-        Assert.Equal(HuntOptions.Sprite + (sprite.Window!.Start - now), sprite.Eta);
+        Near(SpriteEta + (sprite.Window!.Start - now), sprite.Eta);
     }
 
     [Fact]
@@ -154,15 +159,37 @@ public class HuntOptionsTests
     }
 
     [Fact]
-    public void A_running_bunny_FATE_beats_waiting_for_one_and_gold_is_slower()
+    public void A_bunny_FATE_is_a_long_try_and_gold_is_rare()
     {
         var now = Start;
         var waiting = HuntOptions.For(Shard(24007), Farms(Bunny), Context(now)).Single();
         var running = HuntOptions.For(Shard(24007), Farms(Bunny), Context(now, bunnies: 1407)).Single();
         Assert.True(running.Eta < waiting.Eta);
+        // Bronze: 27.8 % per FATE, 1.5 logograms on average, every Conceptual mneme useful here.
+        Assert.Equal(0.278, waiting.TryChance, 6);
+        Near(TimeSpan.FromMinutes(HuntOptions.BunnyCycle.TotalMinutes / 0.278), waiting.Eta);
         var gold = HuntOptions.For(Shard(24010), Farms(Bunny), Context(now, bunnies: 1407)).Single();
         Assert.True(gold.Eta > running.Eta);
+        Assert.True(gold.Tries > 25);
         Assert.Contains(gold.Notes, n => n.Contains("d'or"));
+        // Even running, a bunny coffer is slower than a sprite under its weather.
+        Assert.True(running.Eta > SpriteEta);
+    }
+
+    [Fact]
+    public void An_adapted_sprite_dropping_five_needs_fewer_kills_when_few_mnemes_are_useful()
+    {
+        var now = When("Heat Waves", true);
+        var shard = new HuntShard(24014, [new HuntMneme(1, 0, [new HuntNeed(new LogosAction(1, 1, "T", null, []), 1)]), new HuntMneme(2, 0, [])],
+            [new LogosAction(1, 1, "T", null, [])], []);
+        var one = EmberSprite with { Adapted = true, Drops = [new FarmDrop(24014, false, null, null)] };
+        var five = EmberSprite with { Adapted = true, Drops = [new FarmDrop(24014, false, null, "5")] };
+        var single = HuntOptions.For(shard, Farms(one), Context(now)).Single();
+        var batch = HuntOptions.For(shard, Farms(five), Context(now)).Single();
+        Assert.Equal(HuntOptions.AdaptedChance * 0.5, single.TryChance, 6);
+        Assert.Equal(HuntOptions.AdaptedChance * (1 - Math.Pow(0.5, 5)), batch.TryChance, 6);
+        Assert.True(batch.Eta < single.Eta);
+        Assert.Contains(single.Notes, n => n.Contains("s'adapte"));
     }
 
     [Fact]
@@ -206,7 +233,7 @@ public class HuntOptionsTests
         var now = When("Heat Waves", true);
         var strong = EmberSprite with { Level = 53 };
         var option = HuntOptions.For(Shard(24007), Farms(strong), Context(now, level: 45)).Single();
-        Assert.Equal(HuntOptions.Sprite + HuntOptions.TooStrong, option.Eta);
+        Near(SpriteEta * 2, option.Eta);
     }
 }
 
@@ -246,11 +273,14 @@ public class HuntChanceTests
     [Fact]
     public void A_sprite_takes_as_many_kills_as_logograms_needed()
     {
-        // No weather: the effort alone, divided by the chance (1 useful out of 4 → 4 times).
+        // No weather: kills / chance per kill, and 1 useful mneme out of 4 → 4 times as many.
         var sprite = new Farm(FarmKind.Sprite, 7773, 0, 45, false, [], [new Vector2(20, 20)], [new FarmDrop(24007, false, null, null)]);
         var farms = new FarmCatalog([new ZoneFarms(Pyros, [sprite])]);
-        Assert.Equal(HuntOptions.Sprite * 4, HuntOptions.For(Shard(1, 4), farms, Context()).Single().Eta);
-        Assert.Equal(HuntOptions.Sprite, HuntOptions.For(Shard(4, 4), farms, Context()).Single().Eta);
+        var all = HuntOptions.For(Shard(4, 4), farms, Context()).Single();
+        var quarter = HuntOptions.For(Shard(1, 4), farms, Context()).Single();
+        Assert.Equal(HuntOptions.SpriteKill.TotalMinutes / HuntOptions.SpriteChance, all.Eta!.Value.TotalMinutes, 3);
+        Assert.Equal(all.Eta.Value.TotalMinutes * 4, quarter.Eta!.Value.TotalMinutes, 3);
+        Assert.Equal(4 / HuntOptions.SpriteChance, quarter.Tries, 6);
     }
 
     [Fact]

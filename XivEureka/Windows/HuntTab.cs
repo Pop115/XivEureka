@@ -98,13 +98,14 @@ public sealed class HuntTab(
         {
             ImGui.TextColored(Grey, "Aucune source connue dans cette zone pour les éclats qui te manquent.");
         }
-        using (var table = ImRaii.Table("##fastest", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit))
+        using (var table = ImRaii.Table("##fastest", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit))
         {
             if (table)
             {
                 ImGui.TableSetupColumn("éclat");
                 ImGui.TableSetupColumn("source", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableSetupColumn("quand");
+                ImGui.TableSetupColumn("combien");
                 ImGui.TableSetupColumn("boutons");
                 foreach (var (option, i) in fastest.Select((o, i) => (o, i)))
                 {
@@ -123,11 +124,17 @@ public sealed class HuntTab(
                     ImGui.TableNextColumn();
                     When(option, context);
                     ImGui.TableNextColumn();
+                    Effort(option);
+                    ImGui.TableNextColumn();
                     MapButton(option);
                 }
             }
         }
-        ImGui.TextColored(Grey, "Temps estimés à la louche, pour classer : attente (météo, respawn, FATE) + effort selon la source, divisé par la chance d'un mneme utile.");
+        ImGui.TextColored(Grey, "Temps estimé jusqu'au premier mneme utile : attente (météo, jour/nuit, respawn, FATE) + essais × temps par essai.");
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Chance par essai = chance que l'éclat tombe (tier du coffre, adaptation…) × chance qu'un des éclats donne un mneme utile.\n" +
+                "Mesuré pour les coffres lapin (relevé communautaire de plus de 13 000 coffres par zone) et les mnemes (700 000 analyses).\n" +
+                "Estimé ailleurs (élémentaires, adaptations, coffres de mutation) : des ordres de grandeur pour classer.");
         ImGui.Spacing();
         ImGui.Separator();
     }
@@ -142,11 +149,10 @@ public sealed class HuntTab(
         ImGui.TextColored(Yellow, GameTexts.WithoutUnidentified(text.Name));
         ImGui.SameLine();
         var useful = shard.Mnemes.Count(m => m.NeededBy.Count > 0);
-        ImGui.TextColored(Grey, $"sert à {shard.Actions.Count} action(s) · à l'analyse, 1 mneme parmi {shard.Mnemes.Count} : {useful} utile(s), ≈ {shard.UsefulChance:P0} de chances");
+        ImGui.TextColored(Grey, $"sert à {shard.Actions.Count} action(s) · à l'analyse, 1 mneme parmi {shard.Mnemes.Count} : {useful} utile(s), {shard.UsefulChance:P0} de chances");
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("En supposant que les mnemes sortent à chances égales (le jeu ne le dit pas).\n" +
-                "Les temps estimés en tiennent compte : il faut en moyenne " +
-                $"{1 / shard.UsefulChance:0.#} éclat(s) pour un mneme utile.");
+            ImGui.SetTooltip("Les mnemes sortent à chances égales (relevé communautaire de 700 000 analyses).\n" +
+                $"Il faut en moyenne {1 / shard.UsefulChance:0.#} éclat(s) pour un mneme utile : les temps estimés en tiennent compte.");
         ActionIcons(shard.Actions);
         ImGui.EndGroup();
 
@@ -189,6 +195,8 @@ public sealed class HuntTab(
         ImGui.TextUnformatted(Label(option));
         ImGui.SameLine();
         When(option, context);
+        ImGui.SameLine();
+        Effort(option);
         if (option.Notes.Count > 0)
         {
             ImGui.SameLine();
@@ -196,6 +204,27 @@ public sealed class HuntTab(
         }
         ImGui.SameLine();
         MapButton(option);
+    }
+
+    /// <summary>
+    /// "≈ 35 min · ~7 kills (14 %)", "≈ 1 h 40 · ~4 FATE lapin (28 %)": total estimated time, then
+    /// tries and chance per try; the count dropped at once in the tooltip.
+    /// </summary>
+    private static void Effort(HuntOption option)
+    {
+        if (option.Eta is not { } eta) return;
+        var what = option.Farm?.Kind switch
+        {
+            FarmKind.Bunny => "FATE lapin",
+            null => "NM",
+            _ => "kills",
+        };
+        var tries = option.Tries < 1.5 ? "1 essai" : $"~{option.Tries:0} {what}";
+        ImGui.TextColored(Grey, $"≈ {Formatting.Duration(eta)} · {tries} ({option.TryChance:P0})");
+        if (!ImGui.IsItemHovered()) return;
+        var count = option.Drop?.Count is { } c ? $"{c} éclat(s) à la fois" : "1 éclat à la fois";
+        var per = option.TryTime > TimeSpan.Zero ? $"{Formatting.Duration(option.TryTime)} par essai" : "";
+        ImGui.SetTooltip($"{count} · {per}\n{option.TryChance:P0} de chances par essai d'avoir un mneme utile");
     }
 
     /// <summary>"Sprite d'orage Nv 41", "FATE lapin « … »", "Coffre de mutation : …", "NM (Nv 45, Pyros)".</summary>

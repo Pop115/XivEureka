@@ -24,7 +24,9 @@ les numéros d'éclats de `logos.json` (5 sur 9 décalés). À valider en jeu : 
 noms FR, ordres de grandeur des temps.
 Fait aussi (2026-10-17) : chance d'un mneme utile dans le classement, bouton Drapeau, Hydatos
 (11 NM dans `nm.json`, 29 sources dans `farms.json`, jour/nuit pour les coffres humides), pas
-d'alerte pour ses propres pops. À valider à Hydatos : lieux, Daphné, noms des élémentaires
+d'alerte pour ses propres pops. Modèle par essai (temps × chance × quantité) avec les chances
+mesurées des coffres lapin (relevé communautaire). À affiner en jeu : chances des élémentaires et
+des adaptations, durée réelle d'une FATE lapin. À valider à Hydatos : lieux, Daphné, noms des élémentaires
 (numéros BNpcName partagés avec Pagos).
 
 ## Onglet « Carte » (2026-10-14, à valider avec Pop)
