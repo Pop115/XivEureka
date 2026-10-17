@@ -79,8 +79,8 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   d'armure élémentaire (achetée avec des cristaux Pyros une fois 50 actions Logos apprises ;
   l'amélioration de l'armure d'artefact n'est pas suivie). Seuls les emplacements commencés ont une
   ligne, les autres sont résumés (arme : quête de job ; armure : pièces à acheter et leur coût).
-  Avant : chacune un bloc de numéros d'objet consécutifs (armes : 16 = 15 jobs + bouclier de
-  paladin ; armure d'artefact : 75 = 15 jobs × 5 pièces ; armure élémentaire : 35 = 7 rôles × 5),
+  Chaque étape est un bloc de numéros d'objet consécutifs (armes : 16 = 15 jobs + bouclier de
+  paladin ; armure élémentaire : 35 = 7 rôles × 5),
   premier et dernier objet vérifiés sur XIVAPI ; le job et l'emplacement de chaque objet sont lus
   dans les feuilles du jeu en anglais (`ClassJobCategory`, `EquipSlotCategory`). Coûts du wiki (les
   totaux par palier sont testés). Reliques vues dans sacs, équipement, arsenal et sacoches
