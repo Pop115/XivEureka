@@ -33,11 +33,9 @@ Updates then come through `/xlplugins` like any other plugin. Open the window wi
 
 ## What it does
 
-<!-- Screenshots: docs/images/*.png, cropped to the plugin window. -->
+<!-- Screenshots: docs/images/*.png, cropped to the plugin window (no other player's name). -->
 <p align="center">
-  <img src="docs/images/logos.png" alt="Logos actions tab" width="32%">
-  <img src="docs/images/hunt.png" alt="What to hit tab" width="32%">
-  <img src="docs/images/map.png" alt="Map tab" width="32%">
+  <img src="docs/images/logos.png" alt="Logos actions tab: the 56 actions with your mnemes, and the recipes of Mega Cure L with what is missing" width="80%">
 </p>
 
 **Logos actions.** The ffxiv-eureka.com logogram page, but with *your* mnemes read from the game:
