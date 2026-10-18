@@ -26,17 +26,18 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   mutation, mobs au hasard ; bouton « Carte » qui montre l'endroit, bouton « Drapeau » qui pose le
   drapeau du jeu sur l'endroit le plus proche de toi), et les mnemes qu'il peut donner à l'analyse
   avec ce qui manque pour quelles actions. Classement : temps estimé avant le premier mneme **utile**
-  = attente (météo, jour/nuit, respawn, FATE) + essais × temps par essai, **pour un petit groupe
-  qui farme seul** (réglage « Joueurs pour farmer », 2 par défaut ; le groupe réel compte s'il est
-  plus grand ; aucun groupe public ni train n'est compté). Temps par essai, seul : kill d'élémentaire
-  2 min, adapté 4, mob 3, mob muté 4, ×2 si plus de 3 niveaux au-dessus de toi, divisé par le
-  nombre de joueurs (jusqu'à 4) ; un mob à plus de 5 niveaux au-dessus n'est pas proposé. FATE
-  lapin : cycle de 28 min (le lapin revient 7-8 min après le dernier coffre, trajet 5, FATE 5,
-  chasse au trésor 10), 15 min pour la première si elle est déjà en cours, quel que soit le groupe.
-  NM : ~30 kills du mob de prépa (2 min seul, ×2 s'il est costaud, partagés), le tirage du jeu parmi
-  les NM préparés (toutes les ~11 min, 15 en moyenne), le trajet (3) et le combat (20 min seul pour
-  un NM à ton niveau, moitié s'il a 5 niveaux de moins, double s'il est au-dessus, partagé) ; pas de
-  temps si son mob de prépa est hors de portée. Chaque essai de plus = un autre NM à préparer.
+  = attente (météo, jour/nuit, respawn, FATE) + essais × temps par essai, **pour un joueur**, ou
+  pour le groupe si la case « Compter le groupe » est cochée (nombre de joueurs réglable, 2 par
+  défaut, ou le groupe réel s'il est plus grand : kills et combats de NM partagés jusqu'à 4 joueurs,
+  pas les coffres lapin) ; aucun groupe public ni train n'est compté. **Écart de niveau** (curseur de l'onglet, +0 à +6, +3 par défaut ; l'XP
+  monte jusqu'à +6) : un mob plus haut que ton niveau + l'écart n'est pas proposé, en dessous il
+  ne prend pas plus de temps. Temps par essai : kill d'élémentaire 2 min, adapté 4, mob 3, mob
+  muté 4. FATE lapin : cycle de 28 min (le lapin revient 7-8 min après le dernier coffre, trajet 5,
+  FATE 5, chasse au trésor 10), 15 min pour la première si elle est déjà en cours.
+  NM : ~30 kills du mob de prépa (2 min), le tirage du jeu parmi les NM préparés (toutes les
+  ~11 min, 15 en moyenne), le trajet (3) et le combat (20 min pour un NM à ton niveau, moitié s'il
+  a 5 niveaux de moins, double s'il est au-dessus) ; pas de temps si son mob de prépa dépasse ton
+  écart de niveau. Chaque essai de plus = un autre NM à préparer.
   Temps = attente + premier essai + (essais − 1) × essai suivant, détaillé dans l'infobulle.
   Essais = 1 / (chance que
   l'éclat tombe × chance qu'un des éclats tombés donne un mneme qui manque encore). Chances
@@ -47,11 +48,21 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   « combien » : temps total, nombre d'essais et chance par essai. Calcul dans `Hunt` et `HuntOptions`.
   **XP et difficulté** (`HuntXp`) : jusqu'au niveau max de la zone (Anemos 20, Pagos 35, Pyros 50,
   Hydatos 60), une source qui fait monter de niveau compte pour moins de temps : temps compté = temps
-  × (1 − poids × part d'XP), poids = réglage « Importance de l'XP » (50 % par défaut), part d'XP =
-  XP/min de la source rapportée à un duo qui farme des mobs à +3 niveaux (plafonnée à 100 %). XP par
-  kill : +15 % par niveau au-dessus (jusqu'à ×2), presque rien 3 niveaux en dessous ; élémentaire
+  × (1 − poids × part d'XP), poids = mode de l'onglet (Logos 0, Mix 25/50/75 %, 50 par défaut), part d'XP =
+  XP/min de la source rapportée à des mobs à +3 niveaux, un toutes les 2 min (plafonnée à 100 %). XP par
+  kill : +15 % par niveau au-dessus, rien de plus au-delà de +6, presque rien 3 niveaux en dessous ; élémentaire
   ×1,5, mob qui mute ou s'adapte ×1,75 en moyenne (×2,5 quand il change) ; NM : 25 kills de bonus,
-  plus ses 30 kills de prépa ; FATE lapin : 5 kills. Facteurs estimés d'après les guides (pas de
+  plus ses 30 kills de prépa, mais XP réduite (×0,25, estimé) et **aucune récompense** (ni coffre, ni
+  cristaux, ni éclat) pour un NM à plus d'un niveau au-dessus de toi : retiré du mode Logos
+  (icy-veins, 2026-10-18) ; FATE lapin : 5 kills.
+  **Mode XP** (`XpOptions`, 2026-10-18, d'après les guides icy-veins et gamecraftgather) : sources de
+  la zone classées par XP sur l'heure qui vient (XP/min × part de l'heure sans attente). Mobs de
+  ton niveau − 2 à ton niveau + l'écart ; kill de 2 min (×1,25 pour un mob qui change). Sources : élémentaires, mobs qui mutent ou s'adaptent (sous leur condition), mobs à éclats,
+  mobs de prépa des NM, NM en cours ou préparés (à ton niveau + 1 au plus), et une chaîne de 30 sur
+  n'importe quels mobs à ton niveau + l'écart. Reflect L (action 13000) apprise : les élémentaires se
+  tuent eux-mêmes, 1 min par kill. Rappels Potion d'harmonie (statut 1587) et bénédiction des fées
+  (statut 1461), lus sur le joueur. Éclats utiles lâchés en route : icônes sur la ligne.
+  Scénarios dans `XpScenarioTests`. Facteurs estimés d'après les guides (pas de
   chiffres publiés). Difficulté : dur à 4 niveaux au-dessus ou pour un NM à ton niveau, moyen
   au-dessus ou pour un mob qui change. Coffres de mutation : part de Tactique mesurée (Pyros 56 %,
   Hydatos 39 %), le reste estimé (1/3 de mobs qui changent, 20 % de coffres).
@@ -60,17 +71,17 @@ Une fenêtre « Xiv Eurêka » (`/xiveureka`, ou le bouton du plugin dans `/xlpl
   et NM) ; chaîne de 30 sur des mobs au-dessus de toi (`kind: chain`, niveau relatif) : Obscur à
   Hydatos, Fondamental à Pyros ; orage Nv 53 et Zu Nestling Nv 63 adaptés (Hydatos) : Offensif ;
   orage Nv 46 (adapté ou non), braise Nv 44 adaptée, mort-vivant Nv 53 adapté la nuit (Pyros) :
-  Mitigatif. Les sources d'une autre zone sont comptées (+15 min de changement de zone, état des NM
-  inconnu, pas d'XP si la zone est déjà au max). Un NM seul de sa zone à ta portée : chaque essai de
+  Mitigatif. Seules les sources de la zone où tu es sont listées (2026-10-18 : rien de Pyros quand
+  tu es à Hydatos ; les éclats sans source ici sont juste comptés en bas). Un NM seul de sa zone à ta portée : chaque essai de
   plus attend son respawn (2 h).
-  **Scénarios** (`HuntScenarioTests`, duo Nv 50 sur les vraies données ; chacun affiche son classement
-  avec `dotnet test --logger "console;verbosity=detailed"`) : Conceptuel sous une météo d'élémentaire
-  (≈ 12 min) ou sans (on attend la suivante) ; coffres de bronze (plus de 3 h même FATE lapin en
-  cours) ; Curatif sans rien en cours (coffres d'argent ≈ 90 min, devant un NM à préparer à deux,
-  ≈ 106 min) ou FATE de Leucosia en cours ; NM préparé ou en respawn ; Inimical sous Orage (orage
-  adapté Nv 54, ≈ 5 min) ; Protecteur (un NM à préparer, 53 min) ; Offensif à Pyros (coffres d'or,
-  ≈ 12 h) ; Hydatos au Nv 50 (mobs à plus de 5 niveaux écartés : Offensif par les coffres d'or,
-  Obscur par Khalamari seulement ; Conceptuel par les élémentaires de fonte Nv 51).
+  **Scénarios** (`HuntScenarioTests`, Nv 50 et écart +5 sur les vraies données ; chacun affiche son
+  classement avec `dotnet test --logger "console;verbosity=detailed"`) : Conceptuel sous une météo
+  d'élémentaire (≈ 23 min) ou sans (on attend la suivante) ; coffres de bronze (plus de 3 h même FATE
+  lapin en cours) ; Curatif sans rien en cours (coffres d'argent ≈ 90 min, devant un NM à préparer,
+  ≈ 176 min) ou FATE de Leucosia en cours (≈ 101 min) ; NM préparé ou en respawn ; Inimical sous
+  Orage (orage adapté Nv 54, ≈ 5 min) ; Protecteur (un NM à préparer, 88 min) ; Offensif à Pyros
+  (coffres d'or, ≈ 12 h) ; Hydatos au Nv 50 (mobs au-delà de l'écart écartés : Offensif par l'orage
+  adapté Nv 53, Obscur par Khalamari puis les chaînes ; Conceptuel par les élémentaires de fonte Nv 51).
 - **Carte** (`/xiveureka carte`) : la carte du jeu de la zone d'Eurêka, redessinée par le plugin.
   Repères et noms de zone du jeu, toi (flèche), ton groupe, le drapeau, et en plus les 17 NM de la
   zone avec leur état (FATE en cours, respawn ≥ N min s'il a été vu finir, météo ou nuit à venir),

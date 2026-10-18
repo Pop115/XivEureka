@@ -31,6 +31,12 @@ public sealed class CharacterState
     /// </summary>
     public HashSet<uint> RelicItems { get; set; } = [];
 
+    /// <summary>
+    /// "Quoi acheter": crafts wanted on top of learning the board (action → how many times), for
+    /// the actions worth crafting again (Bloodbath L, Spirit of the Remembered…).
+    /// </summary>
+    public Dictionary<uint, int> ExtraCrafts { get; set; } = [];
+
     /// <summary>In-zone story steps ticked by the player ("territory:level"): the game does not expose them.</summary>
     public HashSet<string> StorySteps { get; set; } = [];
 }
@@ -60,20 +66,46 @@ public sealed class MapLayers
     public bool UnavailableNms { get; set; }
 }
 
+/// <summary>What "Quoi taper" ranks by: the Logos actions only, both, or the experience only.</summary>
+public enum HuntMode
+{
+    Logos,
+    Mix,
+    Xp,
+}
+
 [Serializable]
 public sealed class Configuration : IPluginConfiguration
 {
     /// <summary>2 since the code moved to English names (version 1 is migrated by <see cref="ConfigurationMigration"/>).</summary>
     public int Version { get; set; } = 2;
 
-    /// <summary>
-    /// Players farming the logograms together, for the "Quoi taper" times (no public group counted
-    /// on). The actual party counts when it is bigger.
-    /// </summary>
+    /// <summary>"Quoi taper": how many levels above you you hit (0 to 6; experience grows up to +6).</summary>
+    public int LevelGap { get; set; } = Logos.HuntOptions.DefaultGap;
+
+    /// <summary>"Quoi taper": share the kill times with the party (<see cref="FarmPartySize"/>, or the actual party when bigger).</summary>
+    public bool CountParty { get; set; }
+
+    /// <summary>Players farming together when <see cref="CountParty"/> is ticked (no public group counted on).</summary>
     public int FarmPartySize { get; set; } = 2;
 
-    /// <summary>How much leveling up counts in "Quoi taper" (percent; none at the zone's max level).</summary>
+    /// <summary>What "Quoi taper" ranks by (the tab's buttons).</summary>
+    public HuntMode HuntMode { get; set; } = HuntMode.Mix;
+
+    /// <summary>
+    /// In <see cref="HuntMode.Mix"/>: how much leveling up counts (percent: 25 mostly Logos, 50
+    /// balanced, 75 mostly experience; none at the zone's max level).
+    /// </summary>
     public int XpImportance { get; set; } = 50;
+
+    /// <summary>"Quoi acheter": also plan the actions not learned yet (complete the board).</summary>
+    public bool ShopCompleteBoard { get; set; } = true;
+
+    /// <summary>
+    /// "Quoi acheter": data centers left out of the prices (those of the home world's region not
+    /// listed here are read; all of them by default, as one can travel to any).
+    /// </summary>
+    public HashSet<string> ShopSkippedDataCenters { get; set; } = [];
 
     /// <summary>Plugin text language: the game client's (French or English), or forced.</summary>
     public TextLanguage Language { get; set; } = TextLanguage.Auto;

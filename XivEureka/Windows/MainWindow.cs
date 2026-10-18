@@ -6,28 +6,31 @@ using Dalamud.Interface.Windowing;
 
 namespace XivEureka.Windows;
 
-/// <summary>The plugin window: Logos actions, what to hit, map and progress tabs.</summary>
+/// <summary>The plugin window: Logos actions, what to hit, what to buy, map and progress tabs.</summary>
 public sealed class MainWindow : Window
 {
     public enum Tab
     {
         Logos,
         Hunt,
+        Shop,
         Map,
         Progress,
     }
 
     private readonly LogosTab logos;
     private readonly HuntTab hunt;
+    private readonly ShopTab shop;
     private readonly MapTab map;
     private readonly ProgressTab progress;
     private Tab? toSelect;
 
-    public MainWindow(LogosTab logos, HuntTab hunt, MapTab map, ProgressTab progress)
+    public MainWindow(LogosTab logos, HuntTab hunt, ShopTab shop, MapTab map, ProgressTab progress)
         : base("Xiv Eurêka###XivEurekaLogos")
     {
         this.logos = logos;
         this.hunt = hunt;
+        this.shop = shop;
         this.map = map;
         this.progress = progress;
         Size = new Vector2(1000, 720);
@@ -52,6 +55,7 @@ public sealed class MainWindow : Window
         if (!bar) return;
         DrawTab(Loc.T("Actions Logos", "Logos actions") + "###logos", Tab.Logos, logos.Draw);
         DrawTab(Loc.T("Quoi taper", "What to hit") + "###hunt", Tab.Hunt, hunt.Draw);
+        DrawTab(Loc.T("Quoi acheter", "What to buy") + "###shop", Tab.Shop, shop.Draw);
         DrawTab(Loc.T("Carte", "Map") + "###map", Tab.Map, map.Draw);
         DrawTab(Loc.T("Progression", "Progress") + "###progress", Tab.Progress, progress.Draw);
         toSelect = null;

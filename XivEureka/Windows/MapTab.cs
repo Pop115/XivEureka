@@ -112,10 +112,10 @@ public sealed class MapTab
         var zone = EurekaWeather.Zone(inEureka ? state.Territory : configuration.LastZone) ?? EurekaWeather.Zones[2];
         if (!inEureka) state = MapState.Empty;
         Compute(zone, state);
-        var party = Math.Max(configuration.FarmPartySize, state.Party.Count + 1);
         var level = sources.ElementalLevel();
-        return new HuntContext(zone.Territory, statuses, state.BunnyFates, level, DateTimeOffset.UtcNow, party,
-            HuntXp.Weight(configuration.XpImportance / 100.0, zone.Territory, level));
+        var party = configuration.CountParty ? Math.Max(configuration.FarmPartySize, state.Party.Count + 1) : 1;
+        return new HuntContext(zone.Territory, statuses, state.BunnyFates, level, DateTimeOffset.UtcNow, Math.Clamp(configuration.LevelGap, 0, HuntOptions.MaxGap),
+            HuntXp.Weight(configuration.HuntMode == HuntMode.Logos ? 0 : configuration.XpImportance / 100.0, zone.Territory, level), party);
     }
 
     /// <summary>Chooses the NM and centers the map on it at the next draw.</summary>

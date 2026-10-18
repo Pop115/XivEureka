@@ -3,7 +3,7 @@ using XivEureka.Zones;
 
 namespace XivEureka.Logos;
 
-/// <summary>How hard a source is for a small party: from the level gap and the kind of mob.</summary>
+/// <summary>How hard a source is: from the level gap and the kind of mob.</summary>
 public enum Difficulty
 {
     Easy,
@@ -22,8 +22,8 @@ public enum Difficulty
 /// </summary>
 public static class HuntXp
 {
-    /// <summary>The reference rhythm (share 100 %): a duo grinding plain mobs 3 levels above them.</summary>
-    public const double ReferenceRate = 1.0;
+    /// <summary>The reference rhythm (share 100 %): plain mobs 3 levels above you (×1.45), one every 2 minutes.</summary>
+    public const double ReferenceRate = 1.45 / 2;
 
     public const double SpriteFactor = 1.5;
     /// <summary>Mutating or adapting mobs farmed under their condition: not all of them change (2.5 when they do).</summary>
@@ -33,11 +33,23 @@ public static class HuntXp
     /// <summary>A bunny FATE, in plain kills at its level.</summary>
     public const double BunnyFate = 5;
 
-    /// <summary>Experience of a kill against the level gap: +15 % a level above you (up to twice), almost nothing 3 or more below.</summary>
+    /// <summary>Mobs give more experience up to this many levels above you, no more beyond (icy-veins, gamecraftgather).</summary>
+    public const int CapAbove = 6;
+
+    /// <summary>
+    /// An NM more than this many levels above you gives reduced experience and no reward: no lockbox,
+    /// crystal, rare item nor logogram (icy-veins Eureka overview).
+    /// </summary>
+    public const int NmRewardAbove = 1;
+
+    /// <summary>The "reduced experience" of an NM too far above you (guess).</summary>
+    public const double NmAboveFactor = 0.25;
+
+    /// <summary>Experience of a kill against the level gap: +15 % a level above you (up to +6), almost nothing 3 or more below.</summary>
     public static double LevelFactor(int mobLevel, int? you)
     {
         if (you is not { } level) return 1;
-        var gap = mobLevel - level;
+        var gap = Math.Min(mobLevel - level, CapAbove);
         return gap <= -3 ? 0.1 : Math.Clamp(1 + (0.15 * gap), 0.5, 2.0);
     }
 
@@ -59,7 +71,7 @@ public static class HuntXp
     public static double ForNm(EurekaNm nm, TimeSpan firstTry, bool running, int? level)
     {
         if (firstTry <= TimeSpan.Zero) return 0;
-        var xp = NmBonus * LevelFactor(nm.Level, level);
+        var xp = NmBonus * LevelFactor(nm.Level, level) * (level is { } l && nm.Level > l + NmRewardAbove ? NmAboveFactor : 1);
         if (!running) xp += HuntOptions.PrepKills * LevelFactor(nm.Prep.Level, level);
         return xp / firstTry.TotalMinutes;
     }

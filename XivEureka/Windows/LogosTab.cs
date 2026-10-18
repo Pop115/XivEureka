@@ -44,18 +44,20 @@ public sealed class LogosTab
     private readonly ITextureProvider icons;
     private readonly Func<CharacterState?> currentCharacter;
     private readonly Func<bool> liveStock;
+    private readonly Func<char?> currentRole;
     private readonly Action save;
 
     private int? chosen;
 
     public LogosTab(LogosCatalog catalog, GameTexts texts, ITextureProvider icons,
-        Func<CharacterState?> currentCharacter, Func<bool> liveStock, Action save)
+        Func<CharacterState?> currentCharacter, Func<bool> liveStock, Func<char?> currentRole, Action save)
     {
         this.catalog = catalog;
         this.texts = texts;
         this.icons = icons;
         this.currentCharacter = currentCharacter;
         this.liveStock = liveStock;
+        this.currentRole = currentRole;
         this.save = save;
     }
 
@@ -257,8 +259,19 @@ public sealed class LogosTab
         ImGui.SameLine();
         ImGui.BeginGroup();
         ImGui.TextUnformatted(text.ShortName);
-        ImGui.TextColored(Grey, $"{Loc.T("n°", "#")} {e.Action.Number} · {RoleNames(e.Action.Roles)}");
+        // Wrapped: "mêlée, distance physique, distance magique" does not fit the sheet's width.
+        ImGui.PushTextWrapPos(0);
+        using (ImRaii.PushColor(ImGuiCol.Text, Grey))
+            ImGui.TextUnformatted($"{Loc.T("n°", "#")} {e.Action.Number} · {RoleNames(e.Action.Roles)}");
+        ImGui.PopTextWrapPos();
         if (e.Action.Uses is { } uses) ImGui.TextColored(Grey, Loc.T($"{uses} utilisation(s)", $"{uses} use(s)"));
+        if (currentRole() is { } role && Roles.FirstOrDefault(r => r.Letter == role.ToString()) is { Name: { } roleName })
+        {
+            if (e.Action.Roles.Contains(role, StringComparison.Ordinal))
+                ImGui.TextColored(Green, Loc.T($"✓ utilisable en {roleName} (ta classe)", $"✓ usable as {roleName} (your job)"));
+            else
+                ImGui.TextColored(Red, Loc.T($"pas utilisable en {roleName} (ta classe)", $"not usable as {roleName} (your job)"));
+        }
         ImGui.EndGroup();
 
         var learned = e.Learned;

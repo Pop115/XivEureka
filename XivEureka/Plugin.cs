@@ -76,7 +76,7 @@ public sealed class Plugin : IDalamudPlugin
 
         texts = new GameTexts(DataManager);
         var weatherNames = new WeatherNames(DataManager);
-        var logosTab = new LogosTab(catalog, texts, TextureProvider, CurrentCharacter, () => liveStock, Save);
+        var logosTab = new LogosTab(catalog, texts, TextureProvider, CurrentCharacter, () => liveStock, CurrentRole, Save);
         var mapTab = new MapTab(configuration, new MapReader(DataManager),
             new MapStateReader(ClientState, ObjectTable, PartyList, FateTable, companion.RecentPops),
             nmCatalog,
@@ -85,7 +85,9 @@ public sealed class Plugin : IDalamudPlugin
             new MapSources(EndedFates, tracker.PreppedByFate, ElementalLevel, UsefulShards, tracker,
                 (territory, map, position) => InGameMap.SetFlag(territory, map, position, open: false)),
             Save);
-        var huntTab = new HuntTab(catalog, nmCatalog, FarmCatalog.Embedded(), texts, TextureProvider, CurrentCharacter,
+        var huntTab = new HuntTab(configuration, Save,
+            () => ObjectTable.LocalPlayer?.StatusList.Select(s => s.StatusId).ToHashSet() ?? [],
+            catalog, nmCatalog, FarmCatalog.Embedded(), texts, TextureProvider, CurrentCharacter,
             mapTab.HuntContextNow, w => weatherNames[w],
             nm =>
             {
@@ -101,7 +103,8 @@ public sealed class Plugin : IDalamudPlugin
         var relics = Progress.RelicCatalog.Embedded();
         var progressTab = new ProgressTab(relics, new Progress.ProgressReader(GameInventory, DataManager, ClientState, relics), texts,
             TextureProvider, CurrentCharacter, ElementalLevel, Save);
-        mainWindow = new MainWindow(logosTab, huntTab, mapTab, progressTab);
+        var shopTab = new ShopTab(configuration, Save, catalog, texts, TextureProvider, CurrentCharacter, RegionDataCenters);
+        mainWindow = new MainWindow(logosTab, huntTab, shopTab, mapTab, progressTab);
         windows.AddWindow(mainWindow);
         settingsWindow = new SettingsWindow(configuration, Save, () => Loc.Apply(configuration.Language, DataManager.Language));
         windows.AddWindow(settingsWindow);
@@ -170,6 +173,47 @@ public sealed class Plugin : IDalamudPlugin
         PlayerState.IsLoaded && PlayerState.ContentId != 0
             ? configuration.Character(PlayerState.ContentId, PlayerState.CharacterName)
             : null;
+
+    /// <summary>
+    /// The current job's Logos role letter (T tank, H healer, M melee, P physical ranged, C caster),
+    /// null for a crafter or gatherer: ClassJob.Role 1 tank, 2 melee, 3 ranged (DEX physical, else
+    /// caster), 4 healer.
+    /// </summary>
+    private static char? CurrentRole()
+    {
+        if (!PlayerState.IsLoaded || PlayerState.ClassJob.ValueNullable is not { } job) return null;
+        return job.Role switch
+        {
+            1 => 'T',
+            2 => 'M',
+            3 => job.PrimaryStat == 2 ? 'P' : 'C',
+            4 => 'H',
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// Data centers of the home world's region (Chaos, Light… for a European world), the home one
+    /// first: a character can travel to any of them to buy. Empty before login.
+    /// </summary>
+    private IReadOnlyList<string> RegionDataCenters()
+    {
+        if (!PlayerState.IsLoaded || PlayerState.HomeWorld.ValueNullable is not { } home) return [];
+        if (regionDataCenters is { } cached && cached.Home == home.RowId) return cached.Names;
+        var homeDc = home.DataCenter.Value;
+        var names = DataManager.GetExcelSheet<Lumina.Excel.Sheets.World>()
+            .Where(w => w.IsPublic && w.DataCenter.RowId != 0 && w.DataCenter.Value.Region.RowId == homeDc.Region.RowId)
+            .Select(w => w.DataCenter.Value)
+            .DistinctBy(dc => dc.RowId)
+            .OrderBy(dc => dc.RowId != homeDc.RowId).ThenBy(dc => dc.RowId)
+            .Select(dc => dc.Name.ExtractText())
+            .Where(n => n.Length > 0)
+            .ToList();
+        regionDataCenters = (home.RowId, names);
+        return names;
+    }
+
+    private (uint Home, IReadOnlyList<string> Names)? regionDataCenters;
 
     /// <summary>
     /// Ended NM FATEs and when (UTC): those seen ending in the instance and those from the followed

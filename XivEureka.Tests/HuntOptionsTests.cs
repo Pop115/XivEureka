@@ -219,13 +219,14 @@ public class HuntOptionsTests
     }
 
     [Fact]
-    public void An_NM_of_another_zone_has_no_time_and_comes_last()
+    public void Sources_of_another_zone_are_left_out()
     {
         var nm = new EurekaNm(1, 0, 1, 60, "fire", new Vector2(10, 10), 24007, [], new SpawnCondition(null, false),
             new PrepMob(2, 60, new SpawnCondition(null, false), []));
-        var options = HuntOptions.For(Shard(24007, new HuntSource(827, nm)), Farms(EmberSprite), Context(When("Heat Waves", true)));
-        Assert.Null(options[^1].Eta);
-        Assert.NotNull(options[^1].Nm);
+        var farms = new FarmCatalog([new ZoneFarms(Pyros, [EmberSprite]), new ZoneFarms(827, [EmberSprite])]);
+        var options = HuntOptions.For(Shard(24007, new HuntSource(827, nm)), farms, Context(When("Heat Waves", true)));
+        Assert.All(options, o => Assert.Equal(Pyros, o.Territory));
+        Assert.DoesNotContain(options, o => o.Nm != null);
     }
 
     [Fact]
@@ -239,14 +240,14 @@ public class HuntOptionsTests
     }
 
     [Fact]
-    public void A_mob_well_above_you_is_slower()
+    public void A_mob_beyond_your_level_gap_is_not_proposed()
     {
+        // Within the gap (3 by default), a mob above you takes no longer: Logos actions make up for it.
         var now = When("Heat Waves", true);
-        var strong = EmberSprite with { Level = 49 };
-        var option = HuntOptions.For(Shard(24007), Farms(strong), Context(now, level: 45)).Single();
-        Near(SpriteEta * 2, option.Eta);
-        // More than 5 levels above: out of reach, not proposed.
-        Assert.Empty(HuntOptions.For(Shard(24007), Farms(EmberSprite with { Level = 51 }), Context(now, level: 45)));
+        var option = HuntOptions.For(Shard(24007), Farms(EmberSprite with { Level = 48 }), Context(now, level: 45)).Single();
+        Near(SpriteEta, option.Eta);
+        Assert.Empty(HuntOptions.For(Shard(24007), Farms(EmberSprite with { Level = 49 }), Context(now, level: 45)));
+        Assert.Single(HuntOptions.For(Shard(24007), Farms(EmberSprite with { Level = 49 }), Context(now, level: 45) with { Gap = 4 }));
     }
 }
 
@@ -324,37 +325,65 @@ public class HuntTimeOfDayTests
         foreach (var minutes in Enumerable.Range(0, 70).Select(i => i * 1.0))
         {
             var now = start.AddMinutes(minutes);
-            var option = HuntOptions.For(shard, farms, new HuntContext(827, [], new HashSet<ushort>(), 60, now)).Single();
+            var option = HuntOptions.For(shard, farms, new HuntContext(827, [], new HashSet<ushort>(), 60, now, Gap: 5)).Single();
             Assert.Equal(EurekaWeather.IsNight(now), option.IsOpen(now));
             Assert.True(EurekaWeather.IsNight(option.Window!.Start.AddSeconds(1)));
         }
     }
 }
 
-public class HuntPartyTests
+public class HuntGapTests
 {
     private static readonly EurekaNm Skoll = NmCatalog.Embedded().Zone(795)!.Nms.Single(n => n.Npc == 7739);
+    private static readonly DateTimeOffset Now = DateTimeOffset.FromUnixTimeSeconds(1_760_000_000L);
 
-    private static HuntContext Context(int level, int party) =>
-        new(795, [], new HashSet<ushort>(), level, DateTimeOffset.FromUnixTimeSeconds(1_760_000_000L), party);
+    private static HuntContext Context(int level, int gap = HuntOptions.DefaultGap) =>
+        new(795, [], new HashSet<ushort>(), level, Now, gap);
 
     [Fact]
-    public void Kills_are_shared_by_the_party_up_to_four()
+    public void No_party_counted_an_NM_and_its_prep_take_the_same_time_for_everyone()
     {
-        Assert.Equal(HuntOptions.SpriteKill / 2, HuntOptions.Shared(HuntOptions.SpriteKill, Context(50, 2)));
-        Assert.Equal(HuntOptions.SpriteKill / 4, HuntOptions.Shared(HuntOptions.SpriteKill, Context(50, 8)));
-        Assert.Equal(HuntOptions.SpriteKill, HuntOptions.Shared(HuntOptions.SpriteKill, Context(50, 0)));
+        // Skoll (lv 50): a 20 min fight at your level, 40 above you; its prep, 30 kills of 2 min.
+        Assert.Equal(3 + 20, HuntOptions.NmFight(Skoll, Context(50)).TotalMinutes, 3);
+        Assert.Equal(3 + 40, HuntOptions.NmFight(Skoll, Context(45)).TotalMinutes, 3);
+        Assert.Equal(60, HuntOptions.NmPrep(Skoll, Context(50)).TotalMinutes, 3);
     }
 
     [Fact]
-    public void An_NM_at_your_level_is_a_long_fight_for_two_and_its_prep_mob_too()
+    public void Kills_are_shared_by_the_party_only_when_it_is_counted_up_to_four()
     {
-        // Skoll (lv 50), prep mob lv 55: at lv 50 the prep mob is 5 above (hard: 4 min a kill alone).
-        var duo = Context(50, 2);
+        Assert.Equal(HuntOptions.SpriteKill, HuntOptions.Shared(HuntOptions.SpriteKill, Context(50)));
+        Assert.Equal(HuntOptions.SpriteKill / 2, HuntOptions.Shared(HuntOptions.SpriteKill, Context(50) with { PartySize = 2 }));
+        Assert.Equal(HuntOptions.SpriteKill / 4, HuntOptions.Shared(HuntOptions.SpriteKill, Context(50) with { PartySize = 8 }));
+        // Skoll for two: 60 min of prep become 30, the 20 min fight 10.
+        var duo = Context(50) with { PartySize = 2 };
+        Assert.Equal(30, HuntOptions.NmPrep(Skoll, duo).TotalMinutes, 3);
         Assert.Equal(3 + 10, HuntOptions.NmFight(Skoll, duo).TotalMinutes, 3);
-        Assert.Equal(30 * 4 / 2, HuntOptions.NmPrep(Skoll, duo).TotalMinutes, 3);
-        // At lv 45 Skoll is above you: twice the fight.
-        Assert.Equal(3 + 20, HuntOptions.NmFight(Skoll, Context(45, 2)).TotalMinutes, 3);
+    }
+
+    [Fact]
+    public void Bunny_coffers_are_not_shared()
+    {
+        var bunny = new Farm(FarmKind.Bunny, 0, 1407, 50, false, [], [new(1, 1)], [new FarmDrop(24007, false, "bronze", "1-2", 0.14)]);
+        var farms = new FarmCatalog([new ZoneFarms(795, [bunny])]);
+        var shard = new HuntShard(24007, [new HuntMneme(1, 0, [new HuntNeed(new LogosAction(1, 1, "T", null, []), 1)])], [], []);
+        var alone = HuntOptions.For(shard, farms, Context(50)).Single();
+        var four = HuntOptions.For(shard, farms, Context(50) with { PartySize = 4 }).Single();
+        Assert.Equal(alone.Eta, four.Eta);
+    }
+
+    [Fact]
+    public void The_level_gap_decides_which_mobs_are_proposed()
+    {
+        var sprite = new Farm(FarmKind.Sprite, 1, 0, 55, false, [], [new(1, 1)], [new FarmDrop(24007, true, null, null)]);
+        var farms = new FarmCatalog([new ZoneFarms(795, [sprite])]);
+        var shard = new HuntShard(24007, [new HuntMneme(1, 0, [new HuntNeed(new LogosAction(1, 1, "T", null, []), 1)])], [], []);
+        Assert.Empty(HuntOptions.For(shard, farms, Context(50, gap: 4)));
+        Assert.Single(HuntOptions.For(shard, farms, Context(50, gap: 5)));
+        var xp = XpOptions.For(farms, Context(50, gap: 6), new HashSet<uint>(), new HashSet<uint>());
+        Assert.Equal(56, xp.Single(o => o.Kind == XpKind.Chain).Level);
+        Assert.Contains(xp, o => o.Farm == sprite);
+        Assert.DoesNotContain(XpOptions.For(farms, Context(50, gap: 2), new HashSet<uint>(), new HashSet<uint>()), o => o.Farm == sprite);
     }
 }
 
@@ -365,7 +394,9 @@ public class HuntXpTests
     {
         Assert.Equal(1, HuntXp.LevelFactor(50, 50));
         Assert.Equal(1.45, HuntXp.LevelFactor(53, 50), 6);
-        Assert.Equal(2, HuntXp.LevelFactor(60, 50));
+        // No more beyond +6 (the guides' cap).
+        Assert.Equal(1.9, HuntXp.LevelFactor(56, 50), 6);
+        Assert.Equal(1.9, HuntXp.LevelFactor(60, 50), 6);
         Assert.Equal(0.1, HuntXp.LevelFactor(47, 50));
     }
 

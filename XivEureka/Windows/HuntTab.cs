@@ -19,9 +19,13 @@ namespace XivEureka.Windows;
 /// shard, most useful first: the actions it moves forward, all its sources fastest first (sprites,
 /// NMs with their live state, bunny chests, lockboxes, random mobs) and the mnemes it can turn into,
 /// with what each one is missing for. Computed by <see cref="Hunt"/> and <see cref="HuntOptions"/>.
-/// User-facing texts are French for now.
+/// Three modes on top: Logos (that ranking alone), Mix (the experience counted too, three presets),
+/// XP (what levels you up fastest in the zone, <see cref="XpOptions"/>), only below the zone's max level.
 /// </summary>
 public sealed class HuntTab(
+    Configuration configuration,
+    Action save,
+    Func<IReadOnlySet<uint>> playerStatuses,
     LogosCatalog catalog,
     NmCatalog nmCatalog,
     FarmCatalog farms,
@@ -52,7 +56,14 @@ public sealed class HuntTab(
             return;
         }
 
-        ImGui.TextUnformatted(Loc.T("QUOI TAPER", "WHAT TO HIT"));
+        var context = contextNow();
+        var maxLevel = context.Level is { } lv && lv >= HuntXp.MaxLevel(context.Territory);
+        var mode = DrawMode(context, maxLevel);
+        if (mode == HuntMode.Xp)
+        {
+            DrawXp(state, context);
+            return;
+        }
         if (state.StockReadAt == null)
         {
             ImGui.TextColored(Yellow, Loc.T("Mnemes jamais lues : ouvre la fenêtre des éclats au manipulateur Logos.", "Mnemes never read: open the logogram window at the Logos manipulator."));
@@ -62,8 +73,6 @@ public sealed class HuntTab(
             ImGui.TextColored(Yellow, Loc.T("Actions apprises jamais lues : ouvre le journal chez Drake (sinon tout compte comme à apprendre).", "Learned actions never read: open the notebook at Drake (until then, everything counts as to learn)."));
 
         var plan = Hunt.Compute(catalog, nmCatalog.Zones, state.Stock, state.Learned);
-        var context = contextNow();
-        ImGui.SameLine();
         ImGui.TextColored(Grey, Loc.T($"{plan.NotLearned} action(s) pas encore apprise(s) · mnemes du {state.StockReadAt:dd/MM HH:mm}", $"{plan.NotLearned} action(s) not learned yet · mnemes as of {state.StockReadAt:MM/dd HH:mm}"));
 
         if (plan.CraftableNow.Count > 0)
@@ -84,8 +93,241 @@ public sealed class HuntTab(
         using var list = ImRaii.Child("##hunt", Vector2.Zero, false);
         if (!list) return;
         DrawFastest(plan, context);
-        foreach (var shard in plan.Shards) DrawShard(shard, context);
+        // Only the shards that can be had in this zone: the others wait for their own zone.
+        var here = plan.Shards.Select(s => (Shard: s, Options: HuntOptions.For(s, farms, context))).Where(x => x.Options.Count > 0).ToList();
+        foreach (var (shard, options) in here) DrawShard(shard, options, context);
+        if (here.Count < plan.Shards.Count)
+            ImGui.TextColored(Grey, Loc.T($"{plan.Shards.Count - here.Count} autre(s) éclat(s) utile(s) sans source dans cette zone (ou pas à ton niveau).",
+                $"{plan.Shards.Count - here.Count} other useful logogram(s) with no source in this zone (or not at your level)."));
     }
+
+    private static readonly (int Percent, string Fr, string En)[] Presets =
+    [
+        (25, "surtout Logos", "mostly Logos"),
+        (50, "équilibré", "balanced"),
+        (75, "surtout XP", "mostly XP"),
+    ];
+
+    /// <summary>
+    /// "QUOI TAPER  (o) Logos ( ) Mix ( ) XP", and the Mix presets. At the zone's max level the
+    /// experience counts for nothing: XP is greyed, and a saved XP mode shows the Logos ranking.
+    /// </summary>
+    private HuntMode DrawMode(HuntContext context, bool maxLevel)
+    {
+        ImGui.TextUnformatted(Loc.T("QUOI TAPER", "WHAT TO HIT"));
+        foreach (var (mode, label, tip) in new[]
+        {
+            (HuntMode.Logos, "Logos", Loc.T("Le plus rapide vers les actions Logos qui te manquent.", "Fastest to the Logos actions you are missing.")),
+            (HuntMode.Mix, "Mix", Loc.T("Les actions Logos, en comptant aussi l'XP : une source qui fait monter de niveau compte pour moins de temps.",
+                "The Logos actions, experience counted too: a source that levels you up counts for less time.")),
+            (HuntMode.Xp, "XP", Loc.T("Ce qui fait monter de niveau le plus vite dans la zone.", "What levels you up fastest in the zone.")),
+        })
+        {
+            ImGui.SameLine();
+            using (ImRaii.Disabled(mode != HuntMode.Logos && maxLevel))
+            {
+                if (ImGui.RadioButton(label + "##mode", configuration.HuntMode == mode))
+                {
+                    configuration.HuntMode = mode;
+                    save();
+                }
+            }
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGui.SetTooltip(maxLevel && mode != HuntMode.Logos
+                    ? Loc.T($"Niveau max de la zone ({HuntXp.MaxLevel(context.Territory)}) : l'XP ne compte plus ici.", $"Zone max level ({HuntXp.MaxLevel(context.Territory)}): experience no longer counts here.")
+                    : tip);
+        }
+        var gap = Math.Clamp(configuration.LevelGap, 0, HuntOptions.MaxGap);
+        ImGui.SetNextItemWidth(140);
+        if (ImGui.SliderInt(Loc.T("Écart de niveau", "Level gap") + "##gap", ref gap, 0, HuntOptions.MaxGap, "+%d"))
+        {
+            configuration.LevelGap = gap;
+            save();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(Loc.T("Jusqu'à combien de niveaux au-dessus de toi tu tapes : les mobs plus forts ne sont pas proposés.\n" +
+                "L'XP monte jusqu'à +6, pas au-delà. Les éclats ne tombent que des mobs de ton niveau ou plus.",
+                "How many levels above you you hit: stronger mobs are not proposed.\n" +
+                "Experience grows up to +6, not beyond. Logograms only drop from mobs at or above your level."));
+        ImGui.SameLine();
+        var countParty = configuration.CountParty;
+        if (ImGui.Checkbox(Loc.T("Compter le groupe", "Count the party") + "##party", ref countParty))
+        {
+            configuration.CountParty = countParty;
+            save();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(Loc.T($"Les kills sont partagés entre les joueurs (jusqu'à {HuntOptions.MaxSharing}) : temps plus courts.\nLe groupe réel compte s'il est plus grand. Les coffres lapin ne se partagent pas.",
+                $"Kills are shared by the players (up to {HuntOptions.MaxSharing}): shorter times.\nThe actual party counts when it is bigger. Bunny coffers are not shared."));
+        if (configuration.CountParty)
+        {
+            ImGui.SameLine();
+            var party = Math.Clamp(configuration.FarmPartySize, 1, 8);
+            ImGui.SetNextItemWidth(110);
+            if (ImGui.SliderInt("##partysize", ref party, 1, 8, Loc.T("%d joueur(s)", "%d player(s)")))
+            {
+                configuration.FarmPartySize = party;
+                save();
+            }
+            if (context.PartySize > party)
+            {
+                ImGui.SameLine();
+                ImGui.TextColored(Grey, Loc.T($"(groupe : {context.PartySize})", $"(party: {context.PartySize})"));
+            }
+        }
+        if (maxLevel) return HuntMode.Logos;
+        if (configuration.HuntMode == HuntMode.Mix)
+        {
+            ImGui.TextColored(Grey, Loc.T("Part de l'XP :", "Experience share:"));
+            foreach (var (percent, fr, en) in Presets)
+            {
+                ImGui.SameLine();
+                if (ImGui.RadioButton($"{Loc.T(fr, en)} ({percent} %)##mix{percent}", configuration.XpImportance == percent))
+                {
+                    configuration.XpImportance = percent;
+                    save();
+                }
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(Loc.T("À 50 % : une heure qui rapporte autant d'XP qu'un farm de mobs à +3 niveaux compte pour une demi-heure.",
+                    "At 50%: an hour giving as much experience as grinding mobs 3 levels above counts as half an hour."));
+        }
+        return configuration.HuntMode;
+    }
+
+    /// <summary>XP mode: the experience buffs, a few tips, then the sources of the zone, best first.</summary>
+    private void DrawXp(CharacterState state, HuntContext context)
+    {
+        var zone = EurekaWeather.Zone(context.Territory)?.Name ?? "?";
+        ImGui.TextColored(Grey, context.Level is { } level
+            ? Loc.T($"à {zone}, niveau {level} (max {HuntXp.MaxLevel(context.Territory)})",
+                $"in {zone}, level {level} (max {HuntXp.MaxLevel(context.Territory)})")
+            : Loc.T($"à {zone} (niveau inconnu)", $"in {zone} (level unknown)"));
+
+        var statuses = playerStatuses();
+        Buff(statuses.Contains(XpOptions.HarmonyStatus), Loc.T("Potion d'harmonie", "Potion of Harmony"),
+            Loc.T("+10 % d'XP pendant 1 h (1 h 30 HQ) ; au marché, ou fabriquée", "+10% experience for 1 h (1 h 30 HQ); market board, or crafted"));
+        ImGui.SameLine();
+        Buff(statuses.Contains(XpOptions.FairyStatus), Loc.T("bénédiction des fées", "elementals' blessing"),
+            Loc.T("+XP et dégâts pendant 1 h : reste près d'une fée élémentaire (3 par zone, souvent annoncées en /shout)",
+                "+experience and damage for 1 h: stand by an Eureka elemental (3 per zone, often shouted)"));
+        ImGui.SameLine();
+        ImGui.TextColored(Grey, Loc.T("· conseils", "· tips"));
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(Loc.T("Carnet d'objectifs Eurêka (onglet Autres, chaque semaine) : beaucoup d'XP, il se fait aussi à Anemos (niveau ramené à 20).\n" +
+                "En groupe, un membre à 8 niveaux d'écart ou plus : plus personne ne gagne d'XP sur les mobs.\n" +
+                "NM plus d'un niveau au-dessus de toi : XP réduite et aucune récompense.\n" +
+                "Mort puis retour au camp : perte d'XP, voire d'un niveau ; demande une résurrection en /shout.",
+                "Eureka challenge log (Other tab, weekly): lots of experience, also doable in Anemos (level synced to 20).\n" +
+                "In a party, a member 8 or more levels apart: nobody gets experience from mobs.\n" +
+                "NM more than one level above you: reduced experience and no reward.\n" +
+                "Dying then returning to camp costs experience, even a level; ask for a raise in /shout."));
+
+        var useful = state.StockReadAt == null
+            ? new HashSet<uint>()
+            : Hunt.Compute(catalog, nmCatalog.Zones, state.Stock, state.Learned).Shards.Where(s => s.UsefulChance > 0).Select(s => s.Shard).ToHashSet();
+        var options = XpOptions.For(farms, context, state.Learned, useful);
+        ImGui.Spacing();
+        ImGui.Separator();
+        if (options.Count == 0)
+        {
+            ImGui.TextColored(Grey, Loc.T("Aucune source connue à ton niveau dans cette zone.", "No known source at your level in this zone."));
+            return;
+        }
+        using var list = ImRaii.Child("##xp", Vector2.Zero, false);
+        if (!list) return;
+        using var table = ImRaii.Table("##xptable", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit);
+        if (!table) return;
+        ImGui.TableSetupColumn(Loc.T("cible", "target"), ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn(Loc.T("quand", "when"));
+        ImGui.TableSetupColumn("XP");
+        ImGui.TableSetupColumn(Loc.T("boutons", "buttons"));
+        ImGui.TableHeadersRow();
+        foreach (var (option, i) in options.Select((o, i) => (o, i)))
+        {
+            using var id = ImRaii.PushId(i);
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            var label = XpLabel(option);
+            ImGui.TextUnformatted(label);
+            if (option.Notes.Count > 0 && ImGui.IsItemHovered()) ImGui.SetTooltip(string.Join("\n", option.Notes));
+            foreach (var shard in option.UsefulShards)
+            {
+                ImGui.SameLine(0, 4);
+                var text = texts.Item(shard);
+                Icon(text.Icon, new Vector2(18));
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip(Loc.T($"Lâche aussi {GameTexts.WithoutUnidentified(text.Name)}, utile pour tes actions Logos",
+                        $"Also drops {GameTexts.WithoutUnidentified(text.Name)}, useful for your Logos actions"));
+            }
+            ImGui.TableNextColumn();
+            if (option.Status is { } status) ImGui.TextColored(status.IsDoable(context.Now) ? Green : Amber, status.Describe(context.Now, weatherName));
+            else WindowText(option.Window, option.Farm != null ? Condition(option.Farm) : PrepCondition(option.PrepFor), context.Now);
+            ImGui.TableNextColumn();
+            XpRate(option);
+            ImGui.TableNextColumn();
+            if (option.Nm is { } nm)
+            {
+                if (ImGui.SmallButton(Loc.T("Carte", "Map") + "##map")) showNm(nm);
+                ImGui.SameLine();
+            }
+            else if (option.Places.Count > 0)
+            {
+                if (ImGui.SmallButton(Loc.T("Carte", "Map") + "##map")) showFarm(label, option.Places);
+                ImGui.SameLine();
+            }
+            if (option.Places.Count > 0 && ImGui.SmallButton(Loc.T("Drapeau", "Flag") + "##flag")) setFlag(context.Territory, option.Places);
+        }
+    }
+
+    /// <summary>Green "Potion d'harmonie ✓" when active, amber "pas de …" otherwise, with what it gives.</summary>
+    private static void Buff(bool active, string name, string tip)
+    {
+        if (active) ImGui.TextColored(Green, name + " ✓");
+        else ImGui.TextColored(Amber, Loc.T($"pas de {name}", $"no {name}"));
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip(tip);
+    }
+
+    /// <summary>"×1.4 · moyen": experience per minute against the reference rhythm, then the difficulty.</summary>
+    private static void XpRate(XpOption option)
+    {
+        var relative = option.Relative;
+        ImGui.TextColored(relative >= 1 ? Green : relative >= 0.5 ? Amber : Grey, $"×{relative:0.0}");
+        var hovered = ImGui.IsItemHovered();
+        ImGui.SameLine();
+        var (difficulty, color) = option.Difficulty switch
+        {
+            Difficulty.Easy => (Loc.T("facile", "easy"), Green),
+            Difficulty.Medium => (Loc.T("moyen", "medium"), Amber),
+            _ => (Loc.T("dur", "hard"), Red),
+        };
+        ImGui.TextColored(color, difficulty);
+        hovered |= ImGui.IsItemHovered();
+        if (!hovered) return;
+        var hour = option.Score / HuntXp.ReferenceRate;
+        ImGui.SetTooltip(Loc.T($"XP par minute : ×{relative:0.00} le rythme d'un duo sur des mobs à +3 niveaux\n" +
+                $"sur l'heure qui vient, attente comprise : ×{hour:0.00}\ndifficulté : {difficulty} (écart de niveau, mob qui mute ou s'adapte, NM)",
+            $"Experience per minute: ×{relative:0.00} the rhythm of a duo on mobs 3 levels above\n" +
+                $"over the next hour, wait included: ×{hour:0.00}\ndifficulty: {difficulty} (level gap, mob that mutates or adapts, NM)"));
+    }
+
+    /// <summary>"Chaîne de 30 (mobs Nv 52)", "NM Skoll Nv 50", "Bombe Nv 47 (prépa de …)", "Sprite d'orage Nv 46 adapté".</summary>
+    private string XpLabel(XpOption option) => option.Kind switch
+    {
+        XpKind.Chain => Loc.T($"Chaîne de 30 (mobs Nv {option.Level})", $"Chain of 30 (lv {option.Level} mobs)"),
+        XpKind.Nm => $"NM {texts.Npc(option.Npc)} {Loc.T("Nv", "lv")} {option.Level}",
+        _ => $"{texts.Npc(option.Npc)} {Loc.T("Nv", "lv")} {option.Level}"
+            + (option.Farm is { Adapted: true } ? Loc.T(" adapté", " adapted") : option.Farm is { Mutated: true } ? Loc.T(" muté", " mutated") : "")
+            + (option.PrepFor is { } nm ? Loc.T($" (prépa de {texts.Npc(nm.Npc)})", $" (prep of {texts.Npc(nm.Npc)})") : ""),
+    };
+
+    /// <summary>The weather or night a prep mob waits for; null when none.</summary>
+    private string? PrepCondition(EurekaNm? nm) => nm?.Prep.Condition switch
+    {
+        { Weather: { } weather } => weatherName(weather),
+        { Night: true } => Loc.T("Nuit", "Night"),
+        _ => null,
+    };
 
     /// <summary>One line per useful shard, by its fastest source: what to do first.</summary>
     private void DrawFastest(HuntPlan plan, HuntContext context)
@@ -146,7 +388,7 @@ public sealed class HuntTab(
         ImGui.Separator();
     }
 
-    private void DrawShard(HuntShard shard, HuntContext context)
+    private void DrawShard(HuntShard shard, IReadOnlyList<HuntOption> options, HuntContext context)
     {
         using var id = ImRaii.PushId((int)shard.Shard);
         var text = texts.Item(shard.Shard);
@@ -166,9 +408,6 @@ public sealed class HuntTab(
         ImGui.EndGroup();
 
         ImGui.Indent(40);
-        var options = HuntOptions.For(shard, farms, context);
-        if (options.Count == 0)
-            ImGui.TextColored(Grey, Loc.T("Aucune source connue (zone pas encore dans les données du plugin, ou pas à ton niveau).", "No known source (zone not in the plugin data yet, or not at your level)."));
         for (var i = 0; i < Math.Min(ShownSources, options.Count); i++) DrawOption(options[i], i, context);
         if (options.Count > ShownSources)
         {
@@ -307,16 +546,24 @@ public sealed class HuntTab(
         }
         if (option.Eta == null)
         {
-            ImGui.TextColored(Grey, option.Nm != null ? Loc.T("état inconnu (autre zone)", "state unknown (other zone)") : Loc.T("autre zone", "other zone"));
+            ImGui.TextColored(Grey, Loc.T("hors de portée", "out of reach"));
             return;
         }
-        var weather = option.Farm is { Weathers.Count: > 0 } f
-            ? string.Join(Loc.T(" ou ", " or "), f.Weathers.Select(weatherName))
-            : option.Farm?.Time switch { "night" => Loc.T("Nuit", "Night"), "day" => Loc.T("Jour", "Day"), _ => null };
-        if (option.Window is { } w && !w.IsOpen(now))
-            ImGui.TextColored(Amber, Loc.T($"{weather} dans", $"{weather} in") + $" {Formatting.Duration(w.Start - now)}");
-        else if (option.Window is { } open)
-            ImGui.TextColored(Green, Loc.T($"{weather} en cours (encore {Formatting.Duration(open.End - now)})", $"{weather} now ({Formatting.Duration(open.End - now)} left)"));
+        WindowText(option.Window, Condition(option.Farm), now);
+    }
+
+    /// <summary>"Orages ou Neige", "Nuit", "Jour": what the farm waits for; null when nothing.</summary>
+    private string? Condition(Farm? farm) => farm is { Weathers.Count: > 0 } f
+        ? string.Join(Loc.T(" ou ", " or "), f.Weathers.Select(weatherName))
+        : farm?.Time switch { "night" => Loc.T("Nuit", "Night"), "day" => Loc.T("Jour", "Day"), _ => null };
+
+    /// <summary>Amber "Orages dans 12 min", green "Orages en cours (encore 8 min)", green "maintenant".</summary>
+    private static void WindowText(TimeWindow? window, string? condition, DateTimeOffset now)
+    {
+        if (window is { } w && !w.IsOpen(now))
+            ImGui.TextColored(Amber, Loc.T($"{condition} dans", $"{condition} in") + $" {Formatting.Duration(w.Start - now)}");
+        else if (window is { } open)
+            ImGui.TextColored(Green, Loc.T($"{condition} en cours (encore {Formatting.Duration(open.End - now)})", $"{condition} now ({Formatting.Duration(open.End - now)} left)"));
         else
             ImGui.TextColored(Green, Loc.T("maintenant", "now"));
     }

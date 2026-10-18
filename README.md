@@ -48,9 +48,23 @@ missing mnemes, the logograms that give them, and every way to get those logogra
 under their weather, NMs with their live state, bunny FATE coffers, mutation lockboxes, random
 drops. Each source gets an estimated time to your first *useful* mneme (waiting for the weather or
 the respawn, then tries × time per try, with measured bunny coffer odds and mneme odds), for a
-small party farming on its own, with how hard each one is. If you also want to level up, sources
-that give experience count for less time (until the zone's max level; adjustable). "Fastest" sums
-it up; **Map** and **Flag** buttons take you there.
+player on their own, or for your party sharing the kills if you tick "Count the party", with how
+hard each one is. Only the
+zone you are in is listed, and only mobs up to your **level gap** (a slider, +0 to +6: experience
+stops growing at +6).
+Three modes on top: **Logos** (that ranking), **Mix** (sources that also level you up count for less
+time: mostly Logos, balanced or mostly XP) and **XP** (what levels you up fastest in the zone: mobs
+that mutate or adapt, sprites, Reflect L if you know it, prep mobs, running NMs, a chain at the right
+level; your Potion of Harmony and elementals' blessing; the useful logograms dropped on the way),
+until the zone's max level. "Fastest" sums it up; **Map** and **Flag** buttons take you there.
+
+**What to buy** ("Quoi acheter"). Logograms can be traded, mnemes cannot: the tab lists the
+logograms to buy at the market board to learn every action you are missing, plus the actions you
+want to craft again (Bloodbath L, Spirit of the Remembered…), for the least gil. Prices come from
+Universalis on the data centers of your region (one checkbox each: Chaos, Light…); the plan picks
+each craft's recipe so the expected cost is lowest (mnemes come out of a logogram at random), and
+gives the cheapest stacks to buy for a first round, world by world. Appraise them, come back: the
+plan starts again from your new mnemes.
 
 **Map.** The zone's game map redrawn by the plugin: you, your party, the flag, the NMs with their
 state (FATE running, respawning, weather or night to come), the chosen NM's prep area, pops called
